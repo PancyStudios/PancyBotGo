@@ -5,8 +5,8 @@ package discord
 import (
 	"sync"
 
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/config"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/logger"
+	"github.com/PancyStudios/PancyBotGo/pkg/config"
+	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/bwmarrin/discordgo"
 )
 

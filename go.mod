@@ -1,4 +1,4 @@
-module github.com/PancyStudios/PancyBotCode/PancyBotGo
+module github.com/PancyStudios/PancyBotGo
 
 go 1.24.10
 

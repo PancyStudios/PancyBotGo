@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/logger"
+	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

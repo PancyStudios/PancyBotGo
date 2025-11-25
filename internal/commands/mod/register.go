@@ -3,7 +3,7 @@
 package mod
 
 import (
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/discord"
+	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 )
 
 // RegisterModCommands registers all moderation commands as /mod subcommands

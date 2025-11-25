@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/logger"
+	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 )
 
 // ErrorHandler manages error counting and reporting

@@ -1,0 +1,6 @@
+go.sum
+.idea/
+PancyBotCode
+main
+.env
+logs/

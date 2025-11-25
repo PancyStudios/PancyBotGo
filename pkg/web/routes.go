@@ -4,8 +4,8 @@ package web
 import (
 	"net/http"
 
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/database"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/discord"
+	"github.com/PancyStudios/PancyBotGo/pkg/database"
+	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/gin-gonic/gin"
 )
 

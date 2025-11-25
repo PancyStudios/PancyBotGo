@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/discord"
+	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/bwmarrin/discordgo"
 )
 

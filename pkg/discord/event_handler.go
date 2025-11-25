@@ -2,7 +2,7 @@
 package discord
 
 import (
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/logger"
+	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/bwmarrin/discordgo"
 )
 

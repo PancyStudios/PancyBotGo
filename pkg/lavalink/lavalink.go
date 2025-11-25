@@ -3,14 +3,17 @@
 package lavalink
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	neturl "net/url"
 	"sync"
 	"time"
 
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/logger"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/mqtt"
+	"github.com/PancyStudios/PancyBotGo/pkg/logger"
+	"github.com/PancyStudios/PancyBotGo/pkg/mqtt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/websocket"
 )
@@ -82,18 +85,59 @@ type Node struct {
 	client       *LavalinkClient
 	connected    bool
 	reconnecting bool
+	sessionId    string
 	mu           sync.RWMutex
 }
 
-// SearchResult represents a search response from Lavalink
+// SearchResult represents a search response from Lavalink v4
 type SearchResult struct {
-	LoadType     string      `json:"loadType"`
-	PlaylistInfo interface{} `json:"playlistInfo"`
-	Tracks       []*Track    `json:"tracks"`
-	Exception    *struct {
+	LoadType  string          `json:"loadType"`
+	Data      json.RawMessage `json:"data"`
+	Exception *struct {
 		Message  string `json:"message"`
 		Severity string `json:"severity"`
-	} `json:"exception"`
+	} `json:"exception,omitempty"`
+}
+
+// PlaylistData represents playlist data from Lavalink
+type PlaylistData struct {
+	Info struct {
+		Name string `json:"name"`
+	} `json:"info"`
+	PluginInfo interface{} `json:"pluginInfo,omitempty"`
+	Tracks     []*Track    `json:"tracks"`
+}
+
+// GetTracks returns the tracks from the search result, handling different loadTypes
+func (sr *SearchResult) GetTracks() []*Track {
+	switch sr.LoadType {
+	case "search":
+		// For search results, data is an array of tracks
+		var tracks []*Track
+		if err := json.Unmarshal(sr.Data, &tracks); err != nil {
+			logger.Error(fmt.Sprintf("Error unmarshaling search tracks: %v", err), "Lavalink")
+			return []*Track{}
+		}
+		return tracks
+	case "track":
+		// For single track, data is a track object
+		var track Track
+		if err := json.Unmarshal(sr.Data, &track); err != nil {
+			logger.Error(fmt.Sprintf("Error unmarshaling single track: %v", err), "Lavalink")
+			return []*Track{}
+		}
+		return []*Track{&track}
+	case "playlist":
+		// For playlist, data is an object with tracks array
+		var playlist PlaylistData
+		if err := json.Unmarshal(sr.Data, &playlist); err != nil {
+			logger.Error(fmt.Sprintf("Error unmarshaling playlist: %v", err), "Lavalink")
+			return []*Track{}
+		}
+		return playlist.Tracks
+	default:
+		return []*Track{}
+	}
 }
 
 // MusicState represents the current music state for MQTT publishing
@@ -253,7 +297,15 @@ func (n *Node) handleMessage(payload map[string]interface{}) {
 
 	switch op {
 	case "ready":
-		logger.Info("Lavalink ready", "Lavalink")
+		// Extract sessionId from ready event
+		if sessionId, ok := payload["sessionId"].(string); ok {
+			n.mu.Lock()
+			n.sessionId = sessionId
+			n.mu.Unlock()
+			logger.Info(fmt.Sprintf("Lavalink ready with session: %s", sessionId), "Lavalink")
+		} else {
+			logger.Info("Lavalink ready", "Lavalink")
+		}
 	case "playerUpdate":
 		n.handlePlayerUpdate(payload)
 	case "event":
@@ -352,13 +404,16 @@ func (c *LavalinkClient) DestroyPlayer(guildID string) {
 
 	c.stopProgressUpdates(guildID)
 
-	// Send destroy command to Lavalink
+	// Send destroy command to Lavalink via REST API
 	for _, node := range c.nodes {
-		if node.connected {
-			node.sendOp(map[string]interface{}{
-				"op":      "destroy",
-				"guildId": guildID,
-			})
+		node.mu.RLock()
+		isConnected := node.connected
+		node.mu.RUnlock()
+
+		if isConnected {
+			if err := node.destroyPlayer(guildID); err != nil {
+				logger.Error(fmt.Sprintf("Error destroying player: %v", err), "Lavalink")
+			}
 			break
 		}
 	}
@@ -367,39 +422,70 @@ func (c *LavalinkClient) DestroyPlayer(guildID string) {
 // Search searches for tracks
 func (c *LavalinkClient) Search(query string) (*SearchResult, error) {
 	for _, node := range c.nodes {
-		if !node.connected {
+		node.mu.RLock()
+		isConnected := node.connected
+		config := node.config
+		nodeName := config.Name
+		node.mu.RUnlock()
+
+		if !isConnected {
+			logger.Debug(fmt.Sprintf("Node %s no está conectado, saltando...", nodeName), "Lavalink")
 			continue
 		}
 
+		logger.Debug(fmt.Sprintf("Usando node %s para búsqueda: %s", nodeName, query), "Lavalink")
+
 		scheme := "http"
-		if node.config.Secure {
+		if config.Secure {
 			scheme = "https"
 		}
 
-		url := fmt.Sprintf("%s://%s:%d/v4/loadtracks?identifier=%s:%s",
-			scheme, node.config.Host, node.config.Port, c.defaultPlatform, query)
+		// URL encode the query
+		encodedQuery := neturl.QueryEscape(fmt.Sprintf("%s:%s", c.defaultPlatform, query))
+		url := fmt.Sprintf("%s://%s:%d/v4/loadtracks?identifier=%s",
+			scheme, config.Host, config.Port, encodedQuery)
+
+		logger.Debug(fmt.Sprintf("URL de búsqueda: %s", url), "Lavalink")
 
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
+			logger.Error(fmt.Sprintf("Error creando request HTTP: %v", err), "Lavalink")
 			continue
 		}
-		req.Header.Set("Authorization", node.config.Password)
+		req.Header.Set("Authorization", config.Password)
 
 		client := &http.Client{Timeout: 10 * time.Second}
 		resp, err := client.Do(req)
 		if err != nil {
+			logger.Error(fmt.Sprintf("Error ejecutando request HTTP a %s: %v", url, err), "Lavalink")
 			continue
 		}
 		defer resp.Body.Close()
 
-		var result SearchResult
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		if resp.StatusCode != http.StatusOK {
+			logger.Error(fmt.Sprintf("Lavalink respondió con status %d", resp.StatusCode), "Lavalink")
 			continue
 		}
 
+		// Read the response body
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			logger.Error(fmt.Sprintf("Error leyendo body de respuesta: %v", err), "Lavalink")
+			continue
+		}
+
+		var result SearchResult
+		if err := json.Unmarshal(bodyBytes, &result); err != nil {
+			logger.Error(fmt.Sprintf("Error decodificando respuesta JSON: %v", err), "Lavalink")
+			continue
+		}
+
+		tracks := result.GetTracks()
+		logger.Debug(fmt.Sprintf("LoadType: %s, Tracks encontrados: %d", result.LoadType, len(tracks)), "Lavalink")
 		return &result, nil
 	}
 
+	logger.Error(fmt.Sprintf("No hay nodos Lavalink disponibles. Total de nodos: %d", len(c.nodes)), "Lavalink")
 	return nil, fmt.Errorf("no available Lavalink nodes")
 }
 
@@ -428,14 +514,23 @@ func (c *LavalinkClient) Play(guildID, voiceChannelID, textChannelID string, tra
 	player.IsPlaying = true
 	player.Mu.Unlock()
 
-	// Send play command
+	// Send play command via REST API
 	for _, node := range c.nodes {
-		if node.connected {
-			node.sendOp(map[string]interface{}{
-				"op":      "play",
-				"guildId": guildID,
-				"track":   track.Encoded,
-			})
+		node.mu.RLock()
+		isConnected := node.connected
+		node.mu.RUnlock()
+
+		if isConnected {
+			payload := map[string]interface{}{
+				"track": map[string]interface{}{
+					"encoded": track.Encoded,
+				},
+			}
+			if err := node.updatePlayer(guildID, payload); err != nil {
+				logger.Error(fmt.Sprintf("Error sending play command: %v", err), "Lavalink")
+				continue
+			}
+			logger.Debug(fmt.Sprintf("Track enviado a reproducir: %s", track.Info.Title), "Lavalink")
 			break
 		}
 	}
@@ -451,12 +546,18 @@ func (c *LavalinkClient) Pause(guildID string, pause bool) error {
 	player.Mu.Unlock()
 
 	for _, node := range c.nodes {
-		if node.connected {
-			node.sendOp(map[string]interface{}{
-				"op":      "pause",
-				"guildId": guildID,
-				"pause":   pause,
-			})
+		node.mu.RLock()
+		isConnected := node.connected
+		node.mu.RUnlock()
+
+		if isConnected {
+			payload := map[string]interface{}{
+				"paused": pause,
+			}
+			if err := node.updatePlayer(guildID, payload); err != nil {
+				logger.Error(fmt.Sprintf("Error sending pause command: %v", err), "Lavalink")
+				continue
+			}
 			return nil
 		}
 	}
@@ -475,11 +576,21 @@ func (c *LavalinkClient) Stop(guildID string) error {
 	c.stopProgressUpdates(guildID)
 
 	for _, node := range c.nodes {
-		if node.connected {
-			node.sendOp(map[string]interface{}{
-				"op":      "stop",
-				"guildId": guildID,
-			})
+		node.mu.RLock()
+		isConnected := node.connected
+		node.mu.RUnlock()
+
+		if isConnected {
+			// In Lavalink v4, to stop, we set track to null
+			payload := map[string]interface{}{
+				"track": map[string]interface{}{
+					"encoded": nil,
+				},
+			}
+			if err := node.updatePlayer(guildID, payload); err != nil {
+				logger.Error(fmt.Sprintf("Error sending stop command: %v", err), "Lavalink")
+				continue
+			}
 			return nil
 		}
 	}
@@ -502,12 +613,20 @@ func (c *LavalinkClient) Skip(guildID string) error {
 	player.Mu.Unlock()
 
 	for _, node := range c.nodes {
-		if node.connected {
-			node.sendOp(map[string]interface{}{
-				"op":      "play",
-				"guildId": guildID,
-				"track":   nextTrack.Encoded,
-			})
+		node.mu.RLock()
+		isConnected := node.connected
+		node.mu.RUnlock()
+
+		if isConnected {
+			payload := map[string]interface{}{
+				"track": map[string]interface{}{
+					"encoded": nextTrack.Encoded,
+				},
+			}
+			if err := node.updatePlayer(guildID, payload); err != nil {
+				logger.Error(fmt.Sprintf("Error sending skip command: %v", err), "Lavalink")
+				continue
+			}
 			return nil
 		}
 	}
@@ -529,28 +648,114 @@ func (c *LavalinkClient) SetVolume(guildID string, volume int) error {
 	player.Mu.Unlock()
 
 	for _, node := range c.nodes {
-		if node.connected {
-			node.sendOp(map[string]interface{}{
-				"op":      "volume",
-				"guildId": guildID,
-				"volume":  volume,
-			})
+		node.mu.RLock()
+		isConnected := node.connected
+		node.mu.RUnlock()
+
+		if isConnected {
+			payload := map[string]interface{}{
+				"volume": volume,
+			}
+			if err := node.updatePlayer(guildID, payload); err != nil {
+				logger.Error(fmt.Sprintf("Error sending volume command: %v", err), "Lavalink")
+				continue
+			}
 			return nil
 		}
 	}
 	return fmt.Errorf("no available nodes")
 }
 
-// sendOp sends an operation to the Lavalink node
+// sendOp sends an operation to the Lavalink node (deprecated, kept for compatibility)
 func (n *Node) sendOp(data map[string]interface{}) error {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
+	// This method is deprecated in Lavalink v4
+	// Commands should use REST API instead
+	return fmt.Errorf("sendOp is deprecated in Lavalink v4, use REST API")
+}
 
-	if !n.connected || n.conn == nil {
-		return fmt.Errorf("node not connected")
+// updatePlayer sends a PATCH request to update player state via REST API
+func (n *Node) updatePlayer(guildID string, payload map[string]interface{}) error {
+	n.mu.RLock()
+	sessionId := n.sessionId
+	config := n.config
+	connected := n.connected
+	n.mu.RUnlock()
+
+	if !connected || sessionId == "" {
+		return fmt.Errorf("node not connected or no session")
 	}
 
-	return n.conn.WriteJSON(data)
+	scheme := "http"
+	if config.Secure {
+		scheme = "https"
+	}
+
+	url := fmt.Sprintf("%s://%s:%d/v4/sessions/%s/players/%s?noReplace=false",
+		scheme, config.Host, config.Port, sessionId, guildID)
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("error marshaling payload: %w", err)
+	}
+
+	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("error creating request: %w", err)
+	}
+
+	req.Header.Set("Authorization", config.Password)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error sending request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("lavalink returned status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	return nil
+}
+
+// destroyPlayer sends a DELETE request to destroy a player
+func (n *Node) destroyPlayer(guildID string) error {
+	n.mu.RLock()
+	sessionId := n.sessionId
+	config := n.config
+	connected := n.connected
+	n.mu.RUnlock()
+
+	if !connected || sessionId == "" {
+		return fmt.Errorf("node not connected or no session")
+	}
+
+	scheme := "http"
+	if config.Secure {
+		scheme = "https"
+	}
+
+	url := fmt.Sprintf("%s://%s:%d/v4/sessions/%s/players/%s",
+		scheme, config.Host, config.Port, sessionId, guildID)
+
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return fmt.Errorf("error creating request: %w", err)
+	}
+
+	req.Header.Set("Authorization", config.Password)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("error sending request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	return nil
 }
 
 // handleTrackStart handles track start events
@@ -592,12 +797,20 @@ func (c *LavalinkClient) handleTrackEnd(guildID string, payload map[string]inter
 
 		// Play next track
 		for _, node := range c.nodes {
-			if node.connected {
-				node.sendOp(map[string]interface{}{
-					"op":      "play",
-					"guildId": guildID,
-					"track":   nextTrack.Encoded,
-				})
+			node.mu.RLock()
+			isConnected := node.connected
+			node.mu.RUnlock()
+
+			if isConnected {
+				payload := map[string]interface{}{
+					"track": map[string]interface{}{
+						"encoded": nextTrack.Encoded,
+					},
+				}
+				if err := node.updatePlayer(guildID, payload); err != nil {
+					logger.Error(fmt.Sprintf("Error playing next track: %v", err), "Lavalink")
+					continue
+				}
 				break
 			}
 		}
@@ -692,28 +905,51 @@ func (c *LavalinkClient) voiceStateUpdate(s *discordgo.Session, v *discordgo.Voi
 		return
 	}
 
-	// Send voice state update to Lavalink
-	for _, node := range c.nodes {
-		if node.connected {
-			node.sendOp(map[string]interface{}{
-				"op":        "voiceUpdate",
-				"guildId":   v.GuildID,
-				"sessionId": v.SessionID,
-			})
-			break
-		}
-	}
+	// Store voice session ID for later use with voice server update
+	// In Lavalink v4, voice updates are sent via REST API with both sessionId and server info
+	logger.Debug(fmt.Sprintf("Voice state update for guild %s, session: %s", v.GuildID, v.SessionID), "Lavalink")
 }
 
 func (c *LavalinkClient) voiceServerUpdate(s *discordgo.Session, v *discordgo.VoiceServerUpdate) {
-	// Send voice server update to Lavalink
+	// Get voice state from Discord
+	guild, err := s.State.Guild(v.GuildID)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Error getting guild: %v", err), "Lavalink")
+		return
+	}
+
+	var voiceState *discordgo.VoiceState
+	for _, vs := range guild.VoiceStates {
+		if vs.UserID == s.State.User.ID {
+			voiceState = vs
+			break
+		}
+	}
+
+	if voiceState == nil {
+		logger.Error("Voice state not found", "Lavalink")
+		return
+	}
+
+	// Send voice update to Lavalink via REST API
 	for _, node := range c.nodes {
-		if node.connected {
-			node.sendOp(map[string]interface{}{
-				"op":      "voiceUpdate",
-				"guildId": v.GuildID,
-				"event":   v,
-			})
+		node.mu.RLock()
+		isConnected := node.connected
+		node.mu.RUnlock()
+
+		if isConnected {
+			payload := map[string]interface{}{
+				"voice": map[string]interface{}{
+					"sessionId": voiceState.SessionID,
+					"token":     v.Token,
+					"endpoint":  v.Endpoint,
+				},
+			}
+			if err := node.updatePlayer(v.GuildID, payload); err != nil {
+				logger.Error(fmt.Sprintf("Error sending voice update: %v", err), "Lavalink")
+				continue
+			}
+			logger.Debug(fmt.Sprintf("Voice update sent for guild %s", v.GuildID), "Lavalink")
 			break
 		}
 	}

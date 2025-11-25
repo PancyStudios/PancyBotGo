@@ -3,8 +3,8 @@
 package commands
 
 import (
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/internal/commands/mod"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/discord"
+	"github.com/PancyStudios/PancyBotGo/internal/commands/mod"
+	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 )
 
 // RegisterAll registers all commands with the Discord client

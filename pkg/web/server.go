@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/logger"
+	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/discord"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/lavalink"
+	"github.com/PancyStudios/PancyBotGo/pkg/discord"
+	"github.com/PancyStudios/PancyBotGo/pkg/lavalink"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -129,7 +129,8 @@ func playHandler(ctx *discord.CommandContext) error {
 		return ctx.EditReply(fmt.Sprintf("❌ Error buscando: %v", err))
 	}
 
-	if result.LoadType == "empty" || len(result.Tracks) == 0 {
+	tracks := result.GetTracks()
+	if result.LoadType == "empty" || len(tracks) == 0 {
 		return ctx.EditReply("❌ No se encontraron resultados.")
 	}
 
@@ -137,7 +138,7 @@ func playHandler(ctx *discord.CommandContext) error {
 		return ctx.EditReply(fmt.Sprintf("❌ Error: %s", result.Exception.Message))
 	}
 
-	track := result.Tracks[0]
+	track := tracks[0]
 
 	// Play the track
 	if err := lavalinkClient.Play(ctx.Interaction.GuildID, voiceState.ChannelID, ctx.Interaction.ChannelID, track); err != nil {

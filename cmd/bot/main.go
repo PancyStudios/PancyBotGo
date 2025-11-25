@@ -8,15 +8,16 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/internal/commands"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/config"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/database"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/discord"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/errors"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/lavalink"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/logger"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/mqtt"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/web"
+	"github.com/PancyStudios/PancyBotGo/internal/commands"
+	"github.com/PancyStudios/PancyBotGo/internal/events"
+	"github.com/PancyStudios/PancyBotGo/pkg/config"
+	"github.com/PancyStudios/PancyBotGo/pkg/database"
+	"github.com/PancyStudios/PancyBotGo/pkg/discord"
+	"github.com/PancyStudios/PancyBotGo/pkg/errors"
+	"github.com/PancyStudios/PancyBotGo/pkg/lavalink"
+	"github.com/PancyStudios/PancyBotGo/pkg/logger"
+	"github.com/PancyStudios/PancyBotGo/pkg/mqtt"
+	"github.com/PancyStudios/PancyBotGo/pkg/web"
 )
 
 func main() {
@@ -53,7 +54,8 @@ func main() {
 	db, err := database.Init(cfg.MongoDBURL, cfg.DBName)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error connecting to database: %v", err), "Main")
-		// Continue without database - it will attempt to reconnect
+		logger.Debug(fmt.Sprintf("Error connecting to database: %v", cfg.MongoDBURL), "Main")
+		// Continue without database- it will attempt to reconnect
 	}
 	defer func() {
 		if db != nil {
@@ -93,6 +95,9 @@ func main() {
 
 	// Register commands using the new commands package
 	commands.RegisterAll(discordClient)
+
+	// Register events using the new events package
+	events.RegisterAll(discordClient)
 
 	// Start the bot
 	if err := discordClient.Start(); err != nil {

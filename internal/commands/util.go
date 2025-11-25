@@ -4,8 +4,8 @@ package commands
 import (
 	"fmt"
 
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/database"
-	"github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/discord"
+	"github.com/PancyStudios/PancyBotGo/pkg/database"
+	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 )
 
 // RegisterUtilCommands registers all utility commands
