@@ -66,6 +66,11 @@ func main() {
 		}
 	}()
 
+	// Initialize global DataManagers
+	if db != nil {
+		database.InitGlobalDataManagers(db)
+	}
+
 	// Initialize MQTT
 	mqttClientID := "pancybot"
 	if !cfg.IsProd() {

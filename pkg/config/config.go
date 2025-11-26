@@ -34,7 +34,7 @@ type Config struct {
 	ErrorWebhook      string
 	LogsWebhook       string
 	LogsWebServerHook string
-	guildsWebhook     string
+	GuildsWebhook     string
 
 	// Lavalink
 	LinkServer   string
@@ -79,7 +79,7 @@ func Load() (*Config, error) {
 		ErrorWebhook:      getEnv("errorWebhook", ""),
 		LogsWebhook:       getEnv("logsWebhook", ""),
 		LogsWebServerHook: getEnv("logsWebServerWebhook", ""),
-		guildsWebhook:     getEnv("guildsWebhook", ""),
+		GuildsWebhook:     getEnv("guildsWebhook", ""),
 
 		// Lavalink
 		LinkServer:   getEnv("linkserver", "localhost"),

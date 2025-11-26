@@ -123,7 +123,7 @@ func warnHandler(ctx *discord.CommandContext) error {
 		}
 
 		// 6. Operación DB
-		dm := database.NewDataManager[models.WarnsDocument]("warns", database.Get())
+		dm := database.GlobalWarnDM
 
 		query := bson.M{"guildId": ctx.Interaction.GuildID, "userId": targetUser.ID}
 		doc, err := dm.Get(query)

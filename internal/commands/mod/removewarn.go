@@ -75,7 +75,7 @@ func removeWarnHandler(ctx *discord.CommandContext) error {
 		}
 
 		// 3. Consulta DB
-		dm := database.NewDataManager[models.WarnsDocument]("warns", database.Get())
+		dm := database.GlobalWarnDM
 		query := bson.M{"guildId": ctx.Interaction.GuildID, "userId": targetUser.ID}
 
 		doc, err := dm.Get(query)
@@ -182,7 +182,7 @@ func removeWarnAutoComplete(ctx *discord.CommandContext) {
 		}
 
 		// Consulta DB
-		dm := database.NewDataManager[models.WarnsDocument]("warns", database.Get())
+		dm := database.GlobalWarnDM
 		query := bson.M{"guildId": ctx.Interaction.GuildID, "userId": targetUser.ID}
 
 		doc, err := dm.Get(query)

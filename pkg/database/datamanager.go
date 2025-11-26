@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
+	"github.com/PancyStudios/PancyBotGo/pkg/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -21,20 +22,46 @@ type DataManagerOptions struct {
 	MaxCacheSize int
 }
 
+// CacheManager provides shared caching across DataManagers
+type CacheManager struct {
+	cache     map[string]*list.Element
+	cacheList *list.List
+	mu        sync.RWMutex
+}
+
+// cacheEntry holds a cached value with its key
+type cacheEntry struct {
+	key   string
+	value interface{}
+}
+
+// globalCacheManager is shared across all DataManager instances
+var globalCacheManager = &CacheManager{
+	cache:     make(map[string]*list.Element),
+	cacheList: list.New(),
+}
+
+// global DataManagers for shared collections
+var (
+	GlobalWarnDM         *DataManager[models.WarnsDocument]
+	GlobalUserPremiumDM  *DataManager[models.UserPremium]
+	GlobalGuildPremiumDM *DataManager[models.GuildPremium]
+	GlobalPremiumCodeDM  *DataManager[models.PremiumCode]
+)
+
+// InitGlobalDataManagers initializes shared DataManager instances
+func InitGlobalDataManagers(db *Database) {
+	GlobalWarnDM = NewDataManager[models.WarnsDocument]("warns", db)
+	GlobalUserPremiumDM = NewDataManager[models.UserPremium]("premium", db)
+	GlobalGuildPremiumDM = NewDataManager[models.GuildPremium]("premium_guilds", db)
+	GlobalPremiumCodeDM = NewDataManager[models.PremiumCode]("premium_codes", db)
+}
+
 // DataManager provides cached access to a MongoDB collection
 type DataManager[T any] struct {
 	collection *mongo.Collection
 	dbInstance *Database
-	cache      map[string]*list.Element
-	cacheList  *list.List
 	options    DataManagerOptions
-	mu         sync.RWMutex
-}
-
-// cacheEntry holds a cached value with its key
-type cacheEntry[T any] struct {
-	key   string
-	value *T
 }
 
 // DefaultDataManagerOptions returns default options for DataManager
@@ -46,17 +73,15 @@ func DefaultDataManagerOptions() DataManagerOptions {
 
 // NewDataManager creates a new DataManager for a collection
 func NewDataManager[T any](collectionName string, db *Database, opts ...DataManagerOptions) *DataManager[T] {
-	options := DefaultDataManagerOptions()
+	dmOptions := DefaultDataManagerOptions()
 	if len(opts) > 0 {
-		options = opts[0]
+		dmOptions = opts[0]
 	}
 
 	return &DataManager[T]{
 		collection: db.GetCollection(collectionName),
 		dbInstance: db,
-		cache:      make(map[string]*list.Element),
-		cacheList:  list.New(),
-		options:    options,
+		options:    dmOptions,
 	}
 }
 
@@ -89,17 +114,17 @@ func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 	cacheKey := dm.generateCacheKey(query)
 
 	// Check cache first
-	dm.mu.RLock()
-	if elem, exists := dm.cache[cacheKey]; exists {
+	globalCacheManager.mu.RLock()
+	if elem, exists := globalCacheManager.cache[cacheKey]; exists {
 		// Move to front (LRU)
-		dm.mu.RUnlock()
-		dm.mu.Lock()
-		dm.cacheList.MoveToFront(elem)
-		entry := elem.Value.(*cacheEntry[T])
-		dm.mu.Unlock()
-		return entry.value, nil
+		globalCacheManager.mu.RUnlock()
+		globalCacheManager.mu.Lock()
+		globalCacheManager.cacheList.MoveToFront(elem)
+		entry := elem.Value.(*cacheEntry)
+		globalCacheManager.mu.Unlock()
+		return entry.value.(*T), nil
 	}
-	dm.mu.RUnlock()
+	globalCacheManager.mu.RUnlock()
 
 	// Not in cache, fetch from database
 	if !dm.dbInstance.IsConnected || dm.collection == nil {
@@ -120,20 +145,20 @@ func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 	}
 
 	// Add to cache
-	dm.mu.Lock()
-	defer dm.mu.Unlock()
+	globalCacheManager.mu.Lock()
+	defer globalCacheManager.mu.Unlock()
 
-	entry := &cacheEntry[T]{key: cacheKey, value: &result}
-	elem := dm.cacheList.PushFront(entry)
-	dm.cache[cacheKey] = elem
+	entry := &cacheEntry{key: cacheKey, value: &result}
+	elem := globalCacheManager.cacheList.PushFront(entry)
+	globalCacheManager.cache[cacheKey] = elem
 
 	// Evict if over capacity
-	if dm.options.MaxCacheSize > 0 && dm.cacheList.Len() > dm.options.MaxCacheSize {
-		oldest := dm.cacheList.Back()
+	if dm.options.MaxCacheSize > 0 && globalCacheManager.cacheList.Len() > dm.options.MaxCacheSize {
+		oldest := globalCacheManager.cacheList.Back()
 		if oldest != nil {
-			oldEntry := oldest.Value.(*cacheEntry[T])
-			delete(dm.cache, oldEntry.key)
-			dm.cacheList.Remove(oldest)
+			oldEntry := oldest.Value.(*cacheEntry)
+			delete(globalCacheManager.cache, oldEntry.key)
+			globalCacheManager.cacheList.Remove(oldest)
 		}
 	}
 
@@ -153,7 +178,7 @@ func (dm *DataManager[T]) GetAll(query bson.M) ([]*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer func() { _ = cursor.Close(ctx) }()
 
 	var results []*T
 	for cursor.Next(ctx) {
@@ -204,25 +229,25 @@ func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 	}
 
 	// Update cache
-	dm.mu.Lock()
-	defer dm.mu.Unlock()
+	globalCacheManager.mu.Lock()
+	defer globalCacheManager.mu.Unlock()
 
-	entry := &cacheEntry[T]{key: cacheKey, value: &result}
+	entry := &cacheEntry{key: cacheKey, value: &result}
 
-	if elem, exists := dm.cache[cacheKey]; exists {
+	if elem, exists := globalCacheManager.cache[cacheKey]; exists {
 		elem.Value = entry
-		dm.cacheList.MoveToFront(elem)
+		globalCacheManager.cacheList.MoveToFront(elem)
 	} else {
-		elem := dm.cacheList.PushFront(entry)
-		dm.cache[cacheKey] = elem
+		elem := globalCacheManager.cacheList.PushFront(entry)
+		globalCacheManager.cache[cacheKey] = elem
 
 		// Evict if over capacity
-		if dm.options.MaxCacheSize > 0 && dm.cacheList.Len() > dm.options.MaxCacheSize {
-			oldest := dm.cacheList.Back()
+		if dm.options.MaxCacheSize > 0 && globalCacheManager.cacheList.Len() > dm.options.MaxCacheSize {
+			oldest := globalCacheManager.cacheList.Back()
 			if oldest != nil {
-				oldEntry := oldest.Value.(*cacheEntry[T])
-				delete(dm.cache, oldEntry.key)
-				dm.cacheList.Remove(oldest)
+				oldEntry := oldest.Value.(*cacheEntry)
+				delete(globalCacheManager.cache, oldEntry.key)
+				globalCacheManager.cacheList.Remove(oldest)
 			}
 		}
 	}
@@ -235,12 +260,12 @@ func (dm *DataManager[T]) Delete(query bson.M) error {
 	cacheKey := dm.generateCacheKey(query)
 
 	// Remove from cache first
-	dm.mu.Lock()
-	if elem, exists := dm.cache[cacheKey]; exists {
-		dm.cacheList.Remove(elem)
-		delete(dm.cache, cacheKey)
+	globalCacheManager.mu.Lock()
+	if elem, exists := globalCacheManager.cache[cacheKey]; exists {
+		globalCacheManager.cacheList.Remove(elem)
+		delete(globalCacheManager.cache, cacheKey)
 	}
-	dm.mu.Unlock()
+	globalCacheManager.mu.Unlock()
 
 	if !dm.dbInstance.IsConnected || dm.collection == nil {
 		logger.Warn(fmt.Sprintf("DB offline. Encolando eliminación para '%s'", dm.collection.Name()), "DataManager")
@@ -271,18 +296,18 @@ func (dm *DataManager[T]) Delete(query bson.M) error {
 
 // ClearCache clears the entire cache
 func (dm *DataManager[T]) ClearCache() {
-	dm.mu.Lock()
-	defer dm.mu.Unlock()
+	globalCacheManager.mu.Lock()
+	defer globalCacheManager.mu.Unlock()
 
-	dm.cache = make(map[string]*list.Element)
-	dm.cacheList = list.New()
+	globalCacheManager.cache = make(map[string]*list.Element)
+	globalCacheManager.cacheList = list.New()
 }
 
 // CacheSize returns the current cache size
 func (dm *DataManager[T]) CacheSize() int {
-	dm.mu.RLock()
-	defer dm.mu.RUnlock()
-	return dm.cacheList.Len()
+	globalCacheManager.mu.RLock()
+	defer globalCacheManager.mu.RUnlock()
+	return globalCacheManager.cacheList.Len()
 }
 
 // PrimeCache logs that the cache is ready (caches are filled on demand)

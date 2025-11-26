@@ -8,7 +8,6 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/errors"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
-	"github.com/PancyStudios/PancyBotGo/pkg/models"
 	"github.com/bwmarrin/discordgo"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -74,7 +73,7 @@ func warningsHandler(ctx *discord.CommandContext) error {
 		}
 
 		// 3. Consulta DB
-		dm := database.NewDataManager[models.WarnsDocument]("warns", database.Get())
+		dm := database.GlobalWarnDM
 		query := bson.M{"guildId": ctx.Interaction.GuildID, "userId": targetUser.ID}
 
 		doc, err := dm.Get(query)

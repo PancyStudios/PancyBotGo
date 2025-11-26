@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/config"
+	"github.com/PancyStudios/PancyBotGo/pkg/discord/premium"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/bwmarrin/discordgo"
 )
@@ -232,6 +233,16 @@ func (c *ExtendedClient) handleInteraction(s *discordgo.Session, i *discordgo.In
 		Session:     s,
 		Interaction: i,
 		Client:      c,
+	}
+
+	if !cmd.PremiumType.IsNone() {
+		guildID := i.GuildID
+		userID := ctx.User().ID
+		allowed, msg := premium.Check(cmd.PremiumType, userID, guildID)
+		if !allowed {
+			ctx.ReplyEphemeral(msg)
+			return
+		}
 	}
 
 	if err := cmd.Run(ctx); err != nil {

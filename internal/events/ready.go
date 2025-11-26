@@ -36,7 +36,7 @@ var statusList = []StatusOption{
 
 // onReady solo se llama cuando está completamente conectado y listo
 func onReady(s *discordgo.Session, r *discordgo.Ready) {
-	logger.Success(fmt.Sprintf("✅ Bot conectado: %s#%s", r.User.Username, r.User.Discriminator), "Ready")
+	logger.Success(fmt.Sprintf("✅ Bot conectado: %s#%s | ShardID: %v", r.User.Username, r.User.Discriminator, r.Shard), "Ready")
 	logger.Info(fmt.Sprintf("📊 Conectado a %d servidores", len(r.Guilds)), "Ready")
 
 	// Establecer estado del bot

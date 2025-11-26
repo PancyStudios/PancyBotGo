@@ -3,7 +3,9 @@
 package commands
 
 import (
+	"github.com/PancyStudios/PancyBotGo/internal/commands/dev"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/mod"
+	"github.com/PancyStudios/PancyBotGo/internal/commands/premium"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/utils"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 )
@@ -19,6 +21,12 @@ func RegisterAll(client *discord.ExtendedClient) {
 
 	// Moderation commands (/mod ban, /mod kick, /mod warn, /mod mute)
 	mod.RegisterModCommands(client)
+
+	// Premium commands (/premium redeem)
+	premium.Register(client)
+
+	// Developer commands (/dev codegen)
+	dev.Register(client)
 
 	// Add more categories here as needed:
 	// RegisterFunCommands(client)

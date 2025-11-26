@@ -2,6 +2,7 @@
 package discord
 
 import (
+	"github.com/PancyStudios/PancyBotGo/pkg/discord/premium"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -23,6 +24,7 @@ type Command struct {
 	IsDev           bool
 	InVoiceChannel  bool
 	RequiresDB      bool
+	PremiumType     PremiumRequirement
 	Run             CommandRunFunc
 	AutoComplete    AutoCompleteFunc
 }
@@ -41,6 +43,12 @@ func NewCommand(name, description, category string, run CommandRunFunc) *Command
 		Category:    category,
 		Run:         run,
 	}
+}
+
+// RequiresPremium marks the command as requiring a specific premium type
+func (c *Command) RequiresPremium(req PremiumRequirement) *Command {
+	c.PremiumType = req
+	return c
 }
 
 // WithOptions sets the command options
@@ -92,6 +100,13 @@ func (c *Command) ToApplicationCommand() *discordgo.ApplicationCommand {
 		Description: c.Description,
 		Options:     c.Options,
 	}
+}
+
+func (ctx *CommandContext) IsDev() bool {
+	if ctx.Interaction.User.ID == "852683369899622430" {
+		return true
+	}
+	return false
 }
 
 // Reply sends a reply to the interaction
@@ -288,3 +303,6 @@ func (ctx *CommandContext) SendAutoCompleteChoices(choices []*discordgo.Applicat
 		},
 	})
 }
+
+// PremiumRequirement represents the type of premium required for a command
+type PremiumRequirement = premium.Requirement
