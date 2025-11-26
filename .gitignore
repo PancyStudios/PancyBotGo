@@ -4,3 +4,7 @@ PancyBotCode
 main
 .env
 logs/
+
+*.x86_64
+*.arm64
+*.exe

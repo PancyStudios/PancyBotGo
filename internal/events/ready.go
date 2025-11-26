@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PancyStudios/PancyBotGo/pkg/config"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/bwmarrin/discordgo"
@@ -63,7 +64,7 @@ func rotateStatus(s *discordgo.Session) {
 		guildCount := len(s.State.Guilds)
 		statusText = fmt.Sprintf(statusText, guildCount)
 	} else if strings.Contains(statusText, "%s") {
-
+		statusText = fmt.Sprintf(statusText, config.Version)
 	}
 
 	err := s.UpdateStatusComplex(discordgo.UpdateStatusData{

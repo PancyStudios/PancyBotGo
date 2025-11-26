@@ -40,6 +40,11 @@ type Config struct {
 	LinkPassword string
 }
 
+var (
+	Version   = "Dev-Local"
+	BuildTime = "Hoy"
+)
+
 // cfg holds the global configuration instance
 var cfg *Config
 

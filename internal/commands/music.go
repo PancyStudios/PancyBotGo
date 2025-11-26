@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
+	"github.com/PancyStudios/PancyBotGo/pkg/errors"
 	"github.com/PancyStudios/PancyBotGo/pkg/lavalink"
 	"github.com/bwmarrin/discordgo"
 )
@@ -104,225 +105,324 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 
 // playHandler handles the /play command
 func playHandler(ctx *discord.CommandContext) error {
-	query := ctx.GetStringOption("query")
-	if query == "" {
-		return ctx.ReplyEphemeral("❌ Debes proporcionar una canción para reproducir.")
-	}
+	go func() {
+		defer errors.RecoverMiddleware()()
+		query := ctx.GetStringOption("query")
+		if query == "" {
+			err := ctx.ReplyEphemeral("❌ Debes proporcionar una canción para reproducir.")
+			if err != nil {
+				return
+			}
+			return
+		}
 
-	// Get user's voice channel
-	voiceState, err := ctx.Session.State.VoiceState(ctx.Interaction.GuildID, ctx.User().ID)
-	if err != nil || voiceState.ChannelID == "" {
-		return ctx.ReplyEphemeral("❌ Debes estar en un canal de voz.")
-	}
+		// Get user's voice channel
+		voiceState, err := ctx.Session.State.VoiceState(ctx.Interaction.GuildID, ctx.User().ID)
+		if err != nil || voiceState.ChannelID == "" {
+			err := ctx.ReplyEphemeral("❌ Debes estar en un canal de voz.")
+			if err != nil {
+				return
+			}
+			return
+		}
 
-	// Defer the response since search might take time
-	ctx.Defer()
+		// Defer the response since search might take time
+		ctx.Defer()
 
-	// Search for the track
-	lavalinkClient := lavalink.Get()
-	if lavalinkClient == nil {
-		return ctx.EditReply("❌ El sistema de música no está disponible.")
-	}
+		// Search for the track
+		lavalinkClient := lavalink.Get()
+		if lavalinkClient == nil {
+			err := ctx.EditReply("❌ El sistema de música no está disponible.")
+			if err != nil {
+				return
+			}
+			return
+		}
 
-	result, err := lavalinkClient.Search(query)
-	if err != nil {
-		return ctx.EditReply(fmt.Sprintf("❌ Error buscando: %v", err))
-	}
+		result, err := lavalinkClient.Search(query)
+		if err != nil {
+			err := ctx.EditReply(fmt.Sprintf("❌ Error buscando: %v", err))
+			if err != nil {
+				return
+			}
+			return
+		}
 
-	tracks := result.GetTracks()
-	if result.LoadType == "empty" || len(tracks) == 0 {
-		return ctx.EditReply("❌ No se encontraron resultados.")
-	}
+		tracks := result.GetTracks()
+		if result.LoadType == "empty" || len(tracks) == 0 {
+			err := ctx.EditReply("❌ No se encontraron resultados.")
+			if err != nil {
+				return
+			}
+			return
+		}
 
-	if result.LoadType == "error" && result.Exception != nil {
-		return ctx.EditReply(fmt.Sprintf("❌ Error: %s", result.Exception.Message))
-	}
+		if result.LoadType == "error" && result.Exception != nil {
+			err := ctx.EditReply(fmt.Sprintf("❌ Error: %s", result.Exception.Message))
+			if err != nil {
+				return
+			}
+			return
+		}
 
-	track := tracks[0]
+		track := tracks[0]
 
-	// Play the track
-	if err := lavalinkClient.Play(ctx.Interaction.GuildID, voiceState.ChannelID, ctx.Interaction.ChannelID, track); err != nil {
-		return ctx.EditReply(fmt.Sprintf("❌ Error reproduciendo: %v", err))
-	}
+		// Play the track
+		if err := lavalinkClient.Play(ctx.Interaction.GuildID, voiceState.ChannelID, ctx.Interaction.ChannelID, track); err != nil {
+			err := ctx.EditReply(fmt.Sprintf("❌ Error reproduciendo: %v", err))
+			if err != nil {
+				return
+			}
+			return
+		}
 
-	// Create embed response
-	embed := &discordgo.MessageEmbed{
-		Color:       0x5865F2, // Blurple
-		Title:       "🎵 Añadido a la cola",
-		Description: fmt.Sprintf("[%s](%s)", track.Info.Title, track.Info.URI),
-		Thumbnail: &discordgo.MessageEmbedThumbnail{
-			URL: track.Info.ArtworkURL,
-		},
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "Artista",
-				Value:  track.Info.Author,
-				Inline: true,
+		// Create embed response
+		embed := &discordgo.MessageEmbed{
+			Color:       0x5865F2, // Blurple
+			Title:       "🎵 Añadido a la cola",
+			Description: fmt.Sprintf("[%s](%s)", track.Info.Title, track.Info.URI),
+			Thumbnail: &discordgo.MessageEmbedThumbnail{
+				URL: track.Info.ArtworkURL,
 			},
-			{
-				Name:   "Duración",
-				Value:  formatDuration(track.Info.Length),
-				Inline: true,
+			Fields: []*discordgo.MessageEmbedField{
+				{
+					Name:   "Artista",
+					Value:  track.Info.Author,
+					Inline: true,
+				},
+				{
+					Name:   "Duración",
+					Value:  formatDuration(track.Info.Length),
+					Inline: true,
+				},
 			},
-		},
-	}
+		}
 
-	return ctx.EditReplyEmbed(embed)
+		err = ctx.EditReplyEmbed(embed)
+		if err != nil {
+			return
+		}
+		return
+	}()
+	return nil
 }
 
 // pauseHandler handles the /pause command
 func pauseHandler(ctx *discord.CommandContext) error {
-	lavalinkClient := lavalink.Get()
-	if lavalinkClient == nil {
-		return ctx.ReplyEphemeral("❌ El sistema de música no está disponible.")
-	}
+	go func() {
+		defer errors.RecoverMiddleware()()
+		lavalinkClient := lavalink.Get()
+		if lavalinkClient == nil {
+			err := ctx.ReplyEphemeral("❌ El sistema de música no está disponible.")
+			if err != nil {
+				return
+			}
+			return
+		}
 
-	player := lavalinkClient.GetPlayer(ctx.Interaction.GuildID)
-	player.Mu.RLock()
-	isPaused := player.IsPaused
-	player.Mu.RUnlock()
+		player := lavalinkClient.GetPlayer(ctx.Interaction.GuildID)
+		player.Mu.RLock()
+		isPaused := player.IsPaused
+		player.Mu.RUnlock()
 
-	if err := lavalinkClient.Pause(ctx.Interaction.GuildID, !isPaused); err != nil {
-		return ctx.ReplyEphemeral(fmt.Sprintf("❌ Error: %v", err))
-	}
+		if err := lavalinkClient.Pause(ctx.Interaction.GuildID, !isPaused); err != nil {
+			err := ctx.ReplyEphemeral(fmt.Sprintf("❌ Error: %v", err))
+			if err != nil {
+				return
+			}
+			return
+		}
 
-	if isPaused {
-		return ctx.Reply("▶️ Reproducción resumida.")
-	}
-	return ctx.Reply("⏸️ Reproducción pausada.")
+		if isPaused {
+			err := ctx.Reply("▶️ Reproducción resumida.")
+			if err != nil {
+				return
+			}
+			return
+		}
+		err := ctx.Reply("⏸️ Reproducción pausada.")
+		if err != nil {
+			return
+		}
+		return
+	}()
+	return nil
 }
 
 // skipHandler handles the /skip command
 func skipHandler(ctx *discord.CommandContext) error {
-	lavalinkClient := lavalink.Get()
-	if lavalinkClient == nil {
-		return ctx.ReplyEphemeral("❌ El sistema de música no está disponible.")
-	}
+	go func() {
+		defer errors.RecoverMiddleware()()
+		lavalinkClient := lavalink.Get()
+		if lavalinkClient == nil {
+			err := ctx.ReplyEphemeral("❌ El sistema de música no está disponible.")
+			if err != nil {
+				return
+			}
+			return
+		}
 
-	if err := lavalinkClient.Skip(ctx.Interaction.GuildID); err != nil {
-		return ctx.ReplyEphemeral(fmt.Sprintf("❌ Error: %v", err))
-	}
+		if err := lavalinkClient.Skip(ctx.Interaction.GuildID); err != nil {
+			err := ctx.ReplyEphemeral(fmt.Sprintf("❌ Error: %v", err))
+			if err != nil {
+				return
+			}
+			return
+		}
 
-	return ctx.Reply("⏭️ Canción saltada.")
+		err := ctx.Reply("⏭️ Canción saltada.")
+		if err != nil {
+			return
+		}
+		return
+	}()
+	return nil
 }
 
 // stopHandler handles the /stop command
 func stopHandler(ctx *discord.CommandContext) error {
-	lavalinkClient := lavalink.Get()
-	if lavalinkClient == nil {
-		return ctx.ReplyEphemeral("❌ El sistema de música no está disponible.")
-	}
+	go func() {
+		defer errors.RecoverMiddleware()()
+		lavalinkClient := lavalink.Get()
+		if lavalinkClient == nil {
+			ctx.ReplyEphemeral("❌ El sistema de música no está disponible.")
+			return
+		}
 
-	if err := lavalinkClient.Stop(ctx.Interaction.GuildID); err != nil {
-		return ctx.ReplyEphemeral(fmt.Sprintf("❌ Error: %v", err))
-	}
+		if err := lavalinkClient.Stop(ctx.Interaction.GuildID); err != nil {
+			ctx.ReplyEphemeral(fmt.Sprintf("❌ Error: %v", err))
+			return
+		}
 
-	lavalinkClient.DestroyPlayer(ctx.Interaction.GuildID)
+		lavalinkClient.DestroyPlayer(ctx.Interaction.GuildID)
 
-	return ctx.Reply("⏹️ Reproducción detenida y cola limpiada.")
+		ctx.Reply("⏹️ Reproducción detenida y cola limpiada.")
+		return
+	}()
+	return nil
 }
 
 // queueHandler handles the /queue command
 func queueHandler(ctx *discord.CommandContext) error {
-	lavalinkClient := lavalink.Get()
-	if lavalinkClient == nil {
-		return ctx.ReplyEphemeral("❌ El sistema de música no está disponible.")
-	}
-
-	player := lavalinkClient.GetPlayer(ctx.Interaction.GuildID)
-	player.Mu.RLock()
-	defer player.Mu.RUnlock()
-
-	if player.CurrentTrack == nil && len(player.Queue) == 0 {
-		return ctx.Reply("📭 La cola está vacía.")
-	}
-
-	var sb strings.Builder
-	sb.WriteString("📋 **Cola de reproducción**\n\n")
-
-	if player.CurrentTrack != nil {
-		sb.WriteString(fmt.Sprintf("🎵 **Reproduciendo:** [%s](%s) - %s\n\n",
-			player.CurrentTrack.Info.Title,
-			player.CurrentTrack.Info.URI,
-			formatDuration(player.CurrentTrack.Info.Length)))
-	}
-
-	if len(player.Queue) > 0 {
-		sb.WriteString("**Siguiente:**\n")
-		for i, track := range player.Queue {
-			if i >= 10 {
-				sb.WriteString(fmt.Sprintf("\n... y %d más", len(player.Queue)-10))
-				break
-			}
-			sb.WriteString(fmt.Sprintf("%d. %s - %s\n",
-				i+1, track.Info.Title, formatDuration(track.Info.Length)))
+	go func() {
+		defer errors.RecoverMiddleware()()
+		lavalinkClient := lavalink.Get()
+		if lavalinkClient == nil {
+			ctx.ReplyEphemeral("❌ El sistema de música no está disponible.")
+			return
 		}
-	}
 
-	return ctx.Reply(sb.String())
+		player := lavalinkClient.GetPlayer(ctx.Interaction.GuildID)
+		player.Mu.RLock()
+		defer player.Mu.RUnlock()
+
+		if player.CurrentTrack == nil && len(player.Queue) == 0 {
+			ctx.Reply("📭 La cola está vacía.")
+			return
+		}
+
+		var sb strings.Builder
+		sb.WriteString("📋 **Cola de reproducción**\n\n")
+
+		if player.CurrentTrack != nil {
+			sb.WriteString(fmt.Sprintf("🎵 **Reproduciendo:** [%s](%s) - %s\n\n",
+				player.CurrentTrack.Info.Title,
+				player.CurrentTrack.Info.URI,
+				formatDuration(player.CurrentTrack.Info.Length)))
+		}
+
+		if len(player.Queue) > 0 {
+			sb.WriteString("**Siguiente:**\n")
+			for i, track := range player.Queue {
+				if i >= 10 {
+					sb.WriteString(fmt.Sprintf("\n... y %d más", len(player.Queue)-10))
+					break
+				}
+				sb.WriteString(fmt.Sprintf("%d. %s - %s\n",
+					i+1, track.Info.Title, formatDuration(track.Info.Length)))
+			}
+		}
+
+		ctx.Reply(sb.String())
+		return
+	}()
+	return nil
 }
 
 // volumeHandler handles the /volume command
 func volumeHandler(ctx *discord.CommandContext) error {
-	level := int(ctx.GetIntOption("level"))
+	go func() {
+		defer errors.RecoverMiddleware()()
+		level := int(ctx.GetIntOption("level"))
 
-	lavalinkClient := lavalink.Get()
-	if lavalinkClient == nil {
-		return ctx.ReplyEphemeral("❌ El sistema de música no está disponible.")
-	}
+		lavalinkClient := lavalink.Get()
+		if lavalinkClient == nil {
+			ctx.ReplyEphemeral("❌ El sistema de música no está disponible.")
+			return
+		}
 
-	if err := lavalinkClient.SetVolume(ctx.Interaction.GuildID, level); err != nil {
-		return ctx.ReplyEphemeral(fmt.Sprintf("❌ Error: %v", err))
-	}
+		if err := lavalinkClient.SetVolume(ctx.Interaction.GuildID, level); err != nil {
+			ctx.ReplyEphemeral(fmt.Sprintf("❌ Error: %v", err))
+			return
+		}
 
-	return ctx.Reply(fmt.Sprintf("🔊 Volumen ajustado a %d%%", level))
+		ctx.Reply(fmt.Sprintf("🔊 Volumen ajustado a %d%%", level))
+		return
+	}()
+	return nil
 }
 
 // nowPlayingHandler handles the /nowplaying command
 func nowPlayingHandler(ctx *discord.CommandContext) error {
-	lavalinkClient := lavalink.Get()
-	if lavalinkClient == nil {
-		return ctx.ReplyEphemeral("❌ El sistema de música no está disponible.")
-	}
+	go func() {
+		defer errors.RecoverMiddleware()()
+		lavalinkClient := lavalink.Get()
+		if lavalinkClient == nil {
+			ctx.ReplyEphemeral("❌ El sistema de música no está disponible.")
+			return
+		}
 
-	player := lavalinkClient.GetPlayer(ctx.Interaction.GuildID)
-	player.Mu.RLock()
-	defer player.Mu.RUnlock()
+		player := lavalinkClient.GetPlayer(ctx.Interaction.GuildID)
+		player.Mu.RLock()
+		defer player.Mu.RUnlock()
 
-	if player.CurrentTrack == nil {
-		return ctx.Reply("🔇 No hay nada reproduciéndose.")
-	}
+		if player.CurrentTrack == nil {
+			ctx.Reply("🔇 No hay nada reproduciéndose.")
+			return
+		}
 
-	track := player.CurrentTrack
-	progress := float64(player.Position) / float64(track.Info.Length) * 100
+		track := player.CurrentTrack
+		progress := float64(player.Position) / float64(track.Info.Length) * 100
 
-	embed := &discordgo.MessageEmbed{
-		Color:       0x5865F2,
-		Title:       "🎵 Reproduciendo ahora",
-		Description: fmt.Sprintf("[%s](%s)", track.Info.Title, track.Info.URI),
-		Thumbnail: &discordgo.MessageEmbedThumbnail{
-			URL: track.Info.ArtworkURL,
-		},
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "Artista",
-				Value:  track.Info.Author,
-				Inline: true,
+		embed := &discordgo.MessageEmbed{
+			Color:       0x5865F2,
+			Title:       "🎵 Reproduciendo ahora",
+			Description: fmt.Sprintf("[%s](%s)", track.Info.Title, track.Info.URI),
+			Thumbnail: &discordgo.MessageEmbedThumbnail{
+				URL: track.Info.ArtworkURL,
 			},
-			{
-				Name:   "Progreso",
-				Value:  fmt.Sprintf("%s / %s (%.1f%%)", formatDuration(player.Position), formatDuration(track.Info.Length), progress),
-				Inline: true,
+			Fields: []*discordgo.MessageEmbedField{
+				{
+					Name:   "Artista",
+					Value:  track.Info.Author,
+					Inline: true,
+				},
+				{
+					Name:   "Progreso",
+					Value:  fmt.Sprintf("%s / %s (%.1f%%)", formatDuration(player.Position), formatDuration(track.Info.Length), progress),
+					Inline: true,
+				},
+				{
+					Name:   "Volumen",
+					Value:  fmt.Sprintf("%d%%", player.Volume),
+					Inline: true,
+				},
 			},
-			{
-				Name:   "Volumen",
-				Value:  fmt.Sprintf("%d%%", player.Volume),
-				Inline: true,
-			},
-		},
-	}
-
-	return ctx.ReplyEmbed(embed)
+		}
+		ctx.ReplyEmbed(embed)
+		return
+	}()
+	return nil
 }
 
 // formatDuration formats milliseconds to mm:ss format
