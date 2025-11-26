@@ -113,7 +113,7 @@ func warnHandler(ctx *discord.CommandContext) error {
 
 		// 5. Preparar datos para DB
 		warnID := uuid.New().String()
-		shortID := strings.ReplaceAll(warnID, "-", "")[:6]
+		shortID := strings.ReplaceAll(warnID, "-", "")
 
 		newWarn := models.Warn{
 			Reason:    reason,
@@ -123,7 +123,7 @@ func warnHandler(ctx *discord.CommandContext) error {
 		}
 
 		// 6. Operación DB
-		dm := database.NewDataManager[models.WarnsDocument]("Warns", database.Get())
+		dm := database.NewDataManager[models.WarnsDocument]("warns", database.Get())
 
 		query := bson.M{"guildId": ctx.Interaction.GuildID, "userId": targetUser.ID}
 		doc, err := dm.Get(query)

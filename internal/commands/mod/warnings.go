@@ -74,7 +74,7 @@ func warningsHandler(ctx *discord.CommandContext) error {
 		}
 
 		// 3. Consulta DB
-		dm := database.NewDataManager[models.WarnsDocument]("Warns", database.Get())
+		dm := database.NewDataManager[models.WarnsDocument]("warns", database.Get())
 		query := bson.M{"guildId": ctx.Interaction.GuildID, "userId": targetUser.ID}
 
 		doc, err := dm.Get(query)

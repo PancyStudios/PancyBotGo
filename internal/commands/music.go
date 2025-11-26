@@ -24,12 +24,13 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 		playHandler,
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
-			Type:        discordgo.ApplicationCommandOptionString,
-			Name:        "query",
-			Description: "Nombre de la canción o URL",
-			Required:    true,
+			Type:         discordgo.ApplicationCommandOptionString,
+			Name:         "query",
+			Description:  "Nombre de la canción o URL",
+			Required:     true,
+			Autocomplete: true,
 		},
-	).RequiresVoice()
+	).WithAutoComplete(playAutoComplete).RequiresVoice()
 	client.CommandHandler.RegisterCommand(playCmd)
 	client.CommandHandler.AddGlobalCommand(playCmd.ToApplicationCommand())
 
@@ -165,6 +166,28 @@ func playHandler(ctx *discord.CommandContext) error {
 			return
 		}
 
+		// Handle playlists
+		if result.LoadType == "playlist" {
+			// Add all tracks to queue
+			for _, track := range tracks {
+				if err := lavalinkClient.Play(ctx.Interaction.GuildID, voiceState.ChannelID, ctx.Interaction.ChannelID, track); err != nil {
+					// Log error but continue
+					continue
+				}
+			}
+			embed := &discordgo.MessageEmbed{
+				Color:       0x5865F2,
+				Title:       "🎵 Playlist añadida a la cola",
+				Description: fmt.Sprintf("**Playlist** - %d canciones", len(tracks)),
+			}
+			err = ctx.EditReplyEmbed(embed)
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		// Single track
 		track := tracks[0]
 
 		// Play the track
@@ -425,10 +448,66 @@ func nowPlayingHandler(ctx *discord.CommandContext) error {
 	return nil
 }
 
+// playAutoComplete handles autocomplete for the play command
+func playAutoComplete(ctx *discord.CommandContext) {
+	go func() {
+		defer errors.RecoverMiddleware()()
+		query := ctx.GetStringOption("query")
+
+		if query == "" {
+			return
+		}
+
+		// If it looks like a URL, don't provide autocomplete
+		if isURL(query) {
+			return
+		}
+
+		// Search for tracks
+		lavalinkClient := lavalink.Get()
+		if lavalinkClient == nil {
+			return
+		}
+
+		result, err := lavalinkClient.Search(query)
+		if err != nil {
+			return
+		}
+
+		tracks := result.GetTracks()
+		if len(tracks) == 0 {
+			return
+		}
+
+		choices := make([]*discordgo.ApplicationCommandOptionChoice, 0, 10)
+		for i, track := range tracks {
+			if i >= 10 {
+				break
+			}
+			name := fmt.Sprintf("🎧 | %s - %s", track.Info.Author, track.Info.Title)
+			if len(name) > 100 {
+				name = name[:97] + "..."
+			}
+			choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+				Name:  name,
+				Value: track.Info.URI,
+			})
+		}
+
+		ctx.SendAutoCompleteChoices(choices)
+	}()
+	return
+}
+
 // formatDuration formats milliseconds to mm:ss format
 func formatDuration(ms int64) string {
 	seconds := ms / 1000
 	minutes := seconds / 60
 	seconds = seconds % 60
 	return fmt.Sprintf("%d:%02d", minutes, seconds)
+}
+
+// isURL checks if a string looks like a URL
+func isURL(s string) bool {
+	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }

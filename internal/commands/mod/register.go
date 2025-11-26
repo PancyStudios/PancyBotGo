@@ -14,6 +14,7 @@ func RegisterModCommands(client *discord.ExtendedClient) {
 	warnCmd := createWarnCommand()
 	muteCmd := createMuteCommand()
 	warningsCmd := createWarningsCommand()
+	removeWarnCmd := createRemoveWarnCommand()
 
 	// Build the /mod command group with all subcommands
 	modGroup := client.CommandHandler.BuildCommandGroup(
@@ -24,6 +25,7 @@ func RegisterModCommands(client *discord.ExtendedClient) {
 		warnCmd,
 		muteCmd,
 		warningsCmd,
+		removeWarnCmd,
 	)
 
 	// Register the command group

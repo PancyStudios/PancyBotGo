@@ -261,3 +261,30 @@ func (ctx *CommandContext) User() *discordgo.User {
 func (ctx *CommandContext) Member() *discordgo.Member {
 	return ctx.Interaction.Member
 }
+
+// SendAutoCompleteResults sends autocomplete results
+func (ctx *CommandContext) SendAutoCompleteResults(choices []string) error {
+	acs := make([]*discordgo.ApplicationCommandOptionChoice, len(choices))
+	for i, choice := range choices {
+		acs[i] = &discordgo.ApplicationCommandOptionChoice{
+			Name:  choice,
+			Value: choice,
+		}
+	}
+	return ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionApplicationCommandAutocompleteResult,
+		Data: &discordgo.InteractionResponseData{
+			Choices: acs,
+		},
+	})
+}
+
+// SendAutoCompleteChoices sends custom autocomplete choices
+func (ctx *CommandContext) SendAutoCompleteChoices(choices []*discordgo.ApplicationCommandOptionChoice) error {
+	return ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionApplicationCommandAutocompleteResult,
+		Data: &discordgo.InteractionResponseData{
+			Choices: choices,
+		},
+	})
+}

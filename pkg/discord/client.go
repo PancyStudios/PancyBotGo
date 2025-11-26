@@ -3,12 +3,22 @@
 package discord
 
 import (
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/config"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/bwmarrin/discordgo"
 )
+
+// DiscordGoLogger wraps the custom logger to implement discordgo.Logger interface
+// Note: discordgo.Logger is a function, not an interface
+func init() {
+	discordgo.Logger = func(msgL int, caller int, format string, a ...interface{}) {
+		logger.Info(fmt.Sprintf(format, a...), "DiscordGo")
+	}
+}
 
 // ExtendedClient wraps discordgo.Session with additional functionality
 type ExtendedClient struct {
@@ -16,6 +26,7 @@ type ExtendedClient struct {
 	Commands       *CommandCollection
 	CommandHandler *CommandHandler
 	EventHandler   *EventHandler
+	StartTime      time.Time
 	mu             sync.RWMutex
 	isReady        bool
 }
@@ -87,8 +98,6 @@ func Get() *ExtendedClient {
 
 // NewClient creates a new ExtendedClient
 func NewClient(token string) (*ExtendedClient, error) {
-	logger.Warn("Iniciando cliente", "Client")
-
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, err
@@ -148,17 +157,51 @@ func (c *ExtendedClient) Start() error {
 	// Add interaction handler
 	c.Session.AddHandler(c.handleInteraction)
 
+	// Set start time
+	c.StartTime = time.Now()
+
 	// Open connection
 	err := c.Session.Open()
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
 // handleInteraction handles incoming Discord interactions
 func (c *ExtendedClient) handleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if i.Type == discordgo.InteractionApplicationCommandAutocomplete {
+		data := i.ApplicationCommandData()
+		commandName := data.Name
+
+		// Build full command name for subcommands
+		if len(data.Options) > 0 {
+			opt := data.Options[0]
+			if opt.Type == discordgo.ApplicationCommandOptionSubCommandGroup {
+				if len(opt.Options) > 0 {
+					commandName = data.Name + "." + opt.Name + "." + opt.Options[0].Name
+				}
+			} else if opt.Type == discordgo.ApplicationCommandOptionSubCommand {
+				commandName = data.Name + "." + opt.Name
+			}
+		}
+
+		cmd, ok := c.Commands.Get(commandName)
+		if !ok {
+			return
+		}
+
+		if cmd.AutoComplete != nil {
+			ctx := &CommandContext{
+				Session:     s,
+				Interaction: i,
+				Client:      c,
+			}
+			cmd.AutoComplete(ctx)
+		}
+		return
+	}
+
 	if i.Type != discordgo.InteractionApplicationCommand {
 		return
 	}

@@ -4,6 +4,7 @@ package commands
 
 import (
 	"github.com/PancyStudios/PancyBotGo/internal/commands/mod"
+	"github.com/PancyStudios/PancyBotGo/internal/commands/utils"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 )
 
@@ -11,7 +12,7 @@ import (
 // Add your command registration calls here
 func RegisterAll(client *discord.ExtendedClient) {
 	// Utility commands
-	RegisterUtilCommands(client)
+	utils.RegisterUtilsCommands(client)
 
 	// Music commands
 	RegisterMusicCommands(client)
