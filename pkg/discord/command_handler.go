@@ -170,6 +170,52 @@ func (ch *CommandHandler) UnregisterCommands() error {
 	return nil
 }
 
+// UnregisterGuildCommands removes all guild-specific commands from Discord
+func (ch *CommandHandler) UnregisterGuildCommands(guildID string) error {
+	commands, err := ch.client.Session.ApplicationCommands(ch.client.Session.State.User.ID, guildID)
+	if err != nil {
+		return err
+	}
+
+	for _, cmd := range commands {
+		err := ch.client.Session.ApplicationCommandDelete(ch.client.Session.State.User.ID, guildID, cmd.ID)
+		if err != nil {
+			logger.Error("Error eliminando comando de guild "+cmd.Name+": "+err.Error(), "CommandHandler")
+		}
+	}
+
+	logger.Success("Comandos de guild eliminados para "+guildID, "CommandHandler")
+	return nil
+}
+
+// ListGlobalCommands returns all global commands registered with Discord
+func (ch *CommandHandler) ListGlobalCommands() ([]*discordgo.ApplicationCommand, error) {
+	return ch.client.Session.ApplicationCommands(ch.client.Session.State.User.ID, "")
+}
+
+// ListGuildCommands returns all guild-specific commands registered with Discord
+func (ch *CommandHandler) ListGuildCommands(guildID string) ([]*discordgo.ApplicationCommand, error) {
+	return ch.client.Session.ApplicationCommands(ch.client.Session.State.User.ID, guildID)
+}
+
+// SyncCommands removes stale commands and registers only the current ones
+// This ensures Discord only shows commands that are currently defined
+func (ch *CommandHandler) SyncCommands() error {
+	logger.Info("🔄 Sincronizando comandos con Discord...", "CommandHandler")
+
+	// Remove all existing global commands first
+	if err := ch.UnregisterCommands(); err != nil {
+		logger.Error("Error eliminando comandos existentes: "+err.Error(), "CommandHandler")
+		return err
+	}
+
+	// Register current commands
+	ch.RegisterCommands()
+
+	logger.Success("✅ Sincronización de comandos completada", "CommandHandler")
+	return nil
+}
+
 // AddGlobalCommand adds a command to the global command list
 func (ch *CommandHandler) AddGlobalCommand(cmd *discordgo.ApplicationCommand) {
 	ch.slashCommands = append(ch.slashCommands, cmd)

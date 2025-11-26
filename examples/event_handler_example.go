@@ -1,10 +1,10 @@
-// Package main demonstrates how to use the Event Handler
+// Package examples demonstrates how to use the Event Handler
 // Copy this code to your main.go to add event handling
 //
 // NOTE: This example uses the helper methods (OnReady, OnGuildCreate, etc.)
 // In the new modular system, use client.Session.AddHandler(handlerFunc) directly
 // See internal/events/ for the correct implementation
-package main
+package examples
 
 import (
 	"fmt"
