@@ -104,6 +104,7 @@ func NewClient(token string) (*ExtendedClient, error) {
 	session.ShardCount = 1 // Auto sharding equivalent
 	session.SyncEvents = false
 	session.StateEnabled = true
+	session.LogLevel = discordgo.LogWarning
 
 	c := &ExtendedClient{
 		Session:  session,

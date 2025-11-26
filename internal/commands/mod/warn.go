@@ -43,12 +43,11 @@ func warnHandler(ctx *discord.CommandContext) error {
 		return ctx.ReplyEphemeral("❌ Debes especificar una razón.")
 	}
 
-	// Here you would typically save the warning to the database
-	// For now, we just send a message
+	embed := &discordgo.MessageEmbed{
+		Title:       "Nueva Advertencia",
+		Description: fmt.Sprintf("Has sido advertido en **%s**.", ctx.Guild().Name),
+		Color:       0xFFA500,
+	}
 
-	return ctx.Reply(fmt.Sprintf("⚠️ **%s** ha sido advertido.\n**Razón:** %s\n**Moderador:** %s",
-		user.Username,
-		reason,
-		ctx.User().Username,
-	))
+	return ctx.ReplyEmbed(embed)
 }
