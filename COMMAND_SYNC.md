@@ -47,11 +47,13 @@ O simplemente (sync es el comportamiento por defecto):
 go run cmd/sync-commands/main.go
 ```
 
-Para sincronizar comandos de un servidor específico:
+Para eliminar comandos de un servidor específico:
 
 ```bash
 go run cmd/sync-commands/main.go -sync -guild TU_GUILD_ID
 ```
+
+⚠️ **Nota sobre comandos de guild**: La utilidad puede eliminar comandos de guild, pero no puede registrarlos automáticamente. Para registrar comandos de desarrollo en un guild específico, usa la configuración `DevGuildID` en tu `.env` y ejecuta el bot principal.
 
 #### Limpiar todos los comandos
 

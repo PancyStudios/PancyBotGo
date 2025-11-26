@@ -209,7 +209,7 @@ func (ch *CommandHandler) SyncCommands() error {
 		return err
 	}
 
-	// Register current commands
+	// Register current commands (RegisterCommands doesn't return an error)
 	ch.RegisterCommands()
 
 	logger.Success("✅ Sincronización de comandos completada", "CommandHandler")

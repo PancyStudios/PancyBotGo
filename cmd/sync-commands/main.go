@@ -136,22 +136,22 @@ func syncCommands(client *discord.ExtendedClient, guildID string) {
 	logger.Info("🔄 Sincronizando comandos...", "SyncCommands")
 
 	if guildID != "" {
-		logger.Info(fmt.Sprintf("Sincronizando comandos del servidor: %s", guildID), "SyncCommands")
+		logger.Warn("⚠️  Sincronización de comandos de guild no está completamente implementada", "SyncCommands")
+		logger.Info("Solo se pueden eliminar comandos de guild. Para registrar comandos en un guild específico, modifica RegisterCommands() en command_handler.go", "SyncCommands")
+		logger.Info(fmt.Sprintf("Eliminando comandos del servidor: %s", guildID), "SyncCommands")
+		
 		// Remove guild commands
 		if err := client.CommandHandler.UnregisterGuildCommands(guildID); err != nil {
 			logger.Error(fmt.Sprintf("Error eliminando comandos de guild: %v", err), "SyncCommands")
 			return
 		}
-		// Note: For guild-specific registration, you would need to modify RegisterCommands
-		// to support guild-specific registration
-		logger.Warn("Nota: La registración de comandos específicos de guild no está completamente implementada", "SyncCommands")
+		logger.Success("✅ Comandos de guild eliminados. Usa el bot principal para registrar comandos de desarrollo.", "SyncCommands")
 	} else {
 		// Sync global commands
 		if err := client.CommandHandler.SyncCommands(); err != nil {
 			logger.Error(fmt.Sprintf("Error sincronizando comandos: %v", err), "SyncCommands")
 			return
 		}
+		logger.Success("✅ Comandos sincronizados correctamente", "SyncCommands")
 	}
-
-	logger.Success("✅ Comandos sincronizados correctamente", "SyncCommands")
 }
