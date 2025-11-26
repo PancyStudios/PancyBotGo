@@ -125,6 +125,17 @@ func (ctx *CommandContext) ReplyEphemeral(content string) error {
 	})
 }
 
+// ReplyEphemeralEmbed sends an ephemeral embed reply visible only to the user
+func (ctx *CommandContext) ReplyEphemeralEmbed(embed *discordgo.MessageEmbed) error {
+	return ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: []*discordgo.MessageEmbed{embed},
+			Flags:  discordgo.MessageFlagsEphemeral,
+		},
+	})
+}
+
 // Defer defers the interaction response
 func (ctx *CommandContext) Defer() error {
 	return ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
