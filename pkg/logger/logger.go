@@ -106,19 +106,35 @@ type Logger struct {
 }
 
 // logger is the global logger instance
-var logger *Logger
-var once sync.Once
+var (
+	logger    *Logger
+	once      sync.Once
+	loggerMu  sync.RWMutex
+)
 
 // Init initializes the global logger instance
 func Init(errorWebhook, logsWebhook string) *Logger {
 	once.Do(func() {
+		loggerMu.Lock()
 		logger = NewLogger(errorWebhook, logsWebhook)
+		loggerMu.Unlock()
 	})
+	loggerMu.RLock()
+	defer loggerMu.RUnlock()
 	return logger
 }
 
 // Get returns the global logger instance
 func Get() *Logger {
+	loggerMu.RLock()
+	if logger != nil {
+		defer loggerMu.RUnlock()
+		return logger
+	}
+	loggerMu.RUnlock()
+
+	loggerMu.Lock()
+	defer loggerMu.Unlock()
 	if logger == nil {
 		logger = NewLogger("", "")
 	}

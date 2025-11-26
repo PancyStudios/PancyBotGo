@@ -2,6 +2,8 @@
 package discord
 
 import (
+	"sync"
+
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/bwmarrin/discordgo"
 )
@@ -10,6 +12,7 @@ import (
 type EventHandler struct {
 	client *ExtendedClient
 	events []interface{}
+	mu     sync.RWMutex
 }
 
 // Event represents a Discord event with its handler
@@ -41,7 +44,9 @@ func (eh *EventHandler) LoadEvents() error {
 // RegisterEvent adds an event handler to the Discord session
 func (eh *EventHandler) RegisterEvent(handler interface{}) {
 	eh.client.Session.AddHandler(handler)
+	eh.mu.Lock()
 	eh.events = append(eh.events, handler)
+	eh.mu.Unlock()
 	logger.Debug("Evento registrado", "EventHandler")
 }
 

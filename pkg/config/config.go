@@ -4,6 +4,7 @@ package config
 
 import (
 	"os"
+	"sync"
 
 	"github.com/joho/godotenv"
 )
@@ -47,12 +48,19 @@ var (
 )
 
 // cfg holds the global configuration instance
-var cfg *Config
+var (
+	cfg     *Config
+	cfgOnce sync.Once
+	cfgMu   sync.RWMutex
+)
 
 // Load initializes the configuration from environment variables
 func Load() (*Config, error) {
 	// Load .env file if it exists (ignoring error if it doesn't)
 	_ = godotenv.Load()
+
+	cfgMu.Lock()
+	defer cfgMu.Unlock()
 
 	cfg = &Config{
 		// Discord
@@ -91,9 +99,20 @@ func Load() (*Config, error) {
 
 // Get returns the current configuration
 func Get() *Config {
-	if cfg == nil {
-		cfg, _ = Load()
+	cfgMu.RLock()
+	if cfg != nil {
+		defer cfgMu.RUnlock()
+		return cfg
 	}
+	cfgMu.RUnlock()
+
+	// cfg is nil, need to load it
+	cfgOnce.Do(func() {
+		cfg, _ = Load()
+	})
+
+	cfgMu.RLock()
+	defer cfgMu.RUnlock()
 	return cfg
 }
 
