@@ -25,25 +25,18 @@ type Server struct {
 var (
 	server     *Server
 	serverOnce sync.Once
-	serverMu   sync.RWMutex
 )
 
 // Init initializes the global web server
 func Init(webhookURL string) *Server {
 	serverOnce.Do(func() {
-		serverMu.Lock()
 		server = NewServer(webhookURL)
-		serverMu.Unlock()
 	})
-	serverMu.RLock()
-	defer serverMu.RUnlock()
 	return server
 }
 
 // Get returns the global web server
 func Get() *Server {
-	serverMu.RLock()
-	defer serverMu.RUnlock()
 	return server
 }
 

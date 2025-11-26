@@ -17,7 +17,7 @@ func TestLoad(t *testing.T) {
 	}()
 
 	// Reset global config
-	cfg = nil
+	resetForTesting()
 
 	config, err := Load()
 	if err != nil {
@@ -51,7 +51,7 @@ func TestGetEnv(t *testing.T) {
 }
 
 func TestIsProd(t *testing.T) {
-	cfg = nil
+	resetForTesting()
 	os.Setenv("enviroment", "prod")
 	config, _ := Load()
 
@@ -59,7 +59,7 @@ func TestIsProd(t *testing.T) {
 		t.Error("IsProd() should return true when environment is 'prod'")
 	}
 
-	cfg = nil
+	resetForTesting()
 	os.Setenv("enviroment", "dev")
 	config, _ = Load()
 
@@ -71,7 +71,7 @@ func TestIsProd(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	cfg = nil
+	resetForTesting()
 
 	// Get should create a new config if none exists
 	config := Get()
@@ -97,7 +97,7 @@ func TestDefaultValues(t *testing.T) {
 	os.Unsetenv("PORT")
 	os.Unsetenv("enviroment")
 
-	cfg = nil
+	resetForTesting()
 	config, _ := Load()
 
 	// Check default values
