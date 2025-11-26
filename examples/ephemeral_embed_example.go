@@ -40,22 +40,43 @@ func exampleHandler(ctx *discord.CommandContext) error {
 	return ctx.ReplyEphemeralEmbed(embed)
 }
 
-// Example of using ReplyEphemeralEmbed in a moderation command
-// Note: This example uses Defer + EditReplyEmbed for async operations.
-// For immediate ephemeral embeds, use ctx.ReplyEphemeralEmbed directly.
-func exampleWarningsHandler(ctx *discord.CommandContext) error {
-	// For async operations with embeds, use Defer first (ephemeral by default when first reply was ephemeral)
-	// Then do processing in a goroutine and use EditReplyEmbed
-	
-	// Option 1: Direct ephemeral embed (for quick responses)
+// exampleWarningsHandlerDirect shows direct ephemeral embed response (for quick/sync operations)
+func exampleWarningsHandlerDirect(ctx *discord.CommandContext) error {
 	embed := &discordgo.MessageEmbed{
 		Title:       "✅ Advertencias",
 		Description: "Aquí están las advertencias del usuario",
 		Color:       0x00FF00,
 	}
 	return ctx.ReplyEphemeralEmbed(embed)
+}
+
+// exampleWarningsHandlerAsync shows async processing with ephemeral embeds
+// Note: For async operations, send ephemeral reply first, then edit it after processing
+func exampleWarningsHandlerAsync(ctx *discord.CommandContext) error {
+	// Send initial ephemeral loading message
+	loadingEmbed := &discordgo.MessageEmbed{
+		Title:       "⏳ Cargando...",
+		Description: "Obteniendo información de advertencias...",
+		Color:       0xFFFF00,
+	}
 	
-	// Option 2: For async operations, use Defer + goroutine + EditReplyEmbed
-	// Note: Defer doesn't support ephemeral flag directly in discordgo
-	// So for ephemeral async responses, send a quick ephemeral reply first
+	if err := ctx.ReplyEphemeralEmbed(loadingEmbed); err != nil {
+		return err
+	}
+	
+	// Process in background
+	go func() {
+		// ... do some async processing ...
+		
+		// Update with final result
+		// Note: EditReplyEmbed maintains the ephemeral flag from the initial reply
+		resultEmbed := &discordgo.MessageEmbed{
+			Title:       "✅ Advertencias",
+			Description: "Aquí están las advertencias del usuario",
+			Color:       0x00FF00,
+		}
+		ctx.EditReplyEmbed(resultEmbed)
+	}()
+	
+	return nil
 }
