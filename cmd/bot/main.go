@@ -70,12 +70,7 @@ func main() {
 	if db != nil {
 		database.InitGlobalDataManagers(db)
 
-		// Initialize blacklist cache at startup and start auto-refresh
-		if err := database.InitBlacklistCache(); err != nil {
-			logger.Warn(fmt.Sprintf("Error inicializando caché de blacklist: %v", err), "Main")
-		}
-		database.StartBlacklistCacheRefresh()
-		defer database.StopBlacklistCacheRefresh()
+		// El DataManager ya incluye cache, no es necesario inicializarlo por separado
 	}
 
 	// Initialize MQTT

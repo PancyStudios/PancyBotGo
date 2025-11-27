@@ -2,233 +2,116 @@ package database
 
 import (
 	"errors"
-	"fmt"
-	"sync"
 	"time"
 
-	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/PancyStudios/PancyBotGo/pkg/models"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// Alias de tipos para facilitar el acceso
-type BlacklistEntry = models.BlacklistEntry
-
 var (
-	ErrBlacklistManagerNotInitialized = errors.New("blacklist data manager not initialized")
-	ErrBlacklistEntryNotFound         = errors.New("entrada de blacklist no encontrada")
-	ErrBlacklistEntryExists           = errors.New("la entrada ya existe en la blacklist")
+	ErrBlacklistNotFound  = errors.New("entrada no encontrada en la blacklist")
+	ErrAlreadyBlacklisted = errors.New("ya está en la blacklist")
 )
 
-// BlacklistCache provides in-memory caching for blacklist entries
-type BlacklistCache struct {
-	entries  map[string]*models.BlacklistEntry
-	mu       sync.RWMutex
-	ticker   *time.Ticker
-	done     chan bool
-	stopOnce sync.Once
-}
-
-var blacklistCache = &BlacklistCache{
-	entries: make(map[string]*models.BlacklistEntry),
-	done:    make(chan bool),
-}
-
-// InitBlacklistCache initializes and loads the blacklist cache from the database
-// Should be called at bot startup after InitGlobalDataManagers
-func InitBlacklistCache() error {
-	return RefreshBlacklistCache()
-}
-
-// StartBlacklistCacheRefresh starts a goroutine that refreshes the cache every 5 minutes
-func StartBlacklistCacheRefresh() {
-	blacklistCache.ticker = time.NewTicker(5 * time.Minute)
-
-	go func() {
-		for {
-			select {
-			case <-blacklistCache.done:
-				return
-			case <-blacklistCache.ticker.C:
-				if err := RefreshBlacklistCache(); err != nil {
-					logger.Error("Error refrescando caché de blacklist: "+err.Error(), "BlacklistCache")
-				} else {
-					logger.Debug("Caché de blacklist refrescada automáticamente", "BlacklistCache")
-				}
-			}
-		}
-	}()
-
-	logger.System("Sistema de caché de blacklist iniciado (refresco cada 5 minutos)", "BlacklistCache")
-}
-
-// StopBlacklistCacheRefresh stops the cache refresh goroutine
-func StopBlacklistCacheRefresh() {
-	blacklistCache.stopOnce.Do(func() {
-		if blacklistCache.ticker != nil {
-			blacklistCache.ticker.Stop()
-		}
-		close(blacklistCache.done)
-	})
-}
-
-// RefreshBlacklistCache reloads all blacklist entries from the database into cache
-func RefreshBlacklistCache() error {
-	dm, err := getBlacklistManager()
-	if err != nil {
-		return err
-	}
-
-	entries, err := dm.GetAll(bson.M{})
-	if err != nil {
-		return err
-	}
-
-	blacklistCache.mu.Lock()
-	defer blacklistCache.mu.Unlock()
-
-	// Clear existing cache
-	blacklistCache.entries = make(map[string]*models.BlacklistEntry)
-
-	// Load all entries into cache
-	for _, entry := range entries {
-		blacklistCache.entries[entry.ID] = entry
-	}
-
-	logger.Info(fmt.Sprintf("Caché de blacklist cargada: %d entradas", len(blacklistCache.entries)), "BlacklistCache")
-	return nil
-}
-
-// addToCache adds an entry to the in-memory cache
-func addToCache(entry *models.BlacklistEntry) {
-	blacklistCache.mu.Lock()
-	defer blacklistCache.mu.Unlock()
-	blacklistCache.entries[entry.ID] = entry
-}
-
-// removeFromCache removes an entry from the in-memory cache
-func removeFromCache(id string) {
-	blacklistCache.mu.Lock()
-	defer blacklistCache.mu.Unlock()
-	delete(blacklistCache.entries, id)
-}
-
-// getFromCache retrieves an entry from the in-memory cache
-func getFromCache(id string) (*models.BlacklistEntry, bool) {
-	blacklistCache.mu.RLock()
-	defer blacklistCache.mu.RUnlock()
-	entry, exists := blacklistCache.entries[id]
-	return entry, exists
-}
-
-func getBlacklistManager() (*DataManager[models.BlacklistEntry], error) {
+// AddToBlacklist añade un usuario o guild a la blacklist
+func AddToBlacklist(id string, blacklistType models.BlacklistType, reason string, addedBy string) (*models.Blacklist, error) {
 	if GlobalBlacklistDM == nil {
-		return nil, ErrBlacklistManagerNotInitialized
-	}
-	return GlobalBlacklistDM, nil
-}
-
-// AddToBlacklist adds a user or guild to the blacklist
-func AddToBlacklist(id string, blacklistType models.BlacklistType, reason string, createdBy string) (*models.BlacklistEntry, error) {
-	// Check cache first for duplicates (fast check)
-	if _, exists := getFromCache(id); exists {
-		return nil, ErrBlacklistEntryExists
+		return nil, errors.New("blacklist manager not initialized")
 	}
 
-	dm, err := getBlacklistManager()
+	// Verificar si ya está en la blacklist
+	existing, err := GetBlacklistEntry(id)
+	if err == nil && existing != nil {
+		return nil, ErrAlreadyBlacklisted
+	}
+
+	entry := models.Blacklist{
+		ID:      id,
+		Type:    blacklistType,
+		Reason:  reason,
+		AddedBy: addedBy,
+		AddedAt: time.Now(),
+	}
+
+	result, err := GlobalBlacklistDM.Set(bson.M{"_id": id}, entry)
 	if err != nil {
 		return nil, err
 	}
-
-	entry := models.BlacklistEntry{
-		ID:        id,
-		Type:      blacklistType,
-		Reason:    reason,
-		CreatedAt: time.Now(),
-		CreatedBy: createdBy,
-	}
-
-	result, err := dm.Set(bson.M{"_id": id}, entry)
-	if err != nil {
-		return nil, err
-	}
-
-	// Update cache immediately
-	addToCache(result)
 
 	return result, nil
 }
 
-// RemoveFromBlacklist removes a user or guild from the blacklist
+// RemoveFromBlacklist elimina un usuario o guild de la blacklist
 func RemoveFromBlacklist(id string) error {
-	// Check cache first
-	if _, exists := getFromCache(id); !exists {
-		return ErrBlacklistEntryNotFound
+	if GlobalBlacklistDM == nil {
+		return errors.New("blacklist manager not initialized")
 	}
 
-	dm, err := getBlacklistManager()
+	// Verificar que existe
+	_, err := GetBlacklistEntry(id)
 	if err != nil {
-		return err
+		return ErrBlacklistNotFound
 	}
 
-	err = dm.Delete(bson.M{"_id": id})
-	if err != nil {
-		return err
-	}
-
-	// Update cache immediately
-	removeFromCache(id)
-
-	return nil
+	return GlobalBlacklistDM.Delete(bson.M{"_id": id})
 }
 
-// GetBlacklistEntry gets a specific blacklist entry from cache
-func GetBlacklistEntry(id string) (*models.BlacklistEntry, error) {
-	entry, exists := getFromCache(id)
-	if !exists {
-		return nil, ErrBlacklistEntryNotFound
+// GetBlacklistEntry obtiene una entrada de la blacklist
+func GetBlacklistEntry(id string) (*models.Blacklist, error) {
+	if GlobalBlacklistDM == nil {
+		return nil, errors.New("blacklist manager not initialized")
 	}
+
+	entry, err := GlobalBlacklistDM.Get(bson.M{"_id": id})
+	if err != nil {
+		return nil, err
+	}
+
+	if entry == nil {
+		return nil, ErrBlacklistNotFound
+	}
+
 	return entry, nil
 }
 
-// IsBlacklisted checks if a user or guild is blacklisted (from cache - no DB delay)
-func IsBlacklisted(id string) (bool, *models.BlacklistEntry, error) {
-	entry, exists := getFromCache(id)
-	return exists, entry, nil
+// IsBlacklisted verifica si un ID está en la blacklist
+func IsBlacklisted(id string) bool {
+	entry, err := GetBlacklistEntry(id)
+	return err == nil && entry != nil
 }
 
-// IsUserBlacklisted checks if a user is blacklisted (from cache - no DB delay)
-func IsUserBlacklisted(userID string) (bool, *models.BlacklistEntry, error) {
-	return IsBlacklisted(userID)
-}
-
-// IsGuildBlacklisted checks if a guild is blacklisted (from cache - no DB delay)
-func IsGuildBlacklisted(guildID string) (bool, *models.BlacklistEntry, error) {
-	return IsBlacklisted(guildID)
-}
-
-// GetAllBlacklistEntries gets all blacklist entries from cache
-func GetAllBlacklistEntries() ([]*models.BlacklistEntry, error) {
-	blacklistCache.mu.RLock()
-	defer blacklistCache.mu.RUnlock()
-
-	entries := make([]*models.BlacklistEntry, 0, len(blacklistCache.entries))
-	for _, entry := range blacklistCache.entries {
-		entries = append(entries, entry)
+// IsUserBlacklisted verifica si un usuario está en la blacklist
+func IsUserBlacklisted(userID string) (bool, *models.Blacklist) {
+	entry, err := GetBlacklistEntry(userID)
+	if err != nil || entry == nil || entry.Type != models.BlacklistTypeUser {
+		return false, nil
 	}
-	return entries, nil
+	return true, entry
 }
 
-// GetBlacklistEntriesByType gets all blacklist entries of a specific type from cache
-func GetBlacklistEntriesByType(blacklistType models.BlacklistType) ([]*models.BlacklistEntry, error) {
-	blacklistCache.mu.RLock()
-	defer blacklistCache.mu.RUnlock()
-
-	var entries []*models.BlacklistEntry
-	for _, entry := range blacklistCache.entries {
-		if entry.Type == blacklistType {
-			entries = append(entries, entry)
-		}
+// IsGuildBlacklisted verifica si un guild está en la blacklist
+func IsGuildBlacklisted(guildID string) (bool, *models.Blacklist) {
+	entry, err := GetBlacklistEntry(guildID)
+	if err != nil || entry == nil || entry.Type != models.BlacklistTypeGuild {
+		return false, nil
 	}
-	return entries, nil
+	return true, entry
+}
+
+// GetAllBlacklist obtiene todas las entradas de la blacklist
+func GetAllBlacklist() ([]*models.Blacklist, error) {
+	if GlobalBlacklistDM == nil {
+		return nil, errors.New("blacklist manager not initialized")
+	}
+
+	return GlobalBlacklistDM.GetAll(bson.M{})
+}
+
+// GetBlacklistByType obtiene entradas por tipo
+func GetBlacklistByType(blacklistType models.BlacklistType) ([]*models.Blacklist, error) {
+	if GlobalBlacklistDM == nil {
+		return nil, errors.New("blacklist manager not initialized")
+	}
+
+	return GlobalBlacklistDM.GetAll(bson.M{"type": blacklistType})
 }

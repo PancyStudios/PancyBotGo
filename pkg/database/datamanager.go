@@ -47,7 +47,7 @@ var (
 	GlobalUserPremiumDM  *DataManager[models.UserPremium]
 	GlobalGuildPremiumDM *DataManager[models.GuildPremium]
 	GlobalPremiumCodeDM  *DataManager[models.PremiumCode]
-	GlobalBlacklistDM    *DataManager[models.BlacklistEntry]
+	GlobalBlacklistDM    *DataManager[models.Blacklist]
 )
 
 // InitGlobalDataManagers initializes shared DataManager instances
@@ -56,7 +56,7 @@ func InitGlobalDataManagers(db *Database) {
 	GlobalUserPremiumDM = NewDataManager[models.UserPremium]("premium", db)
 	GlobalGuildPremiumDM = NewDataManager[models.GuildPremium]("premium_guilds", db)
 	GlobalPremiumCodeDM = NewDataManager[models.PremiumCode]("premium_codes", db)
-	GlobalBlacklistDM = NewDataManager[models.BlacklistEntry]("blacklist", db)
+	GlobalBlacklistDM = NewDataManager[models.Blacklist]("blacklist", db)
 }
 
 // DataManager provides cached access to a MongoDB collection

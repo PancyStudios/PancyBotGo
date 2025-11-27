@@ -2,6 +2,7 @@ package dev
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
@@ -12,7 +13,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// CreateBlacklistAddCommand creates the /dev blacklist add command
+// CreateBlacklistAddCommand crea el comando /dev blacklist add
 func CreateBlacklistAddCommand() *discord.Command {
 	return discord.NewCommand(
 		"add",
@@ -23,7 +24,7 @@ func CreateBlacklistAddCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "tipo",
-			Description: "Tipo de entrada a bloquear",
+			Description: "Tipo de blacklist",
 			Required:    true,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{
@@ -39,19 +40,19 @@ func CreateBlacklistAddCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "id",
-			Description: "ID del usuario o servidor a bloquear",
+			Description: "ID del usuario o servidor",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "razon",
-			Description: "Razón del bloqueo",
+			Description: "Razón del blacklist",
 			Required:    false,
 		},
 	)
 }
 
-// CreateBlacklistRemoveCommand creates the /dev blacklist remove command
+// CreateBlacklistRemoveCommand crea el comando /dev blacklist remove
 func CreateBlacklistRemoveCommand() *discord.Command {
 	return discord.NewCommand(
 		"remove",
@@ -60,26 +61,42 @@ func CreateBlacklistRemoveCommand() *discord.Command {
 		blacklistRemoveHandler,
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
+			Type:         discordgo.ApplicationCommandOptionString,
+			Name:         "id",
+			Description:  "ID del usuario o servidor",
+			Required:     true,
+			Autocomplete: true,
+		},
+	).WithAutoComplete(blacklistRemoveAutoComplete)
+}
+
+// CreateBlacklistListCommand crea el comando /dev blacklist list
+func CreateBlacklistListCommand() *discord.Command {
+	return discord.NewCommand(
+		"list",
+		"Lista todas las entradas de la blacklist",
+		"dev",
+		blacklistListHandler,
+	).WithOptions(
+		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "tipo",
-			Description: "Tipo de entrada a desbloquear",
-			Required:    true,
+			Description: "Filtrar por tipo",
+			Required:    false,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{
-					Name:  "Usuario",
+					Name:  "Todos",
+					Value: "all",
+				},
+				{
+					Name:  "Usuarios",
 					Value: "user",
 				},
 				{
-					Name:  "Servidor",
+					Name:  "Servidores",
 					Value: "guild",
 				},
 			},
-		},
-		&discordgo.ApplicationCommandOption{
-			Type:        discordgo.ApplicationCommandOptionString,
-			Name:        "id",
-			Description: "ID del usuario o servidor a desbloquear",
-			Required:    true,
 		},
 	)
 }
@@ -89,13 +106,7 @@ func blacklistAddHandler(ctx *discord.CommandContext) error {
 		defer errors.RecoverMiddleware()()
 
 		// Verificar permisos de desarrollador
-		userID := ""
-		if ctx.Interaction.Member != nil && ctx.Interaction.Member.User != nil {
-			userID = ctx.Interaction.Member.User.ID
-		} else if ctx.Interaction.User != nil {
-			userID = ctx.Interaction.User.ID
-		}
-		if userID != "852683369899622430" {
+		if !isDev(ctx.User().ID) {
 			sendErrorEmbed(ctx, "Acceso Denegado", "❌ Este comando solo está disponible para desarrolladores.")
 			return
 		}
@@ -106,22 +117,25 @@ func blacklistAddHandler(ctx *discord.CommandContext) error {
 		razon := ctx.GetStringOption("razon")
 
 		if razon == "" {
-			razon = "Sin razón especificada"
+			razon = "No especificada"
 		}
 
-		// Determinar el tipo de blacklist
+		// Validar tipo
 		var blacklistType models.BlacklistType
 		if tipo == "user" {
 			blacklistType = models.BlacklistTypeUser
-		} else {
+		} else if tipo == "guild" {
 			blacklistType = models.BlacklistTypeGuild
+		} else {
+			sendErrorEmbed(ctx, "Error", "❌ Tipo inválido. Usa 'user' o 'guild'.")
+			return
 		}
 
 		// Añadir a la blacklist
-		entry, err := database.AddToBlacklist(id, blacklistType, razon, userID)
+		_, err := database.AddToBlacklist(id, blacklistType, razon, ctx.User().ID)
 		if err != nil {
-			if err == database.ErrBlacklistEntryExists {
-				sendErrorEmbed(ctx, "Error", fmt.Sprintf("❌ El %s `%s` ya está en la blacklist.", getBlacklistTypeName(tipo), id))
+			if err == database.ErrAlreadyBlacklisted {
+				sendErrorEmbed(ctx, "Error", "❌ Este ID ya está en la blacklist.")
 				return
 			}
 			logger.Error(fmt.Sprintf("Error añadiendo a blacklist: %v", err), "DevBlacklist")
@@ -129,15 +143,46 @@ func blacklistAddHandler(ctx *discord.CommandContext) error {
 			return
 		}
 
+		// Si es un guild y el bot está en él, salir
+		if blacklistType == models.BlacklistTypeGuild {
+			guild, err := ctx.Session.Guild(id)
+			if err == nil && guild != nil {
+				// Intentar enviar mensaje al owner
+				owner, err := ctx.Session.User(guild.OwnerID)
+				if err == nil && owner != nil {
+					channel, err := ctx.Session.UserChannelCreate(owner.ID)
+					if err == nil {
+						embed := &discordgo.MessageEmbed{
+							Title:       "🚫 Servidor en Blacklist",
+							Description: fmt.Sprintf("El servidor **%s** ha sido añadido a la blacklist y el bot se retirará automáticamente.", guild.Name),
+							Color:       0xFF0000,
+							Fields: []*discordgo.MessageEmbedField{
+								{
+									Name:  "Razón",
+									Value: razon,
+								},
+							},
+							Timestamp: time.Now().Format(time.RFC3339),
+						}
+						ctx.Session.ChannelMessageSendEmbed(channel.ID, embed)
+					}
+				}
+
+				// Salir del servidor
+				ctx.Session.GuildLeave(id)
+				logger.Info(fmt.Sprintf("Bot salió del servidor blacklisted: %s (%s)", guild.Name, id), "DevBlacklist")
+			}
+		}
+
 		// Crear embed de confirmación
 		embed := &discordgo.MessageEmbed{
-			Title:       "🚫 Añadido a la Blacklist",
-			Description: fmt.Sprintf("El %s ha sido bloqueado correctamente.", getBlacklistTypeName(tipo)),
-			Color:       0xFF0000, // Rojo
+			Title:       "✅ Añadido a la Blacklist",
+			Description: fmt.Sprintf("El %s con ID `%s` ha sido añadido a la blacklist.", getTypeName(blacklistType), id),
+			Color:       0x00FF00,
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "Tipo",
-					Value:  getBlacklistTypeEmoji(tipo) + " " + getBlacklistTypeName(tipo),
+					Value:  getTypeName(blacklistType),
 					Inline: true,
 				},
 				{
@@ -147,18 +192,17 @@ func blacklistAddHandler(ctx *discord.CommandContext) error {
 				},
 				{
 					Name:   "Razón",
-					Value:  entry.Reason,
+					Value:  razon,
 					Inline: false,
 				},
 			},
 			Timestamp: time.Now().Format(time.RFC3339),
 			Footer: &discordgo.MessageEmbedFooter{
-				Text: fmt.Sprintf("Bloqueado por %s", getUserName(ctx)),
+				Text: fmt.Sprintf("Añadido por %s", getUserName(ctx)),
 			},
 		}
 
-		// Enviar respuesta
-		err = ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
+		ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Embeds: []*discordgo.MessageEmbed{embed},
@@ -166,12 +210,7 @@ func blacklistAddHandler(ctx *discord.CommandContext) error {
 			},
 		})
 
-		if err != nil {
-			logger.Error(fmt.Sprintf("Error enviando respuesta: %v", err), "DevBlacklist")
-			return
-		}
-
-		logger.Info(fmt.Sprintf("Usuario %s añadió %s %s a la blacklist", getUserName(ctx), tipo, id), "DevBlacklist")
+		logger.Info(fmt.Sprintf("Usuario %s añadió a blacklist: %s (%s)", getUserName(ctx), id, tipo), "DevBlacklist")
 	}()
 
 	return nil
@@ -182,30 +221,22 @@ func blacklistRemoveHandler(ctx *discord.CommandContext) error {
 		defer errors.RecoverMiddleware()()
 
 		// Verificar permisos de desarrollador
-		userID := ""
-		if ctx.Interaction.Member != nil && ctx.Interaction.Member.User != nil {
-			userID = ctx.Interaction.Member.User.ID
-		} else if ctx.Interaction.User != nil {
-			userID = ctx.Interaction.User.ID
-		}
-		if userID != "852683369899622430" {
+		if !isDev(ctx.User().ID) {
 			sendErrorEmbed(ctx, "Acceso Denegado", "❌ Este comando solo está disponible para desarrolladores.")
 			return
 		}
 
-		// Obtener opciones
-		tipo := ctx.GetStringOption("tipo")
+		// Obtener ID
 		id := ctx.GetStringOption("id")
+		if id == "" {
+			sendErrorEmbed(ctx, "Error", "❌ Debes especificar un ID válido.")
+			return
+		}
 
-		// Obtener información antes de eliminar
+		// Obtener entrada antes de eliminar
 		entry, err := database.GetBlacklistEntry(id)
 		if err != nil {
-			if err == database.ErrBlacklistEntryNotFound {
-				sendErrorEmbed(ctx, "Error", fmt.Sprintf("❌ El %s `%s` no está en la blacklist.", getBlacklistTypeName(tipo), id))
-				return
-			}
-			logger.Error(fmt.Sprintf("Error obteniendo entrada de blacklist: %v", err), "DevBlacklist")
-			sendErrorEmbed(ctx, "Error", "❌ Error al obtener la entrada de la blacklist.")
+			sendErrorEmbed(ctx, "Error", "❌ Este ID no está en la blacklist.")
 			return
 		}
 
@@ -220,12 +251,12 @@ func blacklistRemoveHandler(ctx *discord.CommandContext) error {
 		// Crear embed de confirmación
 		embed := &discordgo.MessageEmbed{
 			Title:       "✅ Eliminado de la Blacklist",
-			Description: fmt.Sprintf("El %s ha sido desbloqueado correctamente.", getBlacklistTypeName(tipo)),
-			Color:       0x00FF00, // Verde
+			Description: fmt.Sprintf("El %s con ID `%s` ha sido eliminado de la blacklist.", getTypeName(entry.Type), id),
+			Color:       0x00FF00,
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:   "Tipo",
-					Value:  getBlacklistTypeEmoji(string(entry.Type)) + " " + getBlacklistTypeName(string(entry.Type)),
+					Value:  getTypeName(entry.Type),
 					Inline: true,
 				},
 				{
@@ -233,25 +264,22 @@ func blacklistRemoveHandler(ctx *discord.CommandContext) error {
 					Value:  fmt.Sprintf("`%s`", id),
 					Inline: true,
 				},
-				{
-					Name:   "Razón Original",
-					Value:  entry.Reason,
-					Inline: false,
-				},
-				{
-					Name:   "Bloqueado desde",
-					Value:  fmt.Sprintf("<t:%d:R>", entry.CreatedAt.Unix()),
-					Inline: true,
-				},
 			},
 			Timestamp: time.Now().Format(time.RFC3339),
 			Footer: &discordgo.MessageEmbedFooter{
-				Text: fmt.Sprintf("Desbloqueado por %s", getUserName(ctx)),
+				Text: fmt.Sprintf("Eliminado por %s", getUserName(ctx)),
 			},
 		}
 
-		// Enviar respuesta
-		err = ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
+		if entry.Reason != "" {
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+				Name:   "Razón Original",
+				Value:  entry.Reason,
+				Inline: false,
+			})
+		}
+
+		ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Embeds: []*discordgo.MessageEmbed{embed},
@@ -259,29 +287,231 @@ func blacklistRemoveHandler(ctx *discord.CommandContext) error {
 			},
 		})
 
-		if err != nil {
-			logger.Error(fmt.Sprintf("Error enviando respuesta: %v", err), "DevBlacklist")
-			return
-		}
-
-		logger.Info(fmt.Sprintf("Usuario %s eliminó %s %s de la blacklist", getUserName(ctx), tipo, id), "DevBlacklist")
+		logger.Info(fmt.Sprintf("Usuario %s eliminó de blacklist: %s", getUserName(ctx), id), "DevBlacklist")
 	}()
 
 	return nil
 }
 
-// getBlacklistTypeName devuelve el nombre legible del tipo
-func getBlacklistTypeName(tipo string) string {
-	if tipo == "user" {
-		return "Usuario"
-	}
-	return "Servidor"
+func blacklistListHandler(ctx *discord.CommandContext) error {
+	go func() {
+		defer errors.RecoverMiddleware()()
+
+		// Verificar permisos de desarrollador
+		if !isDev(ctx.User().ID) {
+			sendErrorEmbed(ctx, "Acceso Denegado", "❌ Este comando solo está disponible para desarrolladores.")
+			return
+		}
+
+		// Obtener filtro
+		filtro := "all"
+		if ctx.HasOption("tipo") {
+			filtro = ctx.GetStringOption("tipo")
+		}
+
+		// Obtener entradas
+		var entries []*models.Blacklist
+		var err error
+
+		if filtro == "all" {
+			entries, err = database.GetAllBlacklist()
+		} else {
+			var blacklistType models.BlacklistType
+			if filtro == "user" {
+				blacklistType = models.BlacklistTypeUser
+			} else {
+				blacklistType = models.BlacklistTypeGuild
+			}
+			entries, err = database.GetBlacklistByType(blacklistType)
+		}
+
+		if err != nil {
+			logger.Error(fmt.Sprintf("Error obteniendo blacklist: %v", err), "DevBlacklist")
+			sendErrorEmbed(ctx, "Error", "❌ Error al obtener la blacklist.")
+			return
+		}
+
+		// Si no hay entradas
+		if len(entries) == 0 {
+			embed := &discordgo.MessageEmbed{
+				Title:       "📋 Blacklist",
+				Description: "No hay entradas en la blacklist con los filtros especificados.",
+				Color:       0xFFFF00,
+				Timestamp:   time.Now().Format(time.RFC3339),
+			}
+
+			ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Embeds: []*discordgo.MessageEmbed{embed},
+					Flags:  discordgo.MessageFlagsEphemeral,
+				},
+			})
+			return
+		}
+
+		// Crear embeds (máximo 10 entradas por embed)
+		var embeds []*discordgo.MessageEmbed
+		const entriesPerEmbed = 10
+
+		for i := 0; i < len(entries); i += entriesPerEmbed {
+			end := i + entriesPerEmbed
+			if end > len(entries) {
+				end = len(entries)
+			}
+
+			embed := &discordgo.MessageEmbed{
+				Title:     fmt.Sprintf("📋 Blacklist (%d-%d de %d)", i+1, end, len(entries)),
+				Color:     0xFF0000,
+				Timestamp: time.Now().Format(time.RFC3339),
+			}
+
+			if filtro != "all" {
+				embed.Description = fmt.Sprintf("Filtrando por: %s", getFilterName(filtro))
+			}
+
+			for _, entry := range entries[i:end] {
+				fieldValue := formatBlacklistEntry(entry)
+				embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
+					Name:   fmt.Sprintf("%s `%s`", getTypeEmoji(entry.Type), entry.ID),
+					Value:  fieldValue,
+					Inline: false,
+				})
+			}
+
+			embeds = append(embeds, embed)
+		}
+
+		// Enviar primera respuesta
+		ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Embeds: []*discordgo.MessageEmbed{embeds[0]},
+				Flags:  discordgo.MessageFlagsEphemeral,
+			},
+		})
+
+		// Enviar follow-ups si hay más embeds
+		for i := 1; i < len(embeds); i++ {
+			ctx.Session.FollowupMessageCreate(ctx.Interaction.Interaction, true, &discordgo.WebhookParams{
+				Embeds: []*discordgo.MessageEmbed{embeds[i]},
+				Flags:  discordgo.MessageFlagsEphemeral,
+			})
+			time.Sleep(100 * time.Millisecond)
+		}
+
+		logger.Info(fmt.Sprintf("Usuario %s listó la blacklist (%d entradas)", getUserName(ctx), len(entries)), "DevBlacklist")
+	}()
+
+	return nil
 }
 
-// getBlacklistTypeEmoji devuelve el emoji del tipo
-func getBlacklistTypeEmoji(tipo string) string {
-	if tipo == "user" {
+// blacklistRemoveAutoComplete maneja el autocompletado para blacklist remove
+func blacklistRemoveAutoComplete(ctx *discord.CommandContext) {
+	data := ctx.Interaction.ApplicationCommandData()
+
+	// Obtener el valor actual
+	var focusedValue string
+	for _, opt := range data.Options {
+		if opt.Focused {
+			focusedValue = opt.StringValue()
+			break
+		}
+	}
+
+	// Obtener todas las entradas
+	entries, err := database.GetAllBlacklist()
+	if err != nil {
+		logger.Error(fmt.Sprintf("Error obteniendo blacklist para autocompletado: %v", err), "DevBlacklist")
+		ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionApplicationCommandAutocompleteResult,
+			Data: &discordgo.InteractionResponseData{
+				Choices: []*discordgo.ApplicationCommandOptionChoice{},
+			},
+		})
+		return
+	}
+
+	// Filtrar y crear opciones
+	var choices []*discordgo.ApplicationCommandOptionChoice
+	for _, entry := range entries {
+		if len(choices) >= 25 {
+			break
+		}
+
+		// Filtrar por búsqueda
+		if focusedValue == "" || strings.Contains(strings.ToLower(entry.ID), strings.ToLower(focusedValue)) {
+			name := fmt.Sprintf("%s %s", getTypeEmoji(entry.Type), entry.ID)
+			if len(name) > 100 {
+				name = name[:97] + "..."
+			}
+
+			choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+				Name:  name,
+				Value: entry.ID,
+			})
+		}
+	}
+
+	// Si no hay resultados
+	if len(choices) == 0 {
+		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+			Name:  "No se encontraron entradas",
+			Value: "none",
+		})
+	}
+
+	ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionApplicationCommandAutocompleteResult,
+		Data: &discordgo.InteractionResponseData{
+			Choices: choices,
+		},
+	})
+}
+
+// Helper functions
+
+func getTypeName(blacklistType models.BlacklistType) string {
+	if blacklistType == models.BlacklistTypeUser {
+		return "usuario"
+	}
+	return "servidor"
+}
+
+func getTypeEmoji(blacklistType models.BlacklistType) string {
+	if blacklistType == models.BlacklistTypeUser {
 		return "👤"
 	}
 	return "🏰"
+}
+
+func getFilterName(filtro string) string {
+	switch filtro {
+	case "user":
+		return "Usuarios"
+	case "guild":
+		return "Servidores"
+	default:
+		return "Todos"
+	}
+}
+
+func formatBlacklistEntry(entry *models.Blacklist) string {
+	var parts []string
+
+	parts = append(parts, fmt.Sprintf("**Tipo:** %s", getTypeName(entry.Type)))
+
+	if entry.Reason != "" {
+		parts = append(parts, fmt.Sprintf("**Razón:** %s", entry.Reason))
+	}
+
+	if entry.AddedBy != "" {
+		parts = append(parts, fmt.Sprintf("**Añadido por:** <@%s>", entry.AddedBy))
+	}
+
+	if !entry.AddedAt.IsZero() {
+		parts = append(parts, fmt.Sprintf("**Fecha:** <t:%d:R>", entry.AddedAt.Unix()))
+	}
+
+	return strings.Join(parts, "\n")
 }

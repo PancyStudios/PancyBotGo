@@ -235,6 +235,11 @@ func (c *ExtendedClient) handleInteraction(s *discordgo.Session, i *discordgo.In
 		Client:      c,
 	}
 
+	// Check blacklist
+	if err := c.checkBlacklist(ctx); err != nil {
+		return
+	}
+
 	if !cmd.PremiumType.IsNone() {
 		guildID := i.GuildID
 		userID := ctx.User().ID
@@ -282,4 +287,9 @@ func (c *ExtendedClient) GuildCount() int {
 // GetConfig returns the bot configuration
 func (c *ExtendedClient) GetConfig() *config.Config {
 	return config.Get()
+}
+
+// checkBlacklist verifica si el usuario o guild está en la blacklist
+func (c *ExtendedClient) checkBlacklist(ctx *CommandContext) error {
+	return c.BlacklistMiddleware(ctx)
 }
