@@ -4,6 +4,7 @@ package config
 
 import (
 	"os"
+	"sync"
 
 	"github.com/joho/godotenv"
 )
@@ -47,10 +48,20 @@ var (
 )
 
 // cfg holds the global configuration instance
-var cfg *Config
+var (
+	cfg     *Config
+	cfgOnce sync.Once
+)
 
-// Load initializes the configuration from environment variables
-func Load() (*Config, error) {
+// resetForTesting resets the configuration for testing purposes.
+// This function should only be called from test code.
+func resetForTesting() {
+	cfg = nil
+	cfgOnce = sync.Once{}
+}
+
+// loadConfig performs the actual configuration loading
+func loadConfig() {
 	// Load .env file if it exists (ignoring error if it doesn't)
 	_ = godotenv.Load()
 
@@ -85,15 +96,18 @@ func Load() (*Config, error) {
 		LinkServer:   getEnv("linkserver", "localhost"),
 		LinkPassword: getEnv("linkpassword", ""),
 	}
+}
 
+// Load initializes the configuration from environment variables
+func Load() (*Config, error) {
+	cfgOnce.Do(loadConfig)
 	return cfg, nil
 }
 
 // Get returns the current configuration
 func Get() *Config {
-	if cfg == nil {
-		cfg, _ = Load()
-	}
+	// Use sync.Once to ensure thread-safe initialization if Load wasn't called
+	cfgOnce.Do(loadConfig)
 	return cfg
 }
 

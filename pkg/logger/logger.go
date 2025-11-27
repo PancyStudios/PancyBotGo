@@ -106,8 +106,10 @@ type Logger struct {
 }
 
 // logger is the global logger instance
-var logger *Logger
-var once sync.Once
+var (
+	logger    *Logger
+	once      sync.Once
+)
 
 // Init initializes the global logger instance
 func Init(errorWebhook, logsWebhook string) *Logger {
@@ -119,9 +121,10 @@ func Init(errorWebhook, logsWebhook string) *Logger {
 
 // Get returns the global logger instance
 func Get() *Logger {
-	if logger == nil {
+	// Use sync.Once to ensure thread-safe initialization if Init wasn't called
+	once.Do(func() {
 		logger = NewLogger("", "")
-	}
+	})
 	return logger
 }
 

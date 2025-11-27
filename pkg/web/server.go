@@ -23,12 +23,15 @@ type Server struct {
 }
 
 var (
-	server *Server
+	server     *Server
+	serverOnce sync.Once
 )
 
 // Init initializes the global web server
 func Init(webhookURL string) *Server {
-	server = NewServer(webhookURL)
+	serverOnce.Do(func() {
+		server = NewServer(webhookURL)
+	})
 	return server
 }
 

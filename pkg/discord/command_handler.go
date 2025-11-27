@@ -2,6 +2,8 @@
 package discord
 
 import (
+	"sync"
+
 	"github.com/PancyStudios/PancyBotGo/pkg/config"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/bwmarrin/discordgo"
@@ -12,6 +14,7 @@ type CommandHandler struct {
 	client           *ExtendedClient
 	slashCommands    []*discordgo.ApplicationCommand
 	slashCommandsDev []*discordgo.ApplicationCommand
+	mu               sync.RWMutex
 }
 
 // NewCommandHandler creates a new CommandHandler
@@ -41,11 +44,13 @@ func (ch *CommandHandler) RegisterCommand(cmd *Command) {
 
 	appCmd := cmd.ToApplicationCommand()
 
+	ch.mu.Lock()
 	if cmd.IsDev {
 		ch.slashCommandsDev = append(ch.slashCommandsDev, appCmd)
 	} else {
 		ch.slashCommands = append(ch.slashCommands, appCmd)
 	}
+	ch.mu.Unlock()
 
 	logger.Debug("Comando registrado: "+cmd.Name, "CommandHandler")
 }
@@ -120,7 +125,14 @@ func (ch *CommandHandler) RegisterCommands() {
 	logger.Info("🔄 Registrando comandos globales...", "CommandHandler")
 
 	// Register global commands
-	for _, cmd := range ch.slashCommands {
+	ch.mu.RLock()
+	slashCommands := make([]*discordgo.ApplicationCommand, len(ch.slashCommands))
+	copy(slashCommands, ch.slashCommands)
+	slashCommandsDev := make([]*discordgo.ApplicationCommand, len(ch.slashCommandsDev))
+	copy(slashCommandsDev, ch.slashCommandsDev)
+	ch.mu.RUnlock()
+
+	for _, cmd := range slashCommands {
 		_, err := ch.client.Session.ApplicationCommandCreate(
 			ch.client.Session.State.User.ID,
 			"",
@@ -134,10 +146,10 @@ func (ch *CommandHandler) RegisterCommands() {
 	logger.Success("✅ Comandos globales registrados.", "CommandHandler")
 
 	// Register dev commands in dev guild
-	if cfg.DevGuildID != "" && len(ch.slashCommandsDev) > 0 {
+	if cfg.DevGuildID != "" && len(slashCommandsDev) > 0 {
 		logger.Info("🔄 Registrando comandos de desarrollo en el servidor "+cfg.DevGuildID+"...", "CommandHandler")
 
-		for _, cmd := range ch.slashCommandsDev {
+		for _, cmd := range slashCommandsDev {
 			_, err := ch.client.Session.ApplicationCommandCreate(
 				ch.client.Session.State.User.ID,
 				cfg.DevGuildID,
@@ -218,10 +230,14 @@ func (ch *CommandHandler) SyncCommands() error {
 
 // AddGlobalCommand adds a command to the global command list
 func (ch *CommandHandler) AddGlobalCommand(cmd *discordgo.ApplicationCommand) {
+	ch.mu.Lock()
 	ch.slashCommands = append(ch.slashCommands, cmd)
+	ch.mu.Unlock()
 }
 
 // AddDevCommand adds a command to the dev command list
 func (ch *CommandHandler) AddDevCommand(cmd *discordgo.ApplicationCommand) {
+	ch.mu.Lock()
 	ch.slashCommandsDev = append(ch.slashCommandsDev, cmd)
+	ch.mu.Unlock()
 }

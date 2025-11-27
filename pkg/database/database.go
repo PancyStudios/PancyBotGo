@@ -292,6 +292,13 @@ func (d *Database) DB() *mongo.Database {
 	return d.db
 }
 
+// Connected returns the connection status in a thread-safe manner
+func (d *Database) Connected() bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.IsConnected
+}
+
 // generateCacheKey creates a unique key from a query for caching
 func generateCacheKey(collectionName string, query bson.M) string {
 	data, _ := json.Marshal(query)
