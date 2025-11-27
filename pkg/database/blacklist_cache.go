@@ -87,6 +87,7 @@ func (c *BlacklistCache) Refresh() error {
 	for cursor.Next(ctx) {
 		var entry models.Blacklist
 		if err := cursor.Decode(&entry); err != nil {
+			logger.Warn("BlacklistCache: Error decoding entry: "+err.Error(), "BlacklistCache")
 			continue
 		}
 		newEntries[entry.ID] = &entry
@@ -106,14 +107,17 @@ func (c *BlacklistCache) Refresh() error {
 }
 
 // StartAutoRefresh starts automatic cache refresh at the specified interval
+// If already refreshing, it will stop the current refresher and start a new one
 func (c *BlacklistCache) StartAutoRefresh(interval time.Duration) {
 	c.mu.Lock()
+	// Stop existing refresher if running
 	if c.refreshing {
-		c.mu.Unlock()
-		return
+		close(c.stopRefresh)
+		c.refreshing = false
 	}
 	c.refreshing = true
 	c.stopRefresh = make(chan struct{})
+	stopChan := c.stopRefresh
 	c.mu.Unlock()
 
 	go func() {
@@ -128,7 +132,7 @@ func (c *BlacklistCache) StartAutoRefresh(interval time.Duration) {
 				if err := c.Refresh(); err != nil {
 					logger.Error("BlacklistCache: Auto-refresh failed: "+err.Error(), "BlacklistCache")
 				}
-			case <-c.stopRefresh:
+			case <-stopChan:
 				logger.Info("BlacklistCache: Auto-refresh stopped", "BlacklistCache")
 				return
 			}
@@ -165,7 +169,7 @@ func (c *BlacklistCache) IsBlacklisted(id string) bool {
 // IsUserBlacklisted checks if a user ID is in the blacklist and is of type user
 func (c *BlacklistCache) IsUserBlacklisted(userID string) (bool, *models.Blacklist) {
 	entry, exists := c.Get(userID)
-	if !exists || entry == nil || entry.Type != models.BlacklistTypeUser {
+	if !exists || entry.Type != models.BlacklistTypeUser {
 		return false, nil
 	}
 	return true, entry
@@ -174,7 +178,7 @@ func (c *BlacklistCache) IsUserBlacklisted(userID string) (bool, *models.Blackli
 // IsGuildBlacklisted checks if a guild ID is in the blacklist and is of type guild
 func (c *BlacklistCache) IsGuildBlacklisted(guildID string) (bool, *models.Blacklist) {
 	entry, exists := c.Get(guildID)
-	if !exists || entry == nil || entry.Type != models.BlacklistTypeGuild {
+	if !exists || entry.Type != models.BlacklistTypeGuild {
 		return false, nil
 	}
 	return true, entry
