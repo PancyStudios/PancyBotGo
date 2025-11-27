@@ -127,7 +127,7 @@ func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 	globalCacheManager.mu.RUnlock()
 
 	// Not in cache, fetch from database
-	if !dm.dbInstance.IsConnected || dm.collection == nil {
+	if !dm.dbInstance.Connected() || dm.collection == nil {
 		return nil, fmt.Errorf("database not connected")
 	}
 
@@ -167,7 +167,7 @@ func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 
 // GetAll retrieves all documents matching a query from the database
 func (dm *DataManager[T]) GetAll(query bson.M) ([]*T, error) {
-	if !dm.dbInstance.IsConnected || dm.collection == nil {
+	if !dm.dbInstance.Connected() || dm.collection == nil {
 		return nil, fmt.Errorf("database not connected")
 	}
 
@@ -196,7 +196,7 @@ func (dm *DataManager[T]) GetAll(query bson.M) ([]*T, error) {
 func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 	cacheKey := dm.generateCacheKey(query)
 
-	if !dm.dbInstance.IsConnected || dm.collection == nil {
+	if !dm.dbInstance.Connected() || dm.collection == nil {
 		// Queue for later
 		logger.Warn(fmt.Sprintf("DB offline. Encolando escritura para '%s'", dm.collection.Name()), "DataManager")
 		dm.dbInstance.AddToWriteQueue(QueuedOperation{
@@ -267,7 +267,7 @@ func (dm *DataManager[T]) Delete(query bson.M) error {
 	}
 	globalCacheManager.mu.Unlock()
 
-	if !dm.dbInstance.IsConnected || dm.collection == nil {
+	if !dm.dbInstance.Connected() || dm.collection == nil {
 		logger.Warn(fmt.Sprintf("DB offline. Encolando eliminación para '%s'", dm.collection.Name()), "DataManager")
 		dm.dbInstance.AddToWriteQueue(QueuedOperation{
 			CollectionName: dm.collection.Name(),
