@@ -6,12 +6,18 @@ import "github.com/PancyStudios/PancyBotGo/pkg/discord"
 func Register(client *discord.ExtendedClient) {
 	// Create individual subcommands
 	codegenCmd := CreateCodeGenCommand()
+	codelistCmd := CreateCodeListCommand()
+	codedelCmd := CreateCodeDelCommand()
+	evalCmd := CreateEvalCommand()
 
 	// Build the /dev command group with all subcommands
 	devGroup := client.CommandHandler.BuildCommandGroup(
 		"dev",
 		"Comandos de desarrollo",
 		codegenCmd,
+		codelistCmd,
+		codedelCmd,
+		evalCmd,
 	)
 
 	// Register the command group as dev-only command

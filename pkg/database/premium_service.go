@@ -8,6 +8,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+// Alias de tipos para facilitar el acceso
+type PremiumCode = models.PremiumCode
+
 var (
 	ErrPremiumManagerNotInitialized = errors.New("premium data manager not initialized")
 	ErrPremiumDurationRequired      = errors.New("duration must be greater than zero for non-permanent premium")

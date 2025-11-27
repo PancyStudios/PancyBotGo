@@ -180,6 +180,11 @@ func (ctx *CommandContext) GetOption(name string) *discordgo.ApplicationCommandI
 	return findOption(options, name)
 }
 
+// HasOption checks if an option exists by name
+func (ctx *CommandContext) HasOption(name string) bool {
+	return ctx.GetOption(name) != nil
+}
+
 // findOption recursively finds an option by name
 func findOption(options []*discordgo.ApplicationCommandInteractionDataOption, name string) *discordgo.ApplicationCommandInteractionDataOption {
 	for _, opt := range options {

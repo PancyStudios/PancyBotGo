@@ -213,21 +213,6 @@ func float64Ptr(f float64) *float64 {
 	return &f
 }
 
-// hasOption verifica si una opción está presente en la interacción
-func hasOption(i *discordgo.InteractionCreate, name string) bool {
-	if i.Type != discordgo.InteractionApplicationCommand {
-		return false
-	}
-
-	data := i.ApplicationCommandData()
-	for _, opt := range data.Options {
-		if opt.Name == name {
-			return true
-		}
-	}
-	return false
-}
-
 // getUserName obtiene el nombre del usuario de manera segura
 func getUserName(ctx *discord.CommandContext) string {
 	if ctx.Interaction.Member != nil && ctx.Interaction.Member.User != nil {
