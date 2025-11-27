@@ -70,7 +70,13 @@ func main() {
 	if db != nil {
 		database.InitGlobalDataManagers(db)
 
-		// El DataManager ya incluye cache, no es necesario inicializarlo por separado
+		// Initialize blacklist cache with all entries from DB
+		if err := database.InitBlacklistCache(); err != nil {
+			logger.Warn(fmt.Sprintf("Error initializing blacklist cache: %v", err), "Main")
+		}
+
+		// Start automatic blacklist cache refresh every 5 minutes
+		database.StartBlacklistCacheRefresh()
 	}
 
 	// Initialize MQTT
@@ -141,6 +147,9 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
+
+	// Stop blacklist cache auto-refresh
+	database.StopBlacklistCacheRefresh()
 
 	logger.System("Apagando PancyBot Go...", "Main")
 }
