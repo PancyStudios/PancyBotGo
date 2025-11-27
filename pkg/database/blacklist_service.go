@@ -19,9 +19,9 @@ func AddToBlacklist(id string, blacklistType models.BlacklistType, reason string
 		return nil, errors.New("blacklist manager not initialized")
 	}
 
-	// Verificar si ya está en la blacklist
-	existing, err := GetBlacklistEntry(id)
-	if err == nil && existing != nil {
+	// Verificar si ya está en la blacklist (usando cache)
+	cache := GetBlacklistCache()
+	if _, exists := cache.Get(id); exists {
 		return nil, ErrAlreadyBlacklisted
 	}
 
@@ -38,6 +38,9 @@ func AddToBlacklist(id string, blacklistType models.BlacklistType, reason string
 		return nil, err
 	}
 
+	// Update cache after successful DB write
+	cache.Add(result)
+
 	return result, nil
 }
 
@@ -47,71 +50,59 @@ func RemoveFromBlacklist(id string) error {
 		return errors.New("blacklist manager not initialized")
 	}
 
-	// Verificar que existe
-	_, err := GetBlacklistEntry(id)
-	if err != nil {
+	// Verificar que existe (usando cache)
+	cache := GetBlacklistCache()
+	if _, exists := cache.Get(id); !exists {
 		return ErrBlacklistNotFound
 	}
 
-	return GlobalBlacklistDM.Delete(bson.M{"_id": id})
+	err := GlobalBlacklistDM.Delete(bson.M{"_id": id})
+	if err != nil {
+		return err
+	}
+
+	// Update cache after successful DB delete
+	cache.Remove(id)
+
+	return nil
 }
 
-// GetBlacklistEntry obtiene una entrada de la blacklist
+// GetBlacklistEntry obtiene una entrada de la blacklist (from cache)
 func GetBlacklistEntry(id string) (*models.Blacklist, error) {
-	if GlobalBlacklistDM == nil {
-		return nil, errors.New("blacklist manager not initialized")
-	}
-
-	entry, err := GlobalBlacklistDM.Get(bson.M{"_id": id})
-	if err != nil {
-		return nil, err
-	}
-
-	if entry == nil {
+	cache := GetBlacklistCache()
+	entry, exists := cache.Get(id)
+	if !exists {
 		return nil, ErrBlacklistNotFound
 	}
-
 	return entry, nil
 }
 
-// IsBlacklisted verifica si un ID está en la blacklist
+// IsBlacklisted verifica si un ID está en la blacklist (from cache)
 func IsBlacklisted(id string) bool {
-	entry, err := GetBlacklistEntry(id)
-	return err == nil && entry != nil
+	cache := GetBlacklistCache()
+	return cache.IsBlacklisted(id)
 }
 
-// IsUserBlacklisted verifica si un usuario está en la blacklist
+// IsUserBlacklisted verifica si un usuario está en la blacklist (from cache)
 func IsUserBlacklisted(userID string) (bool, *models.Blacklist) {
-	entry, err := GetBlacklistEntry(userID)
-	if err != nil || entry == nil || entry.Type != models.BlacklistTypeUser {
-		return false, nil
-	}
-	return true, entry
+	cache := GetBlacklistCache()
+	return cache.IsUserBlacklisted(userID)
 }
 
-// IsGuildBlacklisted verifica si un guild está en la blacklist
+// IsGuildBlacklisted verifica si un guild está en la blacklist (from cache)
 func IsGuildBlacklisted(guildID string) (bool, *models.Blacklist) {
-	entry, err := GetBlacklistEntry(guildID)
-	if err != nil || entry == nil || entry.Type != models.BlacklistTypeGuild {
-		return false, nil
-	}
-	return true, entry
+	cache := GetBlacklistCache()
+	return cache.IsGuildBlacklisted(guildID)
 }
 
-// GetAllBlacklist obtiene todas las entradas de la blacklist
+// GetAllBlacklist obtiene todas las entradas de la blacklist (from cache)
 func GetAllBlacklist() ([]*models.Blacklist, error) {
-	if GlobalBlacklistDM == nil {
-		return nil, errors.New("blacklist manager not initialized")
-	}
-
-	return GlobalBlacklistDM.GetAll(bson.M{})
+	cache := GetBlacklistCache()
+	return cache.GetAll(), nil
 }
 
-// GetBlacklistByType obtiene entradas por tipo
+// GetBlacklistByType obtiene entradas por tipo (from cache)
 func GetBlacklistByType(blacklistType models.BlacklistType) ([]*models.Blacklist, error) {
-	if GlobalBlacklistDM == nil {
-		return nil, errors.New("blacklist manager not initialized")
-	}
-
-	return GlobalBlacklistDM.GetAll(bson.M{"type": blacklistType})
+	cache := GetBlacklistCache()
+	return cache.GetByType(blacklistType), nil
 }
