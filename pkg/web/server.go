@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -71,6 +72,11 @@ func (s *Server) Engine() *gin.Engine {
 // logsMiddleware logs all incoming requests to the webhook
 func (s *Server) logsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if strings.HasPrefix(c.Request.URL.Path, "/admin/api/") {
+			c.Next()
+			return
+		}
+
 		host := c.Request.Host
 
 		if s.allowedHostRegex.MatchString(host) {

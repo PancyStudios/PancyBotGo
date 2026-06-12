@@ -103,12 +103,17 @@ type Logger struct {
 	logFile         *os.File
 	errorFile       *os.File
 	mu              sync.Mutex
+	subscribers     []chan string
+	subMu           sync.RWMutex
+	history         []string
+	historyMu       sync.RWMutex
+	maxHistory      int
 }
 
 // logger is the global logger instance
 var (
-	logger    *Logger
-	once      sync.Once
+	logger *Logger
+	once   sync.Once
 )
 
 // Init initializes the global logger instance
@@ -134,6 +139,7 @@ func NewLogger(errorWebhook, logsWebhook string) *Logger {
 		logrus:          logrus.New(),
 		errorWebhookURL: errorWebhook,
 		logsWebhookURL:  logsWebhook,
+		maxHistory:      200,
 	}
 
 	// Setup logrus
@@ -182,6 +188,26 @@ func (l *Logger) log(level LogLevel, message string, prefix string) {
 		message,
 	)
 	fmt.Print(consoleMsg)
+
+	// Broadcast to SSE subscribers
+	l.subMu.RLock()
+	for _, ch := range l.subscribers {
+		select {
+		case ch <- consoleMsg:
+		default:
+			// If buffer is full, skip
+		}
+	}
+	l.subMu.RUnlock()
+
+	// Save to history buffer
+	l.historyMu.Lock()
+	l.history = append(l.history, consoleMsg)
+	if len(l.history) > l.maxHistory {
+		// Drop oldest
+		l.history = l.history[1:]
+	}
+	l.historyMu.Unlock()
 
 	// File output without colors
 	fileMsg := fmt.Sprintf("[%s] [%s] [%s]: %s\n",
@@ -262,6 +288,39 @@ func (l *Logger) Close() {
 	}
 }
 
+// Subscribe returns a channel that receives live log lines
+func (l *Logger) Subscribe() chan string {
+	l.subMu.Lock()
+	defer l.subMu.Unlock()
+	ch := make(chan string, 100)
+	l.subscribers = append(l.subscribers, ch)
+	return ch
+}
+
+// Unsubscribe removes a channel from the subscribers list
+func (l *Logger) Unsubscribe(ch chan string) {
+	l.subMu.Lock()
+	defer l.subMu.Unlock()
+	for i, sub := range l.subscribers {
+		if sub == ch {
+			l.subscribers = append(l.subscribers[:i], l.subscribers[i+1:]...)
+			close(ch)
+			return
+		}
+	}
+}
+
+// GetHistory returns a copy of the recent log history
+func (l *Logger) GetHistory() []string {
+	l.historyMu.RLock()
+	defer l.historyMu.RUnlock()
+
+	// Create a copy to prevent race conditions when reading
+	h := make([]string, len(l.history))
+	copy(h, l.history)
+	return h
+}
+
 // Logging methods
 
 // Critical logs a critical message
@@ -334,4 +393,19 @@ func Debug(message string, prefix string) {
 // System logs a system message using the global logger
 func System(message string, prefix string) {
 	Get().System(message, prefix)
+}
+
+// Subscribe returns a channel that receives live log lines using the global logger
+func Subscribe() chan string {
+	return Get().Subscribe()
+}
+
+// Unsubscribe removes a channel from the subscribers list using the global logger
+func Unsubscribe(ch chan string) {
+	Get().Unsubscribe(ch)
+}
+
+// GetHistory returns the global logger history
+func GetHistory() []string {
+	return Get().GetHistory()
 }

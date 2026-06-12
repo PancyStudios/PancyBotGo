@@ -13,7 +13,7 @@ func Register(client *discord.ExtendedClient) {
 		"Comandos de configuración del servidor",
 		"config",
 		HandleSubcommand,
-	).WithUserPermissions(discordgo.PermissionManageServer) // Require ManageServer permission
+	).WithUserPermissions(discordgo.PermissionManageGuild) // Require ManageServer permission
 
 	// Add subcommands
 	configCmd.Options = append(configCmd.Options, welcomeSubcommand())

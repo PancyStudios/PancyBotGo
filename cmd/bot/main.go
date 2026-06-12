@@ -160,7 +160,7 @@ func main() {
 	logger.Success("PancyBot Go iniciado correctamente!", "Main")
 
 	// Start CLI REPL
-	cli.Start()
+	cli.Start(discordClient)
 
 	// Wait for interrupt signal
 	sc := make(chan os.Signal, 1)

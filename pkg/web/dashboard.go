@@ -1,12 +1,13 @@
 package web
 
 import (
-	"fmt"
 	"net/http"
 	"runtime"
 	"strings"
 	"syscall"
 
+	"github.com/PancyStudios/PancyBotGo/pkg/cli"
+	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -47,6 +48,35 @@ func SetupDashboardRoutes(s *Server) {
 		})
 	})
 
+	api.GET("/stream", func(c *gin.Context) {
+		c.Writer.Header().Set("Content-Type", "text/event-stream")
+		c.Writer.Header().Set("Cache-Control", "no-cache")
+		c.Writer.Header().Set("Connection", "keep-alive")
+		c.Writer.Flush()
+
+		ch := logger.Subscribe()
+		defer logger.Unsubscribe(ch)
+
+		// Send history first
+		history := logger.GetHistory()
+		for _, msg := range history {
+			c.SSEvent("message", msg)
+		}
+		c.Writer.Flush()
+
+		clientGone := c.Writer.CloseNotify()
+
+		for {
+			select {
+			case <-clientGone:
+				return
+			case msg := <-ch:
+				c.SSEvent("message", msg)
+				c.Writer.Flush()
+			}
+		}
+	})
+
 	api.POST("/stop", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "Apagando..."})
 
@@ -66,30 +96,16 @@ func SetupDashboardRoutes(s *Server) {
 		}
 
 		cmd := strings.TrimSpace(strings.ToLower(req.Command))
-		var output string
 
-		switch cmd {
-		case "help":
-			output = "=== PancyBot Web CLI ===\n  help  - Muestra esta lista\n  stats - Estadísticas de sistema\n  clear - Limpia la consola\n  stop  - Apaga el bot\n========================"
-		case "stats":
-			var m runtime.MemStats
-			runtime.ReadMemStats(&m)
-			output = fmt.Sprintf("=== Estadísticas ===\nGoroutines: %d\nMemoria OS: %.2f MB\nMemoria Uso: %.2f MB\nGC Pausas: %d\n===================",
-				runtime.NumGoroutine(), float64(m.Sys)/1024/1024, float64(m.Alloc)/1024/1024, m.NumGC)
-		case "clear":
-			output = "_CLEAR_"
-		case "stop", "exit", "quit":
-			output = "Iniciando apagado seguro..."
-			go func() {
-				syscall.Kill(syscall.Getpid(), syscall.SIGINT)
-			}()
-		case "":
-			output = ""
-		default:
-			output = fmt.Sprintf("Comando desconocido: '%s'. Escribe 'help'.", cmd)
+		if cmd == "clear" {
+			c.JSON(http.StatusOK, gin.H{"output": "_CLEAR_"})
+			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"output": output})
+		// cli.ExecuteCommand handles printing to logger, which is broadcasted via SSE.
+		// It returns true if it's a stop command.
+		cli.ExecuteCommand(cmd)
+		c.JSON(http.StatusOK, gin.H{"output": ""})
 	})
 }
 
@@ -191,55 +207,68 @@ const dashboardHTML = `
         /* Terminal Styles */
         .terminal-container {
             width: 100%;
-            background-color: #000;
-            border-radius: 8px;
+            background-color: #0d1117; /* GitHub Dark theme background */
+            border-radius: 10px;
             overflow: hidden;
             margin-top: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
             display: flex;
             flex-direction: column;
-            border: 1px solid var(--surface);
+            border: 1px solid #30363d;
         }
         .terminal-header {
-            background-color: #1a1a1a;
-            padding: 8px 16px;
-            font-size: 0.8rem;
-            color: #888;
-            font-family: monospace;
-            border-bottom: 1px solid #333;
+            background-color: #161b22;
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            color: #8b949e;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            border-bottom: 1px solid #30363d;
             display: flex;
-            gap: 6px;
+            align-items: center;
+            gap: 8px;
         }
-        .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
         .terminal-dot.r { background-color: #ff5f56; }
         .terminal-dot.y { background-color: #ffbd2e; }
         .terminal-dot.g { background-color: #27c93f; }
         
         .terminal-output {
             padding: 16px;
-            height: 250px;
+            height: 300px;
             overflow-y: auto;
-            font-family: 'Consolas', 'Monaco', monospace;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
             font-size: 0.9rem;
-            color: #0f0;
+            color: #c9d1d9;
             white-space: pre-wrap;
-            line-height: 1.4;
+            line-height: 1.5;
+        }
+        .terminal-output::-webkit-scrollbar {
+            width: 8px;
+        }
+        .terminal-output::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
         }
         .terminal-input-row {
             display: flex;
             padding: 0 16px 16px 16px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            color: #0f0;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
             align-items: center;
         }
-        .terminal-prompt { margin-right: 8px; font-weight: bold; }
+        .terminal-prompt { 
+            margin-right: 10px; 
+            font-weight: bold; 
+            color: #58a6ff; /* Light blue prompt */
+        }
+        .terminal-prompt .user { color: #7ee787; } /* Green user */
         .terminal-input {
             flex: 1;
             background: transparent;
             border: none;
-            color: #fff;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 0.9rem;
+            color: #c9d1d9;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.95rem;
             outline: none;
         }
     </style>
@@ -287,7 +316,7 @@ const dashboardHTML = `
 Escribe 'help' para ver los comandos disponibles.
 </div>
             <div class="terminal-input-row">
-                <span class="terminal-prompt">admin@pancybot:~$</span>
+                <span class="terminal-prompt"><span class="user">admin@pancybot</span>:~$</span>
                 <input type="text" class="terminal-input" id="term-in" autocomplete="off" spellcheck="false" autofocus>
             </div>
         </div>
@@ -327,16 +356,32 @@ Escribe 'help' para ver los comandos disponibles.
         const termOut = document.getElementById('term-out');
 
         function appendTerm(text) {
-            termOut.textContent += '\n' + text;
+            termOut.textContent += text + '\n';
             termOut.scrollTop = termOut.scrollHeight;
         }
+
+        // Connect to Server-Sent Events for live logs
+        const eventSource = new EventSource('/admin/api/stream');
+        
+        // Clear terminal on connection (so if it auto-reconnects, history doesn't duplicate)
+        eventSource.onopen = function() {
+            termOut.textContent = "=== PancyBot Go [Versión 1.0.0] ===\nDesarrollado por PancyStudios\nEscribe 'help' para ver los comandos disponibles.\n\n";
+        };
+
+        eventSource.onmessage = function(event) {
+            let msg = event.data;
+            // Basic regex to strip ANSI color codes if any
+            msg = msg.replace(/\x1b\[[0-9;]*m/g, '');
+            termOut.textContent += msg + '\n';
+            termOut.scrollTop = termOut.scrollHeight;
+        };
 
         termIn.addEventListener('keypress', async function(e) {
             if (e.key === 'Enter') {
                 const cmd = termIn.value.trim();
                 termIn.value = '';
                 
-                appendTerm('admin@pancybot:~$ ' + cmd);
+                appendTerm('> ' + cmd);
                 
                 if (cmd === '') return;
 
@@ -349,7 +394,7 @@ Escribe 'help' para ver los comandos disponibles.
                     const data = await res.json();
                     
                     if (data.output === '_CLEAR_') {
-                        termOut.textContent = '';
+                        termOut.textContent = "=== PancyBot Go [Versión 1.0.0] ===\nDesarrollado por PancyStudios\nEscribe 'help' para ver los comandos disponibles.\n\n";
                     } else if (data.output) {
                         appendTerm(data.output);
                     }
