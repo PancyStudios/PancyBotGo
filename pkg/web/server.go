@@ -50,7 +50,7 @@ func NewServer(webhookURL string) *Server {
 	s := &Server{
 		engine:           engine,
 		webhookURL:       webhookURL,
-		allowedHostRegex: regexp.MustCompile(`^(.+\.)?miau\.media`),
+		allowedHostRegex: regexp.MustCompile(`^(.+\.)?miau\.media|^localhost(:\d+)?$|^127\.0\.0\.1(:\d+)?$`),
 	}
 
 	// Apply middlewares
@@ -83,9 +83,8 @@ func (s *Server) logsMiddleware() gin.HandlerFunc {
 		} else {
 			logger.Warn(fmt.Sprintf("[LOG] Solicitud Sospechosa: %s %s | %s", c.Request.Method, c.Request.URL.Path, c.ClientIP()), "WebServer")
 
-			// Send suspicious request to webhook
-			go s.sendLogToWebhook(c, true)
-
+			// Send suspicious request to webhook go
+			s.sendLogToWebhook(c, true)
 			c.AbortWithStatus(http.StatusForbidden)
 		}
 	}

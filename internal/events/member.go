@@ -1,13 +1,15 @@
-// Package events provides event handlers for member events
 package events
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/bwmarrin/discordgo"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // RegisterMemberEvents registers all member-related event handlers
@@ -22,69 +24,95 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 	logger.Info(fmt.Sprintf("👋 Nuevo miembro: %s#%s en servidor %s",
 		m.User.Username, m.User.Discriminator, m.GuildID), "Member")
 
-	// Obtener información del servidor
 	guild, err := s.Guild(m.GuildID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error obteniendo servidor: %v", err), "Member")
 		return
 	}
 
-	// Enviar mensaje de bienvenida al canal del sistema
-	if guild.SystemChannelID != "" {
-		welcomeEmbed := &discordgo.MessageEmbed{
-			Title:       "¡Bienvenido/a! 🎉",
-			Description: fmt.Sprintf("Dale la bienvenida a <@%s>\nAhora somos **%d** miembros.", m.User.ID, guild.MemberCount),
-			Color:       0x00ff00,
-			Thumbnail: &discordgo.MessageEmbedThumbnail{
-				URL: m.User.AvatarURL("128"),
-			},
-			Footer: &discordgo.MessageEmbedFooter{
-				Text:    guild.Name,
-				IconURL: guild.IconURL("64"),
-			},
-			Timestamp: time.Now().Format(time.RFC3339),
+	// Fetch guild settings from DB
+	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": m.GuildID})
+	if err == nil && guildDoc != nil {
+		// Welcome logic
+		if guildDoc.Greetings.Welcome.Enable {
+			message := guildDoc.Greetings.Welcome.Message
+			if message == "" {
+				message = fmt.Sprintf("¡Bienvenido/a {user} a **%s**!", guild.Name)
+			}
+
+			// Replace {user} with mention
+			message = strings.ReplaceAll(message, "{user}", fmt.Sprintf("<@%s>", m.User.ID))
+
+			channelID := guildDoc.Greetings.Welcome.Channel
+			if channelID == "" {
+				channelID = guild.SystemChannelID
+			}
+
+			welcomeEmbed := &discordgo.MessageEmbed{
+				Title:       "¡Bienvenido/a! 🎉",
+				Description: message,
+				Color:       0x00ff00,
+				Thumbnail: &discordgo.MessageEmbedThumbnail{
+					URL: m.User.AvatarURL("128"),
+				},
+				Footer: &discordgo.MessageEmbedFooter{
+					Text:    fmt.Sprintf("Ahora somos %d miembros", guild.MemberCount),
+					IconURL: guild.IconURL("64"),
+				},
+				Timestamp: time.Now().Format(time.RFC3339),
+			}
+
+			if guildDoc.Greetings.Welcome.IsDM {
+				channel, err := s.UserChannelCreate(m.User.ID)
+				if err == nil {
+					s.ChannelMessageSendEmbed(channel.ID, welcomeEmbed)
+				}
+			} else if channelID != "" {
+				s.ChannelMessageSendEmbed(channelID, welcomeEmbed)
+			}
 		}
 
-		_, err := s.ChannelMessageSendEmbed(guild.SystemChannelID, welcomeEmbed)
-		if err != nil {
-			logger.Error(fmt.Sprintf("Error enviando mensaje de bienvenida: %v", err), "Member")
+		// Autorole logic
+		if guildDoc.Greetings.Autorole.Enable && len(guildDoc.Greetings.Autorole.Roles) > 0 {
+			applyRole := func() {
+				for _, roleID := range guildDoc.Greetings.Autorole.Roles {
+					err := s.GuildMemberRoleAdd(m.GuildID, m.User.ID, roleID)
+					if err != nil {
+						logger.Error(fmt.Sprintf("Error asignando autorol %s a %s: %v", roleID, m.User.ID, err), "Member")
+					} else {
+						logger.Debug(fmt.Sprintf("✅ Autorol %s asignado a %s", roleID, m.User.ID), "Member")
+					}
+				}
+			}
+
+			if guildDoc.Greetings.Autorole.Delay > 0 {
+				go func() {
+					time.Sleep(time.Duration(guildDoc.Greetings.Autorole.Delay) * time.Millisecond)
+					applyRole()
+				}()
+			} else {
+				applyRole()
+			}
+		}
+	} else {
+		// Fallback to default logic if no DB entry exists
+		if guild.SystemChannelID != "" {
+			welcomeEmbed := &discordgo.MessageEmbed{
+				Title:       "¡Bienvenido/a! 🎉",
+				Description: fmt.Sprintf("Dale la bienvenida a <@%s>\nAhora somos **%d** miembros.", m.User.ID, guild.MemberCount),
+				Color:       0x00ff00,
+				Thumbnail: &discordgo.MessageEmbedThumbnail{
+					URL: m.User.AvatarURL("128"),
+				},
+				Footer: &discordgo.MessageEmbedFooter{
+					Text:    guild.Name,
+					IconURL: guild.IconURL("64"),
+				},
+				Timestamp: time.Now().Format(time.RFC3339),
+			}
+			s.ChannelMessageSendEmbed(guild.SystemChannelID, welcomeEmbed)
 		}
 	}
-
-	// Opcional: Enviar DM de bienvenida
-	channel, err := s.UserChannelCreate(m.User.ID)
-	if err == nil {
-		dmEmbed := &discordgo.MessageEmbed{
-			Title:       fmt.Sprintf("¡Bienvenido/a a %s!", guild.Name),
-			Description: "Esperamos que disfrutes tu estancia. Si necesitas ayuda, no dudes en preguntar a los administradores.",
-			Color:       0x3498db,
-			Thumbnail: &discordgo.MessageEmbedThumbnail{
-				URL: guild.IconURL("256"),
-			},
-			Fields: []*discordgo.MessageEmbedField{
-				{
-					Name:  "📋 Reglas",
-					Value: "Asegúrate de leer las reglas del servidor",
-				},
-				{
-					Name:  "💬 Preséntate",
-					Value: "¡No olvides presentarte a la comunidad!",
-				},
-			},
-		}
-
-		_, dmErr := s.ChannelMessageSendEmbed(channel.ID, dmEmbed)
-		if dmErr != nil {
-			logger.Debug("No se pudo enviar DM de bienvenida (DMs cerrados)", "Member")
-		}
-	}
-
-	// Opcional: Asignar rol automático
-	// autoRoleID := "TU_ROL_ID_AQUI"
-	// err = s.GuildMemberRoleAdd(m.GuildID, m.User.ID, autoRoleID)
-	// if err != nil {
-	//     logger.Error(fmt.Sprintf("Error asignando rol: %v", err), "Member")
-	// }
 }
 
 // onGuildMemberRemove is called when a member leaves the server
@@ -92,31 +120,63 @@ func onGuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRemove) {
 	logger.Info(fmt.Sprintf("👋 Adiós: %s#%s salió del servidor %s",
 		m.User.Username, m.User.Discriminator, m.GuildID), "Member")
 
-	// Enviar mensaje de despedida
 	guild, err := s.Guild(m.GuildID)
-	if err == nil && guild.SystemChannelID != "" {
-		farewellEmbed := &discordgo.MessageEmbed{
-			Description: fmt.Sprintf("👋 **%s#%s** ha salido del servidor.\nAhora somos **%d** miembros.",
-				m.User.Username, m.User.Discriminator, guild.MemberCount),
-			Color: 0xe74c3c,
-			Thumbnail: &discordgo.MessageEmbedThumbnail{
-				URL: m.User.AvatarURL("64"),
-			},
-			Timestamp: time.Now().Format(time.RFC3339),
-		}
+	if err != nil {
+		return
+	}
 
-		_, sendErr := s.ChannelMessageSendEmbed(guild.SystemChannelID, farewellEmbed)
-		if sendErr != nil {
-			logger.Error(fmt.Sprintf("Error enviando mensaje de despedida: %v", sendErr), "Member")
+	// Fetch guild settings from DB
+	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": m.GuildID})
+	if err == nil && guildDoc != nil {
+		if guildDoc.Greetings.Farewell.Enable {
+			message := guildDoc.Greetings.Farewell.Message
+			if message == "" {
+				message = fmt.Sprintf("👋 **{user}** ha salido del servidor.")
+			}
+
+			// Replace {user} with username (not mention since they left)
+			message = strings.ReplaceAll(message, "{user}", m.User.Username)
+
+			channelID := guildDoc.Greetings.Farewell.Channel
+			if channelID == "" {
+				channelID = guild.SystemChannelID
+			}
+
+			if channelID != "" {
+				farewellEmbed := &discordgo.MessageEmbed{
+					Description: message,
+					Color:       0xe74c3c,
+					Thumbnail: &discordgo.MessageEmbedThumbnail{
+						URL: m.User.AvatarURL("64"),
+					},
+					Footer: &discordgo.MessageEmbedFooter{
+						Text: fmt.Sprintf("Ahora somos %d miembros", guild.MemberCount),
+					},
+					Timestamp: time.Now().Format(time.RFC3339),
+				}
+				s.ChannelMessageSendEmbed(channelID, farewellEmbed)
+			}
+		}
+	} else {
+		// Fallback to default
+		if guild.SystemChannelID != "" {
+			farewellEmbed := &discordgo.MessageEmbed{
+				Description: fmt.Sprintf("👋 **%s#%s** ha salido del servidor.\nAhora somos **%d** miembros.",
+					m.User.Username, m.User.Discriminator, guild.MemberCount),
+				Color: 0xe74c3c,
+				Thumbnail: &discordgo.MessageEmbedThumbnail{
+					URL: m.User.AvatarURL("64"),
+				},
+				Timestamp: time.Now().Format(time.RFC3339),
+			}
+			s.ChannelMessageSendEmbed(guild.SystemChannelID, farewellEmbed)
 		}
 	}
 }
 
 // onGuildMemberUpdate is called when a member is updated (roles, nickname, etc.)
 func onGuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
-	// Solo loguear si hay cambios significativos
 	if m.BeforeUpdate != nil {
-		// Detectar cambio de nickname
 		oldNick := m.BeforeUpdate.Nick
 		newNick := m.Nick
 
@@ -125,7 +185,6 @@ func onGuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
 				m.User.Username, oldNick, newNick), "Member")
 		}
 
-		// Detectar cambio de roles
 		if len(m.BeforeUpdate.Roles) != len(m.Roles) {
 			logger.Debug(fmt.Sprintf("🎭 Roles actualizados para %s", m.User.Username), "Member")
 		}

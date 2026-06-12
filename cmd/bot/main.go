@@ -3,6 +3,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/PancyStudios/PancyBotGo/internal/commands"
 	"github.com/PancyStudios/PancyBotGo/internal/events"
+	"github.com/PancyStudios/PancyBotGo/pkg/cli"
 	"github.com/PancyStudios/PancyBotGo/pkg/config"
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
@@ -21,6 +23,10 @@ import (
 )
 
 func main() {
+	// Parse flags
+	useDashboard := flag.Bool("dashboard", false, "Abre el panel de control local en el navegador")
+	flag.Parse()
+
 	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
@@ -97,7 +103,14 @@ func main() {
 	// Initialize web server
 	webServer := web.Init(cfg.LogsWebServerHook)
 	web.SetupAPIRoutes(webServer)
+	web.SetupDashboardRoutes(webServer)
 	webServer.StartAsync(cfg.Port)
+
+	// Open dashboard automatically if requested
+	if *useDashboard {
+		dashboardURL := fmt.Sprintf("http://localhost:%s/admin", cfg.Port)
+		cli.OpenBrowser(dashboardURL)
+	}
 
 	// Initialize Discord client
 	discordClient, err = discord.Init(cfg.BotToken)
@@ -141,7 +154,13 @@ func main() {
 	}
 	defer lavalinkClient.Disconnect()
 
+	// Register MQTT handlers for remote control via API
+	lavalink.RegisterMusicHandlers(mqttClient, lavalinkClient)
+
 	logger.Success("PancyBot Go iniciado correctamente!", "Main")
+
+	// Start CLI REPL
+	cli.Start()
 
 	// Wait for interrupt signal
 	sc := make(chan os.Signal, 1)

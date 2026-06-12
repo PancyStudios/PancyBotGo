@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"github.com/PancyStudios/PancyBotGo/internal/commands/config"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/dev"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/mod"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/premium"
@@ -24,6 +25,9 @@ func RegisterAll(client *discord.ExtendedClient) {
 
 	// Premium commands (/premium redeem)
 	premium.Register(client)
+
+	// Config commands (/config ...)
+	config.Register(client)
 
 	// Developer commands (/dev codegen)
 	dev.Register(client)
