@@ -6,8 +6,12 @@ type GuildDocument struct {
 	Configuration GuildConfiguration `bson:"configuration" json:"configuration"`
 	Greetings     Greetings          `bson:"greetings" json:"greetings"`
 	Moderation    ModeratorData      `bson:"moderation" json:"moderation"`
-	// Note: protection is omitted for now as it wasn't fully detailed in the summary,
-	// but can be added later if needed.
+	Protection    ProtectionConfig   `bson:"protection" json:"protection"`
+}
+
+// ProtectionConfig holds security settings like antibots
+type ProtectionConfig struct {
+	Antibots string `bson:"antibots" json:"antibots"` // "all", "only_nv", "only_v", or "" (disabled)
 }
 
 // GuildConfiguration holds general configuration for the bot in a guild
@@ -35,6 +39,10 @@ type SubDataConfig struct {
 	ShowDetailsInCmdsCommand         string `bson:"showDetailsInCmdsCommand" json:"showDetailsInCmdsCommand"`
 	PingMessage                      string `bson:"pingMessage" json:"pingMessage"`
 	DontRepeatTheAutomoderatorAction bool   `bson:"dontRepeatTheAutomoderatorAction" json:"dontRepeatTheAutomoderatorAction"`
+	SuggestChannel                   string `bson:"suggestChannel" json:"suggestChannel"`
+	ConfessionChannel                string `bson:"confessionChannel" json:"confessionChannel"`
+	VerifyChannel                    string `bson:"verifyChannel" json:"verifyChannel"`
+	VerifyRole                       string `bson:"verifyRole" json:"verifyRole"`
 }
 
 // Greetings holds welcome, farewell, and autorole configurations

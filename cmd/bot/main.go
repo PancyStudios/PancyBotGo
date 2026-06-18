@@ -19,7 +19,9 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/lavalink"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/PancyStudios/PancyBotGo/pkg/mqtt"
+	"github.com/PancyStudios/PancyBotGo/pkg/scheduler"
 	"github.com/PancyStudios/PancyBotGo/pkg/web"
+	"github.com/PancyStudios/PancyBotGo/pkg/api"
 )
 
 func main() {
@@ -137,6 +139,9 @@ func main() {
 		}
 	}(discordClient)
 
+	// Start Tempban scheduler
+	scheduler.StartTempBanScheduler(discordClient)
+
 	// Initialize Lavalink after Discord is connected
 	lavalinkClient = lavalink.Init(discordClient.Session, []lavalink.NodeConfig{
 		{
@@ -156,6 +161,7 @@ func main() {
 
 	// Register MQTT handlers for remote control via API
 	lavalink.RegisterMusicHandlers(mqttClient, lavalinkClient)
+	api.RegisterAPIHandlers(mqttClient, discordClient)
 
 	logger.Success("PancyBot Go iniciado correctamente!", "Main")
 

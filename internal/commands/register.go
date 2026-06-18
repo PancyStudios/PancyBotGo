@@ -5,8 +5,14 @@ package commands
 import (
 	"github.com/PancyStudios/PancyBotGo/internal/commands/config"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/dev"
+	"github.com/PancyStudios/PancyBotGo/internal/commands/economy"
+	"github.com/PancyStudios/PancyBotGo/internal/commands/embeds"
+	"github.com/PancyStudios/PancyBotGo/internal/commands/fun"
+	"github.com/PancyStudios/PancyBotGo/internal/commands/ia"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/mod"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/premium"
+	"github.com/PancyStudios/PancyBotGo/internal/commands/reaction"
+	"github.com/PancyStudios/PancyBotGo/internal/commands/security"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/utils"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 )
@@ -20,6 +26,9 @@ func RegisterAll(client *discord.ExtendedClient) {
 	// Music commands
 	RegisterMusicCommands(client)
 
+	// Embeds commands
+	embeds.RegisterEmbedsCommands(client)
+
 	// Moderation commands (/mod ban, /mod kick, /mod warn, /mod mute)
 	mod.RegisterModCommands(client)
 
@@ -32,6 +41,18 @@ func RegisterAll(client *discord.ExtendedClient) {
 	// Developer commands (/dev codegen)
 	dev.Register(client)
 
-	// Add more categories here as needed:
-	// RegisterFunCommands(client)
+	// IA commands (/ia createimage)
+	ia.Register(client)
+
+	// Fun commands (/fun 8ball)
+	fun.Register(client)
+
+	// Reaction commands (/reaccion hug, kiss)
+	reaction.RegisterReactionCommands(client)
+
+	// Economy commands
+	economy.Register(client)
+
+	// Security commands (/security antibots)
+	security.RegisterSecurityCommands(client)
 }

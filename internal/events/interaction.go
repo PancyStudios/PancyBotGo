@@ -5,9 +5,12 @@ package events
 import (
 	"fmt"
 
+	"github.com/PancyStudios/PancyBotGo/internal/commands/embeds"
+	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/bwmarrin/discordgo"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // RegisterInteractionEvents registers all interaction-related event handlers
@@ -24,6 +27,10 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		customID := i.MessageComponentData().CustomID
 		logger.Debug(fmt.Sprintf("🔘 Componente clickeado: %s", customID), "Interaction")
 
+		if embeds.HandleInteraction(s, i) {
+			return
+		}
+
 		// Handle different button/menu IDs
 		switch customID {
 		case "button_accept":
@@ -32,6 +39,8 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			handleDenyButton(s, i)
 		case "menu_roles":
 			handleRoleMenu(s, i)
+		case "btn_verify_user":
+			handleVerifyUser(s, i)
 		default:
 			logger.Debug(fmt.Sprintf("Componente no manejado: %s", customID), "Interaction")
 		}
@@ -42,6 +51,10 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.Type == discordgo.InteractionModalSubmit {
 		modalID := i.ModalSubmitData().CustomID
 		logger.Debug(fmt.Sprintf("📝 Modal enviado: %s", modalID), "Interaction")
+
+		if embeds.HandleInteraction(s, i) {
+			return
+		}
 
 		switch modalID {
 		case "modal_feedback":
@@ -135,3 +148,61 @@ func handleFeedbackModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	logger.Info(fmt.Sprintf("Feedback recibido de %s: %s", i.Member.User.Username, feedback), "Interaction")
 }
+
+func handleVerifyUser(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": i.GuildID})
+	if err != nil || guildDoc == nil || guildDoc.Configuration.SubData.VerifyRole == "" {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "❌ El rol de verificación no está configurado en este servidor.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+		return
+	}
+
+	verifyRoleID := guildDoc.Configuration.SubData.VerifyRole
+
+	// Check if user already has the role
+	hasRole := false
+	for _, r := range i.Member.Roles {
+		if r == verifyRoleID {
+			hasRole = true
+			break
+		}
+	}
+
+	if hasRole {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "✅ Ya estás verificado.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+		return
+	}
+
+	err = s.GuildMemberRoleAdd(i.GuildID, i.Member.User.ID, verifyRoleID)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Error añadiendo rol de verificación: %v", err), "Interaction")
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "❌ No pude añadirte el rol. Es posible que me falten permisos o el rol esté por encima del mío.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+		return
+	}
+
+	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "🎉 ¡Te has verificado exitosamente!",
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	})
+}
+

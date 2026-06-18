@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	neturl "net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -76,6 +77,13 @@ type LavalinkClient struct {
 	defaultPlatform string
 	mqttClient      *mqtt.MqttCommunicator
 	progressTickers map[string]*time.Ticker
+	voiceSessions   map[string]VoiceSessionInfo
+}
+
+// VoiceSessionInfo holds session info for Lavalink voice connection
+type VoiceSessionInfo struct {
+	SessionID string
+	ChannelID string
 }
 
 // Node represents a Lavalink node connection
@@ -190,6 +198,7 @@ func NewLavalinkClient(session *discordgo.Session, nodeConfigs []NodeConfig) *La
 		defaultPlatform: "dzsearch",
 		mqttClient:      mqtt.Get(),
 		progressTickers: make(map[string]*time.Ticker),
+		voiceSessions:   make(map[string]VoiceSessionInfo),
 	}
 
 	// Initialize nodes
@@ -359,7 +368,10 @@ func (n *Node) handleEvent(payload map[string]interface{}) {
 	case "TrackStuckEvent":
 		logger.Warn(fmt.Sprintf("Track stuck in guild %s", guildID), "Lavalink")
 	case "WebSocketClosedEvent":
-		logger.Warn(fmt.Sprintf("WebSocket closed for guild %s", guildID), "Lavalink")
+		code, _ := payload["code"].(float64)
+		reason, _ := payload["reason"].(string)
+		byRemote, _ := payload["byRemote"].(bool)
+		logger.Warn(fmt.Sprintf("WebSocket closed for guild %s - Code: %.0f, Reason: %s, ByRemote: %v", guildID, code, reason, byRemote), "Lavalink")
 	}
 }
 
@@ -404,6 +416,12 @@ func (c *LavalinkClient) DestroyPlayer(guildID string) {
 
 	c.stopProgressUpdates(guildID)
 
+	// Leave voice channel
+	err := c.session.ChannelVoiceJoinManual(guildID, "", false, false)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Error leaving voice channel: %v", err), "Lavalink")
+	}
+
 	// Send destroy command to Lavalink via REST API
 	for _, node := range c.nodes {
 		node.mu.RLock()
@@ -441,7 +459,13 @@ func (c *LavalinkClient) Search(query string) (*SearchResult, error) {
 		}
 
 		// URL encode the query
-		encodedQuery := neturl.QueryEscape(fmt.Sprintf("%s:%s", c.defaultPlatform, query))
+		var finalQuery string
+		if strings.HasPrefix(query, "http://") || strings.HasPrefix(query, "https://") {
+			finalQuery = query
+		} else {
+			finalQuery = fmt.Sprintf("%s:%s", c.defaultPlatform, query)
+		}
+		encodedQuery := neturl.QueryEscape(finalQuery)
 		url := fmt.Sprintf("%s://%s:%d/v4/loadtracks?identifier=%s",
 			scheme, config.Host, config.Port, encodedQuery)
 
@@ -906,28 +930,27 @@ func (c *LavalinkClient) voiceStateUpdate(s *discordgo.Session, v *discordgo.Voi
 	}
 
 	// Store voice session ID for later use with voice server update
-	// In Lavalink v4, voice updates are sent via REST API with both sessionId and server info
+	c.mu.Lock()
+	if v.ChannelID == "" {
+		delete(c.voiceSessions, v.GuildID)
+	} else {
+		c.voiceSessions[v.GuildID] = VoiceSessionInfo{
+			SessionID: v.SessionID,
+			ChannelID: v.ChannelID,
+		}
+	}
+	c.mu.Unlock()
+
 	logger.Debug(fmt.Sprintf("Voice state update for guild %s, session: %s", v.GuildID, v.SessionID), "Lavalink")
 }
 
 func (c *LavalinkClient) voiceServerUpdate(s *discordgo.Session, v *discordgo.VoiceServerUpdate) {
-	// Get voice state from Discord
-	guild, err := s.State.Guild(v.GuildID)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Error getting guild: %v", err), "Lavalink")
-		return
-	}
+	c.mu.RLock()
+	info, exists := c.voiceSessions[v.GuildID]
+	c.mu.RUnlock()
 
-	var voiceState *discordgo.VoiceState
-	for _, vs := range guild.VoiceStates {
-		if vs.UserID == s.State.User.ID {
-			voiceState = vs
-			break
-		}
-	}
-
-	if voiceState == nil {
-		logger.Error("Voice state not found", "Lavalink")
+	if !exists || info.SessionID == "" {
+		logger.Error("Voice session ID not found for guild "+v.GuildID, "Lavalink")
 		return
 	}
 
@@ -940,7 +963,8 @@ func (c *LavalinkClient) voiceServerUpdate(s *discordgo.Session, v *discordgo.Vo
 		if isConnected {
 			payload := map[string]interface{}{
 				"voice": map[string]interface{}{
-					"sessionId": voiceState.SessionID,
+					"sessionId": info.SessionID,
+					"channelId": info.ChannelID,
 					"token":     v.Token,
 					"endpoint":  v.Endpoint,
 				},

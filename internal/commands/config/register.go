@@ -7,6 +7,12 @@ import (
 
 // Register registers all configuration commands
 func Register(client *discord.ExtendedClient) {
+	suggestConfigCmd := createSuggestConfigCommand()
+	confessConfigCmd := createConfessConfigCommand()
+	verifyChannelCmd := createVerifyChannelCommand()
+	verifyRoleCmd := createVerifyRoleCommand()
+	sendVerifyCmd := createSendVerifyCommand()
+
 	// Create the base /config command
 	configCmd := discord.NewCommand(
 		"config",
@@ -24,6 +30,20 @@ func Register(client *discord.ExtendedClient) {
 	// Register the command with the client
 	client.CommandHandler.RegisterCommand(configCmd)
 	client.CommandHandler.AddGlobalCommand(configCmd.ToApplicationCommand())
+
+	cmds := []*discord.Command{
+		suggestConfigCmd,
+		confessConfigCmd,
+		verifyChannelCmd,
+		verifyRoleCmd,
+		sendVerifyCmd,
+	}
+
+	for _, cmd := range cmds {
+		cmd.WithUserPermissions(discordgo.PermissionManageGuild)
+		client.CommandHandler.RegisterCommand(cmd)
+		client.CommandHandler.AddGlobalCommand(cmd.ToApplicationCommand())
+	}
 }
 
 // helper to safely run subcommand handlers

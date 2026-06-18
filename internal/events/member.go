@@ -33,6 +33,28 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 	// Fetch guild settings from DB
 	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": m.GuildID})
 	if err == nil && guildDoc != nil {
+
+		// Antibots logic
+		if m.User.Bot {
+			if guildDoc.Protection.Antibots == "all" {
+				s.GuildMemberDeleteWithReason(m.GuildID, m.User.ID, "Anti-Bots: Todos los bots están bloqueados")
+				logger.Info(fmt.Sprintf("🤖 Bot %s expulsado por Anti-Bots (all)", m.User.Username), "Member")
+				return
+			} else if guildDoc.Protection.Antibots == "only_nv" {
+				if m.User.PublicFlags&discordgo.UserFlagVerifiedBot == 0 {
+					s.GuildMemberDeleteWithReason(m.GuildID, m.User.ID, "Anti-Bots: Bot no verificado")
+					logger.Info(fmt.Sprintf("🤖 Bot %s expulsado por Anti-Bots (only_nv)", m.User.Username), "Member")
+					return
+				}
+			} else if guildDoc.Protection.Antibots == "only_v" {
+				if m.User.PublicFlags&discordgo.UserFlagVerifiedBot != 0 {
+					s.GuildMemberDeleteWithReason(m.GuildID, m.User.ID, "Anti-Bots: Bot verificado no permitido")
+					logger.Info(fmt.Sprintf("🤖 Bot %s expulsado por Anti-Bots (only_v)", m.User.Username), "Member")
+					return
+				}
+			}
+		}
+
 		// Welcome logic
 		if guildDoc.Greetings.Welcome.Enable {
 			message := guildDoc.Greetings.Welcome.Message

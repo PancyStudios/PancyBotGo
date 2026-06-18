@@ -1,0 +1,77 @@
+package economy
+
+import (
+	"fmt"
+
+	"github.com/PancyStudios/PancyBotGo/pkg/database"
+	"github.com/PancyStudios/PancyBotGo/pkg/discord"
+	"github.com/bwmarrin/discordgo"
+)
+
+func createDepositCommand() *discord.Command {
+	return discord.NewCommand(
+		"deposit",
+		"🏦 Deposita dinero de tu cartera a tu banco",
+		"economy",
+		depositHandler,
+	).WithOptions(
+		&discordgo.ApplicationCommandOption{
+			Type:        discordgo.ApplicationCommandOptionString,
+			Name:        "tipo",
+			Description: "Elige si quieres depositar economía Local o Global",
+			Required:    true,
+			Choices: []*discordgo.ApplicationCommandOptionChoice{
+				{Name: "Local (Servidor)", Value: "local"},
+				{Name: "Global (Estrellas)", Value: "global"},
+			},
+		},
+		&discordgo.ApplicationCommandOption{
+			Type:        discordgo.ApplicationCommandOptionInteger,
+			Name:        "cantidad",
+			Description: "Cantidad a depositar",
+			Required:    true,
+		},
+	)
+}
+
+func depositHandler(ctx *discord.CommandContext) error {
+	ecoType := ctx.GetStringOption("tipo")
+	amount := ctx.GetIntOption("cantidad")
+	userID := ctx.Interaction.Member.User.ID
+	guildID := ctx.Interaction.GuildID
+
+	if amount <= 0 {
+		ctx.Reply("❌ " + "La cantidad debe ser mayor a 0.")
+		return nil
+	}
+
+	var err error
+	if ecoType == "local" {
+		err = database.DepositLocal(guildID, userID, amount)
+		if err != nil {
+			if err == database.ErrInsufficientFunds {
+				ctx.Reply("❌ " + "No tienes suficientes monedas locales en tu cartera.")
+			} else if err == database.ErrBankFull {
+				ctx.Reply("❌ " + "El banco local no tiene suficiente capacidad para ese depósito.")
+			} else {
+				ctx.Reply("❌ " + "Error al depositar.")
+			}
+			return err
+		}
+		ctx.Reply(fmt.Sprintf("Has depositado **💵 %d** a tu banco local.", amount))
+	} else {
+		err = database.DepositStars(userID, amount)
+		if err != nil {
+			if err == database.ErrInsufficientFunds {
+				ctx.Reply("❌ " + "No tienes suficientes estrellas en tu cartera.")
+			} else if err == database.ErrBankFull {
+				ctx.Reply("❌ " + "Tu banco estelar está al límite de su capacidad.")
+			} else {
+				ctx.Reply("❌ " + "Error al depositar.")
+			}
+			return err
+		}
+		ctx.Reply(fmt.Sprintf("Has depositado **🌟 %d** a tu banco estelar.", amount))
+	}
+	return nil
+}

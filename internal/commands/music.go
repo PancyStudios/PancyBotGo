@@ -459,7 +459,7 @@ func playAutoComplete(ctx *discord.CommandContext) {
 		}
 
 		// If it looks like a URL, don't provide autocomplete
-		if isURL(query) {
+		if strings.HasPrefix(query, "http://") || strings.HasPrefix(query, "https://") {
 			return
 		}
 
@@ -505,9 +505,4 @@ func formatDuration(ms int64) string {
 	minutes := seconds / 60
 	seconds = seconds % 60
 	return fmt.Sprintf("%d:%02d", minutes, seconds)
-}
-
-// isURL checks if a string looks like a URL
-func isURL(s string) bool {
-	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
 }

@@ -9,23 +9,27 @@ import (
 // RegisterModCommands registers all moderation commands as /mod subcommands
 func RegisterModCommands(client *discord.ExtendedClient) {
 	// Create individual subcommands (each can be in its own file)
-	banCmd := createBanCommand()
-	kickCmd := createKickCommand()
-	warnCmd := createWarnCommand()
-	muteCmd := createMuteCommand()
-	warningsCmd := createWarningsCommand()
-	removeWarnCmd := createRemoveWarnCommand()
+	commands := []*discord.Command{
+		createWarnCommand(),
+		createRemoveWarnCommand(),
+		createWarningsCommand(),
+		createKickCommand(),
+		createBanCommand(),
+		createMuteCommand(),
+		createClearCommand(),
+		createSoftbanCommand(),
+		createAssignRoleCommand(),
+		createRemoveRoleCommand(),
+		createNukeCommand(),
+		createLockdownCommand(),
+		createTempBanCommand(),
+	}
 
 	// Build the /mod command group with all subcommands
 	modGroup := client.CommandHandler.BuildCommandGroup(
 		"mod",
 		"Comandos de moderación",
-		banCmd,
-		kickCmd,
-		warnCmd,
-		muteCmd,
-		warningsCmd,
-		removeWarnCmd,
+		commands...,
 	)
 
 	// Register the command group

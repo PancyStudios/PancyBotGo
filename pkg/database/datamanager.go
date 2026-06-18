@@ -48,6 +48,9 @@ var (
 	GlobalGuildPremiumDM *DataManager[models.GuildPremium]
 	GlobalPremiumCodeDM  *DataManager[models.PremiumCode]
 	GlobalBlacklistDM    *DataManager[models.Blacklist]
+	GlobalEconomyDM      *DataManager[models.GlobalEconomyProfile]
+	LocalEconomyDM       *DataManager[models.LocalEconomyProfile]
+	ItemDM               *DataManager[models.Item]
 	GlobalGuildDM        *DataManager[models.GuildDocument]
 	GlobalMusicDM        *DataManager[models.MusicSettings]
 )
@@ -61,6 +64,9 @@ func InitGlobalDataManagers(db *Database) {
 	GlobalBlacklistDM = NewDataManager[models.Blacklist]("blacklist", db)
 	GlobalGuildDM = NewDataManager[models.GuildDocument]("guilds", db)
 	GlobalMusicDM = NewDataManager[models.MusicSettings]("music", db)
+	GlobalEconomyDM = NewDataManager[models.GlobalEconomyProfile]("economy_global", db)
+	LocalEconomyDM = NewDataManager[models.LocalEconomyProfile]("economy_local", db)
+	ItemDM = NewDataManager[models.Item]("economy_items", db)
 }
 
 // DataManager provides cached access to a MongoDB collection

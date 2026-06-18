@@ -10,7 +10,11 @@ func RegisterUtilsCommands(client *discord.ExtendedClient) {
 	pingCmd := createPingCommand()
 	statusCmd := createStatusCommand()
 	helpCmd := createHelpCommand()
-	statsCmd := createStatsCommand()
+	botinfoCmd := createBotinfoCommand()
+	inviteCmd := createInviteCommand()
+	screenshotCmd := createScreenshotCommand()
+	suggestCmd := createSuggestCommand()
+	confessCmd := createConfessCommand()
 
 	// Build the /utils command group with all subcommands
 	modGroup := client.CommandHandler.BuildCommandGroup(
@@ -19,7 +23,11 @@ func RegisterUtilsCommands(client *discord.ExtendedClient) {
 		pingCmd,
 		statusCmd,
 		helpCmd,
-		statsCmd,
+		botinfoCmd,
+		inviteCmd,
+		screenshotCmd,
+		suggestCmd,
+		confessCmd,
 	)
 
 	// Register the command group

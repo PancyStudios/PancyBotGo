@@ -40,6 +40,9 @@ type Config struct {
 	// Lavalink
 	LinkServer   string
 	LinkPassword string
+
+	//Craiyon
+	CraiyonToken string
 }
 
 var (
@@ -95,6 +98,9 @@ func loadConfig() {
 		// Lavalink
 		LinkServer:   getEnv("linkserver", "localhost"),
 		LinkPassword: getEnv("linkpassword", ""),
+
+		// Craiyon
+		CraiyonToken: getEnv("craiyonToken", ""),
 	}
 }
 

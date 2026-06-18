@@ -9,4 +9,5 @@ logs/
 *.arm64
 *.exe
 
+fix_commands.sh
 bot

@@ -13,18 +13,18 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// createStatsCommand creates the /utils stats subcommand
-func createStatsCommand() *discord.Command {
+// createBotinfoCommand creates the /utils botinfo subcommand
+func createBotinfoCommand() *discord.Command {
 	return discord.NewCommand(
-		"stats",
-		"Muestra estadísticas del bot",
+		"botinfo",
+		"Muestra estadísticas detalladas del bot",
 		"utils",
-		statsHandler,
+		botinfoHandler,
 	)
 }
 
-// statsHandler handles the /utils stats command
-func statsHandler(ctx *discord.CommandContext) error {
+// botinfoHandler handles the /utils botinfo command
+func botinfoHandler(ctx *discord.CommandContext) error {
 	go func() {
 		defer errors.RecoverMiddleware()()
 
@@ -55,9 +55,12 @@ func statsHandler(ctx *discord.CommandContext) error {
 		// Calculate uptime
 		uptime := time.Since(ctx.Client.StartTime)
 
+		// Calculate Ping
+		ping := ctx.Session.HeartbeatLatency()
+
 		// Create embed
 		embed := &discordgo.MessageEmbed{
-			Title: "📊 Estadísticas del Bot",
+			Title: "📊 Información del Bot",
 			Color: 0x5865F2,
 			Fields: []*discordgo.MessageEmbedField{
 				{
@@ -98,6 +101,16 @@ func statsHandler(ctx *discord.CommandContext) error {
 				{
 					Name:   "👥 Miembros",
 					Value:  fmt.Sprintf("%d", memberCount),
+					Inline: true,
+				},
+				{
+					Name:   "🌐 Ping",
+					Value:  fmt.Sprintf("%d ms", ping.Milliseconds()),
+					Inline: true,
+				},
+				{
+					Name:   "📅 Compilación",
+					Value:  config.BuildTime,
 					Inline: true,
 				},
 			},
