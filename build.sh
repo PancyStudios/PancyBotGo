@@ -3,6 +3,10 @@ VERSION=$(git describe --tags --abbrev=0 2>/dev/null || git rev-parse --short HE
 FECHA=$(date +%F)
 
 printf "Building PancyBot version: %s\n" "$VERSION"
+# Evitar que GOPATH se cree dentro del repositorio (lo que causa el error de @version)
+export GOPATH=/home/container/.go
+export GOMODCACHE=/home/container/.go/pkg/mod
+rm -rf go/
 
 # Descargamos e instalamos las dependencias
 printf "Installing Go dependencies...\n"
