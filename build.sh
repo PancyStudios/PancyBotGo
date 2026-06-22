@@ -6,6 +6,10 @@ printf "Building PancyBot version: %s\n" "$VERSION"
 # Evitar que GOPATH se cree dentro del repositorio (lo que causa el error de @version)
 export GOPATH=/home/container/.go
 export GOMODCACHE=/home/container/.go/pkg/mod
+export GOCACHE=/home/container/.gocache
+export TMPDIR=/home/container/.tmp
+export GOTMPDIR=/home/container/.tmp
+mkdir -p /home/container/.tmp
 rm -rf go/
 
 # Descargamos e instalamos las dependencias
