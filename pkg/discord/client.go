@@ -224,7 +224,25 @@ func (c *ExtendedClient) handleInteraction(s *discordgo.Session, i *discordgo.In
 
 	cmd, ok := c.Commands.Get(commandName)
 	if !ok {
-		logger.Warn("Command not found: "+commandName, "Client")
+		logger.Warn("Command not found: "+commandName+". Borrando de Discord...", "Client")
+		
+		// Responder efímeramente para que no se quede "pensando"
+		_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "⚠️ Este comando ha sido movido, agrupado o ya no existe. Se ha borrado de tu caché.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+
+		// Borrar el comando obsoleto usando su ID
+		err := s.ApplicationCommandDelete(s.State.User.ID, i.GuildID, data.ID)
+		if err != nil {
+			logger.Error("No se pudo borrar el comando obsoleto: "+err.Error(), "Client")
+		} else {
+			logger.Success("Comando obsoleto borrado exitosamente: "+data.Name, "Client")
+		}
+
 		return
 	}
 
