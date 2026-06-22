@@ -4,6 +4,11 @@ FECHA=$(date +%F)
 
 printf "Building PancyBot version: %s\n" "$VERSION"
 
+# Descargamos e instalamos las dependencias
+printf "Installing Go dependencies...\n"
+go mod tidy
+go mod download
+
 # Compilamos inyectando las variables
 go build -ldflags "-X 'github.com/PancyStudios/PancyBotGo/pkg/config.Version=$VERSION' -X 'github.com/PancyStudios/PancyBotGo/pkg/config.BuildTime=$FECHA'" -o PancyBot.x86_64 cmd/bot/main.go
 printf "Build completed: PancyBot.x86_64\n"

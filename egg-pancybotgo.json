@@ -1,0 +1,31 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2026-06-22T00:00:00+00:00",
+    "name": "PancyBotGo (Auto-Update)",
+    "author": "pancy@studios.com",
+    "description": "Bot de Discord escrito en Go (PancyBotGo). Clona automáticamente el repositorio en la instalación y compila al iniciar.",
+    "features": null,
+    "docker_images": {
+        "Custom Go Puppeteer": "ghcr.io/parkervcp/yolks:puppeteer"
+    },
+    "file_denylist": [],
+    "startup": "cd PancyBotGo && git pull && bash build.sh && ./PancyBot.x86_64",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": \"Bot online\"\r\n}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\napt-get update\napt-get install -y git\ncd /mnt/server\nif [ -d \".git\" ]; then\n    echo \"El repositorio ya está clonado. Saltando instalación.\"\nelse\n    echo \"Clonando PancyBotCode...\"\n    git clone https://github.com/PancyStudios/PancyBotCode.git .\nfi\necho \"Instalación completada con éxito.\"",
+            "container": "debian:bookworm-slim",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": []
+}
