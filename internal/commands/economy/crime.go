@@ -13,7 +13,7 @@ import (
 func createCrimeCommand() *discord.Command {
 	return discord.NewCommand(
 		"crime",
-		"🔪 Comete un crimen para ganar dinero rápido... o pagar una multa",
+		"🔫 | Comete un crimen (cuidado con la policía)",
 		"economy",
 		crimeHandler,
 	).WithOptions(

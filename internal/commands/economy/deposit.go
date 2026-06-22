@@ -11,7 +11,7 @@ import (
 func createDepositCommand() *discord.Command {
 	return discord.NewCommand(
 		"deposit",
-		"🏦 Deposita dinero de tu cartera a tu banco",
+		"🏦 | Deposita tus monedas en el banco",
 		"economy",
 		depositHandler,
 	).WithOptions(

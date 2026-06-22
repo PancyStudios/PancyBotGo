@@ -12,7 +12,7 @@ import (
 func createKickCommand() *discord.Command {
 	return discord.NewCommand(
 		"kick",
-		"Expulsa a un usuario del servidor",
+		"👢 | Expulsa a un usuario del servidor",
 		"mod",
 		kickHandler,
 	).WithOptions(

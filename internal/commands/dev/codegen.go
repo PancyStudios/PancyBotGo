@@ -19,7 +19,7 @@ import (
 func CreateCodeGenCommand() *discord.Command {
 	return discord.NewCommand(
 		"codegen",
-		"Genera códigos premium (Solo desarrolladores)",
+		"✨ | Genera códigos premium (Solo desarrolladores)",
 		"dev",
 		codegenHandler,
 	).WithOptions(

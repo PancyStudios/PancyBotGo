@@ -16,7 +16,7 @@ import (
 func CreateCodeListCommand() *discord.Command {
 	return discord.NewCommand(
 		"codelist",
-		"Lista todos los códigos premium generados (Solo desarrolladores)",
+		"✨ | Lista todos los códigos premium generados (Solo desarrolladores)",
 		"dev",
 		codelistHandler,
 	).WithOptions(

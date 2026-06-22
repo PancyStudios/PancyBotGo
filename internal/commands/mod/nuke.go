@@ -10,7 +10,7 @@ import (
 func createNukeCommand() *discord.Command {
 	return discord.NewCommand(
 		"nuke",
-		"Elimina todo el contenido de un canal clonándolo y borrando el original",
+		"☢️ | Elimina todo el contenido de un canal clonándolo y borrando el original",
 		"mod",
 		nukeHandler,
 	).WithOptions(

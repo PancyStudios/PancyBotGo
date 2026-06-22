@@ -19,7 +19,7 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 	// Play command
 	playCmd := discord.NewCommand(
 		"play",
-		"Reproduce una canción o la añade a la cola",
+		"✨ | Reproduce una canción o la añade a la cola",
 		"music",
 		playHandler,
 	).WithOptions(
@@ -37,7 +37,7 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 	// Pause command
 	pauseCmd := discord.NewCommand(
 		"pause",
-		"Pausa o resume la reproducción",
+		"✨ | Pausa o resume la reproducción",
 		"music",
 		pauseHandler,
 	).RequiresVoice()
@@ -47,7 +47,7 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 	// Skip command
 	skipCmd := discord.NewCommand(
 		"skip",
-		"Salta a la siguiente canción",
+		"✨ | Salta a la siguiente canción",
 		"music",
 		skipHandler,
 	).RequiresVoice()
@@ -57,7 +57,7 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 	// Stop command
 	stopCmd := discord.NewCommand(
 		"stop",
-		"Detiene la reproducción y limpia la cola",
+		"✨ | Detiene la reproducción y limpia la cola",
 		"music",
 		stopHandler,
 	).RequiresVoice()
@@ -67,7 +67,7 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 	// Queue command
 	queueCmd := discord.NewCommand(
 		"queue",
-		"Muestra la cola de reproducción",
+		"✨ | Muestra la cola de reproducción",
 		"music",
 		queueHandler,
 	)
@@ -77,7 +77,7 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 	// Volume command
 	volumeCmd := discord.NewCommand(
 		"volume",
-		"Ajusta el volumen de reproducción",
+		"✨ | Ajusta el volumen de reproducción",
 		"music",
 		volumeHandler,
 	).WithOptions(
@@ -96,7 +96,7 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 	// NowPlaying command
 	npCmd := discord.NewCommand(
 		"nowplaying",
-		"Muestra la canción que se está reproduciendo",
+		"✨ | Muestra la canción que se está reproduciendo",
 		"music",
 		nowPlayingHandler,
 	)

@@ -16,7 +16,7 @@ import (
 func CreateRedeemCommand() *discord.Command {
 	return discord.NewCommand(
 		"redeem",
-		"Canjea un código premium",
+		"🎟️ | Canjea un código premium",
 		"premium",
 		redeemHandler,
 	).WithOptions(

@@ -10,7 +10,7 @@ import (
 func createHelpCommand() *discord.Command {
 	return discord.NewCommand(
 		"help",
-		"Muestra información de ayuda",
+		"📚 | Muestra información de ayuda",
 		"utils",
 		helpHandler,
 	)

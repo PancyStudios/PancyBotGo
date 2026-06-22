@@ -18,7 +18,7 @@ import (
 func createRemoveWarnCommand() *discord.Command {
 	return discord.NewCommand(
 		"removewarn",
-		"Elimina una advertencia específica de un usuario",
+		"🗑️ | Elimina una advertencia específica de un usuario",
 		"mod",
 		removeWarnHandler,
 	).WithOptions(

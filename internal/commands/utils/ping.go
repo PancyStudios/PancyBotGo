@@ -12,7 +12,7 @@ import (
 func createPingCommand() *discord.Command {
 	return discord.NewCommand(
 		"ping",
-		"Comprueba la latencia del bot",
+		"🏓 | Comprueba la latencia del bot",
 		"utils",
 		pingHandler,
 	)

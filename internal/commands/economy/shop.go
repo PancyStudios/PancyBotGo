@@ -10,8 +10,8 @@ import (
 
 func createShopCommand() *discord.Command {
 	return discord.NewCommand(
-		"shop",
-		"🛒 Explora la tienda de objetos globales y locales",
+		"view",
+		"🛒 | Explora el mercado intergaláctico",
 		"economy",
 		shopHandler,
 	)

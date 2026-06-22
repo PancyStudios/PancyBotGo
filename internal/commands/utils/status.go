@@ -13,7 +13,7 @@ import (
 func createStatusCommand() *discord.Command {
 	return discord.NewCommand(
 		"status",
-		"Muestra el estado del bot",
+		"🟢 | Muestra el estado del bot",
 		"utils",
 		statusHandler,
 	)

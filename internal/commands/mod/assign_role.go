@@ -10,7 +10,7 @@ import (
 func createAssignRoleCommand() *discord.Command {
 	return discord.NewCommand(
 		"assign-role",
-		"Asigna un rol a un usuario",
+		"✨ | Asigna un rol a un usuario",
 		"mod",
 		assignRoleHandler,
 	).WithOptions(

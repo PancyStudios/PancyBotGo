@@ -19,7 +19,7 @@ type DogResponse struct {
 func createDogCommand() *discord.Command {
 	return discord.NewCommand(
 		"dog",
-		"Muestra una imagen de un perro",
+		"🐶 | Muestra una imagen de un perro",
 		"fun",
 		dogHandler,
 	)

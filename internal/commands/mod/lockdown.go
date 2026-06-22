@@ -10,7 +10,7 @@ import (
 func createLockdownCommand() *discord.Command {
 	return discord.NewCommand(
 		"lockdown",
-		"Bloquea o desbloquea el canal actual para que nadie pueda escribir",
+		"🔒 | Bloquea o desbloquea el canal actual para que nadie pueda escribir",
 		"mod",
 		lockdownHandler,
 	).WithOptions(

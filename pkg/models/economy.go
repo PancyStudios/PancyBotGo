@@ -27,6 +27,8 @@ type Item struct {
 	Emoji       string   `bson:"emoji" json:"emoji"`
 	Stock       int      `bson:"stock" json:"stock"` // -1 for infinite
 	RoleID      string   `bson:"role_id,omitempty" json:"role_id,omitempty"` // If type is role
+	Effect      string   `bson:"effect,omitempty" json:"effect,omitempty"`   // EFFECT_BANK_CAPACITY, etc.
+	EffectValue float64  `bson:"effect_value,omitempty" json:"effect_value,omitempty"`
 }
 
 // GlobalEconomyProfile represents a user's global economy (Stars)

@@ -12,7 +12,7 @@ import (
 func createAsciiCommand() *discord.Command {
 	return discord.NewCommand(
 		"ascii",
-		"Muestra un texto ASCII",
+		"🔤 | Muestra un texto ASCII",
 		"fun",
 		asciiHandler,
 	).WithOptions(

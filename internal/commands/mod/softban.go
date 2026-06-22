@@ -10,7 +10,7 @@ import (
 func createSoftbanCommand() *discord.Command {
 	return discord.NewCommand(
 		"softban",
-		"Banea temporalmente a un usuario para borrar sus mensajes y lo desbanea inmediatamente",
+		"💨 | Banea temporalmente a un usuario para borrar sus mensajes y lo desbanea inmediatamente",
 		"mod",
 		softbanHandler,
 	).WithOptions(

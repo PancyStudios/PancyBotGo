@@ -56,7 +56,7 @@ func CreateBlacklistAddCommand() *discord.Command {
 func CreateBlacklistRemoveCommand() *discord.Command {
 	return discord.NewCommand(
 		"remove",
-		"Elimina un usuario o servidor de la blacklist",
+		"✨ | Elimina un usuario o servidor de la blacklist",
 		"dev",
 		blacklistRemoveHandler,
 	).WithOptions(
@@ -74,7 +74,7 @@ func CreateBlacklistRemoveCommand() *discord.Command {
 func CreateBlacklistListCommand() *discord.Command {
 	return discord.NewCommand(
 		"list",
-		"Lista todas las entradas de la blacklist",
+		"✨ | Lista todas las entradas de la blacklist",
 		"dev",
 		blacklistListHandler,
 	).WithOptions(

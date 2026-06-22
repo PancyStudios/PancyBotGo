@@ -11,7 +11,7 @@ import (
 func createWeeklyCommand() *discord.Command {
 	return discord.NewCommand(
 		"weekly",
-		"🎁 Reclama tu gran recompensa semanal de estrellas",
+		"📆 | Reclama tu recompensa semanal",
 		"economy",
 		weeklyHandler,
 	)

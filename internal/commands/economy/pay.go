@@ -11,7 +11,7 @@ import (
 func createPayCommand() *discord.Command {
 	return discord.NewCommand(
 		"pay",
-		"💸 Transfiere dinero a otro usuario",
+		"💵 | Paga monedas a otro usuario",
 		"economy",
 		payHandler,
 	).WithOptions(

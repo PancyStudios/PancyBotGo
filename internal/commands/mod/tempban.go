@@ -12,7 +12,7 @@ import (
 func createTempBanCommand() *discord.Command {
 	return discord.NewCommand(
 		"tempban",
-		"Banea temporalmente a alguien",
+		"⏳ | Banea temporalmente a alguien",
 		"mod",
 		tempBanHandler,
 	).WithOptions(

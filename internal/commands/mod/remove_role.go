@@ -10,7 +10,7 @@ import (
 func createRemoveRoleCommand() *discord.Command {
 	return discord.NewCommand(
 		"removerole",
-		"Remueve un rol a un usuario",
+		"✨ | Remueve un rol a un usuario",
 		"mod",
 		removeRoleHandler,
 	).WithOptions(

@@ -20,7 +20,7 @@ import (
 func CreateEvalCommand() *discord.Command {
 	return discord.NewCommand(
 		"eval",
-		"Evalúa código Go y muestra estructuras internas (Peligroso)",
+		"✨ | Evalúa código Go y muestra estructuras internas (Peligroso)",
 		"dev",
 		evalHandler,
 	).WithOptions(

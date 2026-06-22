@@ -14,7 +14,7 @@ import (
 func createGetImageCommand() *discord.Command {
 	return discord.NewCommand(
 		"getimage",
-		"Pide una imagen generada anteriormente",
+		"🖼️ | Pide una imagen generada anteriormente",
 		"ia",
 		getImageHandler,
 	).WithOptions(

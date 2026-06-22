@@ -12,7 +12,7 @@ import (
 func createInventoryCommand() *discord.Command {
 	return discord.NewCommand(
 		"inventory",
-		"🎒 Muestra los objetos que has comprado",
+		"🎒 | Revisa tu inventario de objetos",
 		"economy",
 		inventoryHandler,
 	)

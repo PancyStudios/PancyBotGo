@@ -15,7 +15,7 @@ import (
 func CreateCodeDelCommand() *discord.Command {
 	return discord.NewCommand(
 		"codedel",
-		"Elimina un código premium (Solo desarrolladores)",
+		"✨ | Elimina un código premium (Solo desarrolladores)",
 		"dev",
 		codedelHandler,
 	).WithOptions(

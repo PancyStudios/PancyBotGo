@@ -45,6 +45,31 @@ func Register(client *discord.ExtendedClient) {
 		},
 	}
 
+	// Create global shop subcommands
+	shopAddCmd := CreateShopAddCommand()
+	shopRemoveCmd := CreateShopRemoveCommand()
+
+	// Build the shop subcommand group
+	shopGroup := &discordgo.ApplicationCommandOption{
+		Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
+		Name:        "shop",
+		Description: "Gestión de la tienda estelar global",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        shopAddCmd.Name,
+				Description: shopAddCmd.Description,
+				Options:     shopAddCmd.Options,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        shopRemoveCmd.Name,
+				Description: shopRemoveCmd.Description,
+				Options:     shopRemoveCmd.Options,
+			},
+		},
+	}
+
 	// Build the /dev command group with all subcommands
 	devGroup := &discordgo.ApplicationCommand{
 		Name:        "dev",
@@ -75,6 +100,7 @@ func Register(client *discord.ExtendedClient) {
 				Options:     evalCmd.Options,
 			},
 			blacklistGroup,
+			shopGroup,
 		},
 	}
 
@@ -86,6 +112,8 @@ func Register(client *discord.ExtendedClient) {
 	client.Commands.Set("dev.blacklist.add", blacklistAddCmd)
 	client.Commands.Set("dev.blacklist.remove", blacklistRemoveCmd)
 	client.Commands.Set("dev.blacklist.list", blacklistListCmd)
+	client.Commands.Set("dev.shop.add", shopAddCmd)
+	client.Commands.Set("dev.shop.remove", shopRemoveCmd)
 
 	// Register the command group as dev-only command
 	client.CommandHandler.AddDevCommand(devGroup)

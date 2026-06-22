@@ -12,8 +12,8 @@ import (
 
 func createAdminShopCommand() *discord.Command {
 	cmd := discord.NewCommand(
-		"shopadmin",
-		"🛠️ (Admins) Añade o elimina objetos de la tienda local",
+		"admin",
+		"🛠️ | Administra la tienda local del servidor",
 		"economy",
 		adminShopHandler,
 	).WithOptions(

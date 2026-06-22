@@ -13,7 +13,7 @@ import (
 func createRobCommand() *discord.Command {
 	return discord.NewCommand(
 		"rob",
-		"🦹 Intenta robarle el dinero de la cartera a otro usuario",
+		"🥷 | Intenta robarle monedas a otro usuario",
 		"economy",
 		robHandler,
 	).WithOptions(

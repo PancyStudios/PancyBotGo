@@ -13,7 +13,7 @@ import (
 func createMuteCommand() *discord.Command {
 	return discord.NewCommand(
 		"mute",
-		"Silencia a un usuario temporalmente",
+		"🤐 | Silencia a un usuario temporalmente",
 		"mod",
 		muteHandler,
 	).WithOptions(

@@ -13,7 +13,7 @@ import (
 func createWorkCommand() *discord.Command {
 	return discord.NewCommand(
 		"work",
-		"💼 Trabaja para ganar monedas locales o estrellas",
+		"💼 | Trabaja honradamente para ganar monedas",
 		"economy",
 		workHandler,
 	).WithOptions(

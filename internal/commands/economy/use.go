@@ -13,7 +13,7 @@ import (
 func createUseCommand() *discord.Command {
 	return discord.NewCommand(
 		"use",
-		"🎒 Usa un objeto de tu inventario",
+		"✨ | Usa un objeto mágico de tu inventario",
 		"economy",
 		useHandler,
 	).WithOptions(
@@ -65,7 +65,23 @@ func useHandler(ctx *discord.CommandContext) error {
 		if profile.Inventory[selectedItem.ID] == 0 {
 			delete(profile.Inventory, selectedItem.ID)
 		}
+
+		// Apply Global Effect
+		efectoAplicado := false
+		if selectedItem.Effect == "EXPAND_BANK" {
+			profile.BankCapacity += int64(selectedItem.EffectValue)
+			efectoAplicado = true
+		} else if selectedItem.Effect == "STAR_TICKET" {
+			profile.StarsWallet += int64(selectedItem.EffectValue)
+			efectoAplicado = true
+		}
+
 		database.GlobalEconomyDM.Set(bson.M{"_id": profile.UserID}, profile)
+
+		if efectoAplicado {
+			ctx.Reply(fmt.Sprintf("✨ Has usado **%s**. ¡Tu capacidad estelar o balance ha mejorado!", selectedItem.Name))
+			return nil
+		}
 		
 	} else {
 		// Local Item

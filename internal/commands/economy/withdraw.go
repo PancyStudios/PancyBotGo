@@ -11,7 +11,7 @@ import (
 func createWithdrawCommand() *discord.Command {
 	return discord.NewCommand(
 		"withdraw",
-		"🏧 Retira dinero de tu banco a tu cartera",
+		"🏧 | Retira monedas de tu banco",
 		"economy",
 		withdrawHandler,
 	).WithOptions(

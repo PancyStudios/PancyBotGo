@@ -11,7 +11,7 @@ import (
 func createClearCommand() *discord.Command {
 	return discord.NewCommand(
 		"clear",
-		"Elimina mensajes en un canal (funciona con mensajes de cualquier antigüedad)",
+		"🧹 | Elimina mensajes en un canal (funciona con mensajes de cualquier antigüedad)",
 		"mod",
 		clearHandler,
 	).WithOptions(

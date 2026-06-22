@@ -13,7 +13,7 @@ import (
 func createSlutCommand() *discord.Command {
 	return discord.NewCommand(
 		"slut",
-		"💋 Vende tu cuerpo para ganar dinero, si tienes suerte...",
+		"👠 | Trabaja en las calles (alto riesgo)",
 		"economy",
 		slutHandler,
 	).WithOptions(

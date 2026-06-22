@@ -11,7 +11,7 @@ import (
 func createDailyCommand() *discord.Command {
 	return discord.NewCommand(
 		"daily",
-		"🎁 Reclama tu recompensa diaria de estrellas",
+		"📅 | Reclama tu recompensa diaria",
 		"economy",
 		dailyHandler,
 	)

@@ -17,7 +17,7 @@ import (
 func createBotinfoCommand() *discord.Command {
 	return discord.NewCommand(
 		"botinfo",
-		"Muestra estadísticas detalladas del bot",
+		"✨ | Muestra estadísticas detalladas del bot",
 		"utils",
 		botinfoHandler,
 	)

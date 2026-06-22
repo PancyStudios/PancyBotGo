@@ -14,7 +14,7 @@ import (
 func createPPTCommand() *discord.Command {
 	return discord.NewCommand(
 		"ppt",
-		"Juega Piedra, Papel o Tijera",
+		"✂️ | Juega Piedra, Papel o Tijera",
 		"fun",
 		pptHandler,
 	).WithOptions(

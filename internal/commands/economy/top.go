@@ -13,7 +13,7 @@ import (
 func createTopCommand() *discord.Command {
 	return discord.NewCommand(
 		"top",
-		"🏆 Muestra la tabla de clasificación de la economía",
+		"🏆 | Muestra la tabla de clasificación de millonarios",
 		"economy",
 		topHandler,
 	).WithOptions(

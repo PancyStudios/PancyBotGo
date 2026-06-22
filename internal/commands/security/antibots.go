@@ -12,7 +12,7 @@ import (
 func createAntibotsCommand() *discord.Command {
 	return discord.NewCommand(
 		"antibots",
-		"Evita que se unan bots según su tipo",
+		"🤖 | Evita que se unan bots según su tipo",
 		"security",
 		antibotsHandler,
 	).WithOptions(

@@ -16,7 +16,7 @@ func Register(client *discord.ExtendedClient) {
 	// Create the base /config command
 	configCmd := discord.NewCommand(
 		"config",
-		"Comandos de configuración del servidor",
+		"✨ | Comandos de configuración del servidor",
 		"config",
 		HandleSubcommand,
 	).WithUserPermissions(discordgo.PermissionManageGuild) // Require ManageServer permission

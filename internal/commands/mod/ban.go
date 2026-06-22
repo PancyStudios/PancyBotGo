@@ -12,7 +12,7 @@ import (
 func createBanCommand() *discord.Command {
 	return discord.NewCommand(
 		"ban",
-		"Banea a un usuario del servidor",
+		"🔨 | Banea a un usuario del servidor",
 		"mod",
 		banHandler,
 	).WithOptions(

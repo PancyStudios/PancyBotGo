@@ -13,7 +13,7 @@ import (
 func createBuyCommand() *discord.Command {
 	return discord.NewCommand(
 		"buy",
-		"🛍️ Compra un objeto de la tienda",
+		"🛍️ | Compra un objeto del mercado estelar o local",
 		"economy",
 		buyHandler,
 	).WithOptions(

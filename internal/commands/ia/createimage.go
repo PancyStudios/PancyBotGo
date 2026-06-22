@@ -17,7 +17,7 @@ import (
 func createCreateImageCommand() *discord.Command {
 	return discord.NewCommand(
 		"createimage",
-		"Genera una imagen con IA",
+		"🎨 | Genera una imagen con IA",
 		"ia",
 		createImageHandler,
 	).WithOptions(

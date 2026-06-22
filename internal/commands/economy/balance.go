@@ -12,7 +12,7 @@ import (
 func createBalanceCommand() *discord.Command {
 	return discord.NewCommand(
 		"balance",
-		"💰 Revisa tu cartera y banco (Estrellas globales y monedas locales)",
+		"💸 | Revisa tu balance estelar y de monedas locales",
 		"economy",
 		balanceHandler,
 	).WithOptions(

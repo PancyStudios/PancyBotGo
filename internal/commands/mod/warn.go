@@ -20,7 +20,7 @@ import (
 func createWarnCommand() *discord.Command {
 	return discord.NewCommand(
 		"warn",
-		"Advierte a un usuario",
+		"⚠️ | Advierte a un usuario",
 		"mod",
 		warnHandler,
 	).WithOptions(

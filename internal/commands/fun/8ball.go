@@ -13,7 +13,7 @@ import (
 func create8BallCommand() *discord.Command {
 	return discord.NewCommand(
 		"8ball",
-		"Pregúntale algo a la bola mágica",
+		"🎱 | Pregúntale algo a la bola mágica",
 		"fun",
 		eightBallHandler,
 	).WithOptions(

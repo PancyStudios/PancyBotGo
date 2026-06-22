@@ -77,8 +77,21 @@ func (ch *CommandHandler) BuildCommandGroup(name, description string, subcommand
 		fullName := name + "." + cmd.Name
 		ch.client.Commands.Set(fullName, cmd)
 
+		optType := discordgo.ApplicationCommandOptionSubCommand
+		if len(cmd.Options) > 0 && cmd.Options[0].Type == discordgo.ApplicationCommandOptionSubCommand {
+			optType = discordgo.ApplicationCommandOptionSubCommandGroup
+			// Also, we need to register the routing for subcommands inside the group
+			for _, subOpt := range cmd.Options {
+				if subOpt.Type == discordgo.ApplicationCommandOptionSubCommand {
+					subFullName := fullName + "." + subOpt.Name
+					// the handler logic might need to route differently, but let's just map it to the group root for now
+					ch.client.Commands.Set(subFullName, cmd)
+				}
+			}
+		}
+
 		opt := &discordgo.ApplicationCommandOption{
-			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Type:        optType,
 			Name:        cmd.Name,
 			Description: cmd.Description,
 			Options:     cmd.Options,
