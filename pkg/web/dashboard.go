@@ -15,7 +15,7 @@ import (
 func localOnlyMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		host := c.Request.Host
-		if !strings.HasPrefix(host, "localhost") && !strings.HasPrefix(host, "127.0.0.1") {
+		if !strings.HasPrefix(host, "localhost") && !strings.HasPrefix(host, "127.0.0.1") && !strings.HasPrefix(host, "172.18.0.1") {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Forbidden", "message": "El panel de administración solo es accesible localmente."})
 			return
 		}

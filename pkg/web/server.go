@@ -51,7 +51,7 @@ func NewServer(webhookURL string) *Server {
 	s := &Server{
 		engine:           engine,
 		webhookURL:       webhookURL,
-		allowedHostRegex: regexp.MustCompile(`^(.+\.)?miau\.media|^localhost(:\d+)?$|^127\.0\.0\.1(:\d+)?$`),
+		allowedHostRegex: regexp.MustCompile(`^(.+\.)?miau\.media|^localhost(:\d+)?$|^127\.0\.0\.1(:\d+)?$|^172\.18\.0\.1(:\d+)?$`),
 	}
 
 	// Apply middlewares
