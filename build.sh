@@ -18,5 +18,5 @@ go mod tidy
 go mod download
 
 # Compilamos inyectando las variables
-go build -ldflags "-X 'github.com/PancyStudios/PancyBotGo/pkg/config.Version=$VERSION' -X 'github.com/PancyStudios/PancyBotGo/pkg/config.BuildTime=$FECHA'" -o PancyBot.x86_64 cmd/bot/main.go
+go build -p 2 -ldflags "-X 'github.com/PancyStudios/PancyBotGo/pkg/config.Version=$VERSION' -X 'github.com/PancyStudios/PancyBotGo/pkg/config.BuildTime=$FECHA'" -o PancyBot.x86_64 cmd/bot/main.go
 printf "Build completed: PancyBot.x86_64\n"

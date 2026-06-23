@@ -155,7 +155,7 @@ func (c *ExtendedClient) Start() error {
 		c.CommandHandler.RegisterCommands()
 
 		// Señal para que Pterodactyl marque el servidor como "Running"
-		fmt.Println("Server marked as running...")
+		fmt.Println("Sistemas Basicos Iniciados Correctamente")
 	})
 
 	// Add interaction handler
@@ -228,7 +228,7 @@ func (c *ExtendedClient) handleInteraction(s *discordgo.Session, i *discordgo.In
 	cmd, ok := c.Commands.Get(commandName)
 	if !ok {
 		logger.Warn("Command not found: "+commandName+". Borrando de Discord...", "Client")
-		
+
 		// Responder efímeramente para que no se quede "pensando"
 		_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,

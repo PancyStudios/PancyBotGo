@@ -2,7 +2,9 @@ package events
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
@@ -10,6 +12,11 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/bwmarrin/discordgo"
 	"go.mongodb.org/mongo-driver/bson"
+)
+
+var (
+	raidCache = make(map[string][]time.Time)
+	raidMutex sync.Mutex
 )
 
 // RegisterMemberEvents registers all member-related event handlers
@@ -33,6 +40,87 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 	// Fetch guild settings from DB
 	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": m.GuildID})
 	if err == nil && guildDoc != nil {
+
+		// Anti-Raid Logic
+		antiRaid := &guildDoc.Protection.AntiRaid
+		
+		// 1. Min Account Age
+		if antiRaid.MinAccountAgeDays > 0 {
+			idInt, err := strconv.ParseInt(m.User.ID, 10, 64)
+			if err == nil {
+				createdAt := time.UnixMilli((idInt >> 22) + 1420070400000)
+				ageDays := int(time.Since(createdAt).Hours() / 24)
+				
+				if ageDays < antiRaid.MinAccountAgeDays {
+					reason := fmt.Sprintf("Anti-Raid: Cuenta muy reciente (%d días < %d días)", ageDays, antiRaid.MinAccountAgeDays)
+					if antiRaid.Action == "ban" {
+						s.GuildBanCreateWithReason(m.GuildID, m.User.ID, reason, 0)
+					} else {
+						s.GuildMemberDeleteWithReason(m.GuildID, m.User.ID, reason)
+					}
+					logger.Info(fmt.Sprintf("🛡️ %s expulsado/baneado por Anti-Raid (Edad de cuenta: %d días)", m.User.Username, ageDays), "AntiRaid")
+					return
+				}
+			}
+		}
+
+		// 2. Active Panic Mode
+		if antiRaid.Enable {
+			reason := "Anti-Raid: Modo pánico activado"
+			if antiRaid.Action == "ban" {
+				s.GuildBanCreateWithReason(m.GuildID, m.User.ID, reason, 0)
+			} else {
+				s.GuildMemberDeleteWithReason(m.GuildID, m.User.ID, reason)
+			}
+			logger.Info(fmt.Sprintf("🛡️ %s expulsado/baneado por Modo Pánico Anti-Raid", m.User.Username), "AntiRaid")
+			return
+		}
+
+		// 3. Raid Detection
+		if antiRaid.JoinLimit > 0 && antiRaid.TimeWindow > 0 {
+			raidMutex.Lock()
+			joins := raidCache[m.GuildID]
+			now := time.Now()
+			window := time.Duration(antiRaid.TimeWindow) * time.Second
+			
+			var validJoins []time.Time
+			for _, j := range joins {
+				if now.Sub(j) <= window {
+					validJoins = append(validJoins, j)
+				}
+			}
+			validJoins = append(validJoins, now)
+			raidCache[m.GuildID] = validJoins
+			raidCount := len(validJoins)
+			raidMutex.Unlock()
+
+			if raidCount >= antiRaid.JoinLimit {
+				// Trigger Panic Mode!
+				antiRaid.Enable = true
+				database.GlobalGuildDM.Set(bson.M{"_id": m.GuildID}, guildDoc)
+				
+				logger.Warn(fmt.Sprintf("🚨 POSIBLE RAID DETECTADO en %s! Modo Pánico activado automáticamente.", m.GuildID), "AntiRaid")
+				
+				// Kick current user
+				reason := "Anti-Raid: Límite de uniones superado (Modo Pánico Auto-Activado)"
+				if antiRaid.Action == "ban" {
+					s.GuildBanCreateWithReason(m.GuildID, m.User.ID, reason, 0)
+				} else {
+					s.GuildMemberDeleteWithReason(m.GuildID, m.User.ID, reason)
+				}
+				
+				// Try to alert in system channel or logs channel
+				alertChannel := guildDoc.Configuration.LogsChannel
+				if alertChannel == "" {
+					alertChannel = guild.SystemChannelID
+				}
+				
+				if alertChannel != "" {
+					s.ChannelMessageSend(alertChannel, "🚨 **¡ALERTA DE RAID!**\nSe detectó un pico inusual de nuevas cuentas uniéndose al servidor. El **Modo Pánico Anti-Raid** ha sido activado automáticamente y las nuevas uniones serán bloqueadas. Un administrador debe desactivarlo con `/security antiraid toggle` cuando sea seguro.")
+				}
+				return
+			}
+		}
 
 		// Antibots logic
 		if m.User.Bot {

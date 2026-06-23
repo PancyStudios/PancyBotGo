@@ -8,6 +8,7 @@ import (
 func RegisterSecurityCommands(client *discord.ExtendedClient) {
 	commands := []*discord.Command{
 		createAntibotsCommand(),
+		createAntiraidCommand(),
 	}
 
 	securityGroup := client.CommandHandler.BuildCommandGroup(

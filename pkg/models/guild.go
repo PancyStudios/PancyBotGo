@@ -17,9 +17,19 @@ type LevelsConfig struct {
 	LevelUpMessage   string `bson:"levelUpMessage" json:"levelUpMessage"`     // Available placeholders: {user}, {level}
 }
 
-// ProtectionConfig holds security settings like antibots
+// ProtectionConfig holds security settings like antibots and antiraid
 type ProtectionConfig struct {
-	Antibots string `bson:"antibots" json:"antibots"` // "all", "only_nv", "only_v", or "" (disabled)
+	Antibots string         `bson:"antibots" json:"antibots"` // "all", "only_nv", "only_v", or "" (disabled)
+	AntiRaid AntiRaidConfig `bson:"antiRaid" json:"antiRaid"`
+}
+
+// AntiRaidConfig holds the configuration for raid protection
+type AntiRaidConfig struct {
+	Enable            bool   `bson:"enable" json:"enable"`
+	Action            string `bson:"action" json:"action"`                       // "kick" or "ban"
+	MinAccountAgeDays int    `bson:"minAccountAgeDays" json:"minAccountAgeDays"` // Days
+	JoinLimit         int    `bson:"joinLimit" json:"joinLimit"`                 // Max joins
+	TimeWindow        int    `bson:"timeWindow" json:"timeWindow"`               // In seconds
 }
 
 // GuildConfiguration holds general configuration for the bot in a guild
