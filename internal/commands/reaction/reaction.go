@@ -45,7 +45,7 @@ func createReactionCommand(name string, description string, actionText string, s
 			{
 				Type:        discordgo.ApplicationCommandOptionUser,
 				Name:        "usuario",
-				Description: "El usuario con el que vas a interactuar",
+				Description: "🎭 | El usuario con el que vas a interactuar",
 				Required:    true,
 			},
 		}

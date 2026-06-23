@@ -20,7 +20,7 @@ func createWorkCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "tipo",
-			Description: "Elige si quieres ganar economía Local o Global",
+			Description: "💰 | Elige si quieres ganar economía Local o Global",
 			Required:    true,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{Name: "Local (Servidor)", Value: "local"},

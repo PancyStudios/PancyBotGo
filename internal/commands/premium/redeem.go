@@ -23,13 +23,13 @@ func CreateRedeemCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "codigo",
-			Description: "El código premium a canjear",
+			Description: "💎 | El código premium a canjear",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "tipo",
-			Description: "Tipo de código (user/guild)",
+			Description: "💎 | Tipo de código (user/guild)",
 			Required:    false,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{
@@ -128,7 +128,7 @@ func handleUserRedeem(ctx *discord.CommandContext, code string) {
 
 	embed := &discordgo.MessageEmbed{
 		Title:       "✨ Premium Activado",
-		Description: "¡Has canjeado exitosamente tu código premium!",
+		Description: "💎 | ¡Has canjeado exitosamente tu código premium!",
 		Color:       0xFFD700,
 		Fields: []*discordgo.MessageEmbedField{
 			{

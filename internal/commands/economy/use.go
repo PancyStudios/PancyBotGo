@@ -20,7 +20,7 @@ func createUseCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "id",
-			Description: "ID del objeto a usar",
+			Description: "💰 | ID del objeto a usar",
 			Required:    true,
 		},
 	)

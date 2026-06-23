@@ -21,7 +21,7 @@ func createGetImageCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "id",
-			Description: "ID de la imagen",
+			Description: "🤖 | ID de la imagen",
 			Required:    true,
 		},
 	)

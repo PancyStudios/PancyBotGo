@@ -4,10 +4,13 @@ package events
 import (
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/bwmarrin/discordgo"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // RegisterMessageEvents registers all message-related event handlers
@@ -96,6 +99,74 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		err := s.MessageReactionAdd(m.ChannelID, m.ID, "❤️")
 		if err != nil {
 			logger.Debug(fmt.Sprintf("Error agregando reacción: %v", err), "Message")
+		}
+	}
+
+	// ------------------ SISTEMA DE NIVELES ------------------
+	if m.GuildID != "" {
+		handleUserLeveling(s, m)
+	}
+}
+
+func handleUserLeveling(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// Verificar si el servidor tiene activado el sistema
+	guildData, err := database.GlobalGuildDM.Get(bson.M{"_id": m.GuildID})
+	if err != nil || guildData == nil || !guildData.Levels.Enable {
+		return
+	}
+
+	profile, err := database.GetLocalLevelProfile(m.GuildID, m.Author.ID)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Error obteniendo perfil de nivel para %s: %v", m.Author.ID, err), "Levels")
+		return
+	}
+
+	// Comprobar cooldown (60 segundos)
+	now := time.Now()
+	if now.Sub(profile.LastMessageTime) < 60*time.Second {
+		return
+	}
+
+	// Añadir XP aleatorio (15 a 25)
+	addedXP := int64(15 + (now.UnixNano() % 11)) // simple pseudo-random
+	profile.XP += addedXP
+	profile.TotalMessages += 1
+	profile.LastMessageTime = now
+
+	// Verificar si subió de nivel
+	nextLevel := profile.Level + 1
+	requiredXP := nextLevel * nextLevel * 100
+
+	levelUp := false
+	if profile.XP >= requiredXP {
+		profile.Level = nextLevel
+		levelUp = true
+	}
+
+	_, err = database.LocalLevelsDM.Set(bson.M{"_id": profile.ID}, profile)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Error guardando perfil de nivel para %s: %v", m.Author.ID, err), "Levels")
+		return
+	}
+
+	// Enviar mensaje de Level Up si es necesario
+	if levelUp {
+		chID := m.ChannelID
+		if guildData.Levels.LevelUpChannel != "" {
+			chID = guildData.Levels.LevelUpChannel
+		}
+		
+		msgContent := guildData.Levels.LevelUpMessage
+		if msgContent == "" {
+			msgContent = "¡Felicidades {user}, has avanzado al **Nivel {level}**! 🎉"
+		}
+		
+		msgContent = strings.ReplaceAll(msgContent, "{user}", fmt.Sprintf("<@%s>", m.Author.ID))
+		msgContent = strings.ReplaceAll(msgContent, "{level}", fmt.Sprintf("%d", profile.Level))
+
+		_, err = s.ChannelMessageSend(chID, msgContent)
+		if err != nil {
+			logger.Error(fmt.Sprintf("No se pudo enviar mensaje de level up a %s: %v", chID, err), "Levels")
 		}
 	}
 }

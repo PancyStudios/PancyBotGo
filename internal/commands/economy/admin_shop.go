@@ -20,30 +20,30 @@ func createAdminShopCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "add",
-			Description: "Añadir un nuevo objeto local",
+			Description: "💰 | Añadir un nuevo objeto local",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "nombre",
-					Description: "Nombre del objeto",
+					Description: "💰 | Nombre del objeto",
 					Required:    true,
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "descripcion",
-					Description: "Descripción del objeto",
+					Description: "💰 | Descripción del objeto",
 					Required:    true,
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionInteger,
 					Name:        "precio",
-					Description: "Precio de compra (en monedas locales)",
+					Description: "💰 | Precio de compra (en monedas locales)",
 					Required:    true,
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "emoji",
-					Description: "Emoji que representa al objeto",
+					Description: "💰 | Emoji que representa al objeto",
 					Required:    false,
 				},
 			},
@@ -51,12 +51,12 @@ func createAdminShopCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "delete",
-			Description: "Eliminar un objeto local",
+			Description: "💰 | Eliminar un objeto local",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "id",
-					Description: "ID del objeto a eliminar",
+					Description: "💰 | ID del objeto a eliminar",
 					Required:    true,
 				},
 			},

@@ -11,12 +11,12 @@ import (
 func createEmbedSendCommand() *discord.Command {
 	return &discord.Command{
 		Name:        "send",
-		Description: "Envía el embed que estás creando actualmente",
+		Description: "📝 | Envía el embed que estás creando actualmente",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionChannel,
 				Name:        "canal",
-				Description: "Canal donde enviar el embed (opcional, por defecto el actual)",
+				Description: "📝 | Canal donde enviar el embed (opcional, por defecto el actual)",
 				Required:    false,
 				ChannelTypes: []discordgo.ChannelType{discordgo.ChannelTypeGuildText, discordgo.ChannelTypeGuildNews},
 			},

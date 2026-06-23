@@ -26,7 +26,7 @@ func CreateCodeGenCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "tipo",
-			Description: "Tipo de código premium",
+			Description: "💻 | Tipo de código premium",
 			Required:    true,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{
@@ -42,7 +42,7 @@ func CreateCodeGenCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "duracion",
-			Description: "Duración en días (0 para permanente)",
+			Description: "💻 | Duración en días (0 para permanente)",
 			Required:    false,
 			MinValue:    float64Ptr(0),
 			MaxValue:    3650, // ~10 años
@@ -50,7 +50,7 @@ func CreateCodeGenCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "cantidad",
-			Description: "Cantidad de códigos a generar (1-10)",
+			Description: "💻 | Cantidad de códigos a generar (1-10)",
 			Required:    false,
 			MinValue:    float64Ptr(1),
 			MaxValue:    10,

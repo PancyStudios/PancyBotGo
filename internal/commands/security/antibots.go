@@ -19,7 +19,7 @@ func createAntibotsCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "type",
-			Description: "¿Qué tipo de bots expulso?",
+			Description: "🔒 | ¿Qué tipo de bots expulso?",
 			Required:    true,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{

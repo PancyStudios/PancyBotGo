@@ -17,12 +17,12 @@ import (
 func createScreenshotCommand() *discord.Command {
 	return &discord.Command{
 		Name:        "screenshot",
-		Description: "Toma una captura de pantalla de una página web",
+		Description: "🧰 | Toma una captura de pantalla de una página web",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionString,
 				Name:        "url",
-				Description: "La url de la página web",
+				Description: "🧰 | La url de la página web",
 				Required:    true,
 			},
 		},
@@ -116,7 +116,7 @@ func createScreenshotCommand() *discord.Command {
 func sendError(ctx *discord.CommandContext, errorMsg string) error {
 	embed := &discordgo.MessageEmbed{
 		Title:       "Error",
-		Description: "No se pudo tomar la captura de pantalla, verifica la url o intenta nuevamente.\n\n" + errorMsg,
+		Description: "🧰 | No se pudo tomar la captura de pantalla, verifica la url o intenta nuevamente.\n\n" + errorMsg,
 		Color:       0xFF0000, // Red
 	}
 	

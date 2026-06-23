@@ -254,3 +254,10 @@ func (ch *CommandHandler) AddDevCommand(cmd *discordgo.ApplicationCommand) {
 	ch.slashCommandsDev = append(ch.slashCommandsDev, cmd)
 	ch.mu.Unlock()
 }
+
+// GetRegisteredCommands returns the list of global application commands registered in memory
+func (ch *CommandHandler) GetRegisteredCommands() []*discordgo.ApplicationCommand {
+	ch.mu.RLock()
+	defer ch.mu.RUnlock()
+	return ch.slashCommands
+}

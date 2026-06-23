@@ -8,12 +8,12 @@ import (
 func createEmbedEditCommand() *discord.Command {
 	return &discord.Command{
 		Name:        "edit",
-		Description: "Carga un embed existente para editarlo",
+		Description: "📝 | Carga un embed existente para editarlo",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionString,
 				Name:        "mensaje_id",
-				Description: "ID del mensaje que contiene el embed (debe estar en el mismo canal)",
+				Description: "📝 | ID del mensaje que contiene el embed (debe estar en el mismo canal)",
 				Required:    true,
 			},
 		},

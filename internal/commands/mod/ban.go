@@ -19,19 +19,19 @@ func createBanCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
 			Name:        "usuario",
-			Description: "Usuario a banear",
+			Description: "🛡️ | Usuario a banear",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "razon",
-			Description: "Razón del ban",
+			Description: "🛡️ | Razón del ban",
 			Required:    false,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "dias",
-			Description: "Días de mensajes a eliminar (0-7)",
+			Description: "🛡️ | Días de mensajes a eliminar (0-7)",
 			Required:    false,
 			MinValue:    func() *float64 { v := 0.0; return &v }(),
 			MaxValue:    7,

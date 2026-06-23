@@ -7,6 +7,14 @@ type GuildDocument struct {
 	Greetings     Greetings          `bson:"greetings" json:"greetings"`
 	Moderation    ModeratorData      `bson:"moderation" json:"moderation"`
 	Protection    ProtectionConfig   `bson:"protection" json:"protection"`
+	Levels        LevelsConfig       `bson:"levels" json:"levels"`
+}
+
+// LevelsConfig holds user level system settings
+type LevelsConfig struct {
+	Enable           bool   `bson:"enable" json:"enable"`
+	LevelUpChannel   string `bson:"levelUpChannel" json:"levelUpChannel"`     // Empty for same channel
+	LevelUpMessage   string `bson:"levelUpMessage" json:"levelUpMessage"`     // Available placeholders: {user}, {level}
 }
 
 // ProtectionConfig holds security settings like antibots

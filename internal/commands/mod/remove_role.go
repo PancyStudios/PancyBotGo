@@ -17,13 +17,13 @@ func createRemoveRoleCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
 			Name:        "usuario",
-			Description: "Usuario al que se le removerá el rol",
+			Description: "🛡️ | Usuario al que se le removerá el rol",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionRole,
 			Name:        "rol",
-			Description: "Rol que se removerá",
+			Description: "🛡️ | Rol que se removerá",
 			Required:    true,
 		},
 	).WithUserPermissions(discordgo.PermissionManageRoles).

@@ -19,20 +19,20 @@ func createTempBanCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
 			Name:        "usuario",
-			Description: "Usuario a banear",
+			Description: "🛡️ | Usuario a banear",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "duracion_horas",
-			Description: "Duración del ban en horas",
+			Description: "🛡️ | Duración del ban en horas",
 			Required:    true,
 			MinValue:    func() *float64 { v := 1.0; return &v }(),
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "razon",
-			Description: "Razón del ban",
+			Description: "🛡️ | Razón del ban",
 			Required:    false,
 		},
 	).WithUserPermissions(discordgo.PermissionBanMembers).

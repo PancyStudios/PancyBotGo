@@ -14,25 +14,25 @@ import (
 func farewellSubcommand() *discordgo.ApplicationCommandOption {
 	return &discordgo.ApplicationCommandOption{
 		Name:        "farewell",
-		Description: "Configura el sistema de despedidas",
+		Description: "⚙️ | Configura el sistema de despedidas",
 		Type:        discordgo.ApplicationCommandOptionSubCommand,
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionBoolean,
 				Name:        "enable",
-				Description: "Activar o desactivar las despedidas",
+				Description: "⚙️ | Activar o desactivar las despedidas",
 				Required:    true,
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionChannel,
 				Name:        "channel",
-				Description: "Canal donde se enviarán las despedidas",
+				Description: "⚙️ | Canal donde se enviarán las despedidas",
 				Required:    false,
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionString,
 				Name:        "message",
-				Description: "Mensaje de despedida (usa {user} para el nombre del usuario)",
+				Description: "⚙️ | Mensaje de despedida (usa {user} para el nombre del usuario)",
 				Required:    false,
 			},
 		},

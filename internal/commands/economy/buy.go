@@ -20,13 +20,13 @@ func createBuyCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "id",
-			Description: "El ID del objeto que quieres comprar (revisa /shop)",
+			Description: "💰 | El ID del objeto que quieres comprar (revisa /shop)",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "cantidad",
-			Description: "Cuántos quieres comprar",
+			Description: "💰 | Cuántos quieres comprar",
 			Required:    false,
 		},
 	)

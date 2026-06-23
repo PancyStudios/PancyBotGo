@@ -19,7 +19,7 @@ func createBalanceCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
 			Name:        "usuario",
-			Description: "Usuario para ver su balance",
+			Description: "💰 | Usuario para ver su balance",
 			Required:    false,
 		},
 	)
@@ -51,7 +51,7 @@ func balanceHandler(ctx *discord.CommandContext) error {
 		Title:       fmt.Sprintf("Balance de %s", targetUser.Username),
 		Color:       0xF1C40F,
 		Thumbnail:   &discordgo.MessageEmbedThumbnail{URL: targetUser.AvatarURL("")},
-		Description: "Aquí tienes el resumen de tu economía.",
+		Description: "💰 | Aquí tienes el resumen de tu economía.",
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "🌐 Economía Global (Estrellas)",

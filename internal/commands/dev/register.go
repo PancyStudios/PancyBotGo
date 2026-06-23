@@ -22,7 +22,7 @@ func Register(client *discord.ExtendedClient) {
 	blacklistGroup := &discordgo.ApplicationCommandOption{
 		Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
 		Name:        "blacklist",
-		Description: "Gestión de blacklist",
+		Description: "💻 | Gestión de blacklist",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -53,7 +53,7 @@ func Register(client *discord.ExtendedClient) {
 	shopGroup := &discordgo.ApplicationCommandOption{
 		Type:        discordgo.ApplicationCommandOptionSubCommandGroup,
 		Name:        "shop",
-		Description: "Gestión de la tienda estelar global",
+		Description: "💻 | Gestión de la tienda estelar global",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -73,7 +73,7 @@ func Register(client *discord.ExtendedClient) {
 	// Build the /dev command group with all subcommands
 	devGroup := &discordgo.ApplicationCommand{
 		Name:        "dev",
-		Description: "Comandos de desarrollo",
+		Description: "💻 | Comandos de desarrollo",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,

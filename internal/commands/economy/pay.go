@@ -18,7 +18,7 @@ func createPayCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "tipo",
-			Description: "Elige si quieres transferir economía Local o Global",
+			Description: "💰 | Elige si quieres transferir economía Local o Global",
 			Required:    true,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{Name: "Local (Servidor)", Value: "local"},
@@ -28,13 +28,13 @@ func createPayCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
 			Name:        "usuario",
-			Description: "El usuario que recibirá el dinero",
+			Description: "💰 | El usuario que recibirá el dinero",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "cantidad",
-			Description: "La cantidad a enviar",
+			Description: "💰 | La cantidad a enviar",
 			Required:    true,
 		},
 	)

@@ -51,7 +51,7 @@ func shopHandler(ctx *discord.CommandContext) error {
 	embed := &discordgo.MessageEmbed{
 		Title:       "🛒 Mercado Intergaláctico",
 		Color:       0x9B59B6,
-		Description: "Usa `/buy <id>` para comprar un objeto.",
+		Description: "💰 | Usa `/buy <id>` para comprar un objeto.",
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "🌟 Mercado Global (Cuesta Estrellas)",

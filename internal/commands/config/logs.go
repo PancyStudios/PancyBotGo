@@ -13,13 +13,13 @@ import (
 func logsSubcommand() *discordgo.ApplicationCommandOption {
 	return &discordgo.ApplicationCommandOption{
 		Name:        "logs",
-		Description: "Establece el canal de Logs del servidor",
+		Description: "⚙️ | Establece el canal de Logs del servidor",
 		Type:        discordgo.ApplicationCommandOptionSubCommand,
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionChannel,
 				Name:        "channel",
-				Description: "Canal donde se enviarán los logs",
+				Description: "⚙️ | Canal donde se enviarán los logs",
 				Required:    true,
 			},
 		},

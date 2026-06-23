@@ -27,7 +27,7 @@ func CreateEvalCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "codigo",
-			Description: "Código o expresión Go a evaluar",
+			Description: "💻 | Código o expresión Go a evaluar",
 			Required:    true,
 		},
 	)

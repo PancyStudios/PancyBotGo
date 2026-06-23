@@ -27,13 +27,13 @@ func createWarnCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
 			Name:        "usuario",
-			Description: "Usuario a advertir",
+			Description: "🛡️ | Usuario a advertir",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "razon",
-			Description: "Razón de la advertencia",
+			Description: "🛡️ | Razón de la advertencia",
 			Required:    false,
 		},
 	).WithUserPermissions(discordgo.PermissionModerateMembers).RequiresDatabase()

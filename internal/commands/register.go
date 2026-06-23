@@ -8,7 +8,9 @@ import (
 	"github.com/PancyStudios/PancyBotGo/internal/commands/economy"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/embeds"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/fun"
+	"github.com/PancyStudios/PancyBotGo/internal/commands/help"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/ia"
+	"github.com/PancyStudios/PancyBotGo/internal/commands/levels"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/mod"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/premium"
 	"github.com/PancyStudios/PancyBotGo/internal/commands/reaction"
@@ -55,4 +57,10 @@ func RegisterAll(client *discord.ExtendedClient) {
 
 	// Security commands (/security antibots)
 	security.RegisterSecurityCommands(client)
+
+	// Levels commands (/levels rank, /levels leaderboard)
+	levels.RegisterCommands(client)
+
+	// Help commands (/help cmds)
+	help.Register(client)
 }

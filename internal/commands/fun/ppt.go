@@ -21,7 +21,7 @@ func createPPTCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "move",
-			Description: "Elige una opción",
+			Description: "🎉 | Elige una opción",
 			Required:    true,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{Name: "Piedra", Value: "piedra"},

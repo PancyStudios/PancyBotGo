@@ -18,7 +18,7 @@ func createDepositCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "tipo",
-			Description: "Elige si quieres depositar economía Local o Global",
+			Description: "💰 | Elige si quieres depositar economía Local o Global",
 			Required:    true,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{Name: "Local (Servidor)", Value: "local"},
@@ -28,7 +28,7 @@ func createDepositCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "cantidad",
-			Description: "Cantidad a depositar",
+			Description: "💰 | Cantidad a depositar",
 			Required:    true,
 		},
 	)

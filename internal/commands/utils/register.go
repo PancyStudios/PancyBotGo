@@ -9,7 +9,6 @@ func RegisterUtilsCommands(client *discord.ExtendedClient) {
 	// Create individual subcommands (each can be in its own file)
 	pingCmd := createPingCommand()
 	statusCmd := createStatusCommand()
-	helpCmd := createHelpCommand()
 	botinfoCmd := createBotinfoCommand()
 	inviteCmd := createInviteCommand()
 	screenshotCmd := createScreenshotCommand()
@@ -22,7 +21,6 @@ func RegisterUtilsCommands(client *discord.ExtendedClient) {
 		"Comandos de utilidad",
 		pingCmd,
 		statusCmd,
-		helpCmd,
 		botinfoCmd,
 		inviteCmd,
 		screenshotCmd,

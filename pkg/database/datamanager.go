@@ -50,6 +50,7 @@ var (
 	GlobalBlacklistDM    *DataManager[models.Blacklist]
 	GlobalEconomyDM      *DataManager[models.GlobalEconomyProfile]
 	LocalEconomyDM       *DataManager[models.LocalEconomyProfile]
+	LocalLevelsDM        *DataManager[models.UserLevelProfile]
 	ItemDM               *DataManager[models.Item]
 	GlobalGuildDM        *DataManager[models.GuildDocument]
 	GlobalMusicDM        *DataManager[models.MusicSettings]
@@ -66,6 +67,7 @@ func InitGlobalDataManagers(db *Database) {
 	GlobalMusicDM = NewDataManager[models.MusicSettings]("music", db)
 	GlobalEconomyDM = NewDataManager[models.GlobalEconomyProfile]("economy_global", db)
 	LocalEconomyDM = NewDataManager[models.LocalEconomyProfile]("economy_local", db)
+	LocalLevelsDM = NewDataManager[models.UserLevelProfile]("levels", db)
 	ItemDM = NewDataManager[models.Item]("economy_items", db)
 }
 

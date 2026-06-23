@@ -14,12 +14,12 @@ import (
 func createSuggestConfigCommand() *discord.Command {
 	return &discord.Command{
 		Name:        "config-suggest",
-		Description: "Configura el canal de sugerencias",
+		Description: "⚙️ | Configura el canal de sugerencias",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionChannel,
 				Name:        "canal",
-				Description: "El canal donde se enviarán las sugerencias",
+				Description: "⚙️ | El canal donde se enviarán las sugerencias",
 				Required:    true,
 				ChannelTypes: []discordgo.ChannelType{discordgo.ChannelTypeGuildText},
 			},
@@ -55,12 +55,12 @@ func createSuggestConfigCommand() *discord.Command {
 func createConfessConfigCommand() *discord.Command {
 	return &discord.Command{
 		Name:        "config-confess",
-		Description: "Configura el canal de confesiones",
+		Description: "⚙️ | Configura el canal de confesiones",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionChannel,
 				Name:        "canal",
-				Description: "El canal donde se enviarán las confesiones",
+				Description: "⚙️ | El canal donde se enviarán las confesiones",
 				Required:    true,
 				ChannelTypes: []discordgo.ChannelType{discordgo.ChannelTypeGuildText},
 			},
@@ -96,12 +96,12 @@ func createConfessConfigCommand() *discord.Command {
 func createVerifyChannelCommand() *discord.Command {
 	return &discord.Command{
 		Name:        "config-verifychannel",
-		Description: "Configura el canal de verificación",
+		Description: "⚙️ | Configura el canal de verificación",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionChannel,
 				Name:        "canal",
-				Description: "El canal donde se enviará el panel de verificación",
+				Description: "⚙️ | El canal donde se enviará el panel de verificación",
 				Required:    true,
 				ChannelTypes: []discordgo.ChannelType{discordgo.ChannelTypeGuildText},
 			},
@@ -137,12 +137,12 @@ func createVerifyChannelCommand() *discord.Command {
 func createVerifyRoleCommand() *discord.Command {
 	return &discord.Command{
 		Name:        "config-verifyrole",
-		Description: "Configura el rol que se dará al verificarse",
+		Description: "⚙️ | Configura el rol que se dará al verificarse",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionRole,
 				Name:        "rol",
-				Description: "El rol de verificado",
+				Description: "⚙️ | El rol de verificado",
 				Required:    true,
 			},
 		},
@@ -177,7 +177,7 @@ func createVerifyRoleCommand() *discord.Command {
 func createSendVerifyCommand() *discord.Command {
 	return &discord.Command{
 		Name:        "config-sendverify",
-		Description: "Envía el panel de verificación al canal configurado",
+		Description: "⚙️ | Envía el panel de verificación al canal configurado",
 		Run: func(ctx *discord.CommandContext) error {
 			guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": ctx.Interaction.GuildID})
 			if err != nil || guildDoc == nil || guildDoc.Configuration.SubData.VerifyChannel == "" || guildDoc.Configuration.SubData.VerifyRole == "" {
@@ -188,7 +188,7 @@ func createSendVerifyCommand() *discord.Command {
 
 			embed := &discordgo.MessageEmbed{
 				Title:       "🔒 Sistema de Verificación",
-				Description: "Haz clic en el botón de abajo para verificarte y acceder al servidor.",
+				Description: "⚙️ | Haz clic en el botón de abajo para verificarte y acceder al servidor.",
 				Color:       0x2ECC71, // Green
 			}
 

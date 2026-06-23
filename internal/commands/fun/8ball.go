@@ -20,7 +20,7 @@ func create8BallCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "pregunta",
-			Description: "Pregunta que quieres hacerle al bot",
+			Description: "🎉 | Pregunta que quieres hacerle al bot",
 			Required:    true,
 		},
 	)

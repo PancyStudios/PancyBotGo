@@ -17,7 +17,7 @@ func createNukeCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionChannel,
 			Name:        "canal",
-			Description: "Canal a nuke (opcional, por defecto el actual)",
+			Description: "🛡️ | Canal a nuke (opcional, por defecto el actual)",
 			Required:    false,
 			ChannelTypes: []discordgo.ChannelType{
 				discordgo.ChannelTypeGuildText,

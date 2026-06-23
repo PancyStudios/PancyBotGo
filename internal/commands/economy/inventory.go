@@ -66,7 +66,7 @@ func inventoryHandler(ctx *discord.CommandContext) error {
 		Title:       fmt.Sprintf("🎒 Inventario de %s", ctx.Interaction.Member.User.Username),
 		Color:       0x3498DB,
 		Thumbnail:   &discordgo.MessageEmbedThumbnail{URL: ctx.Interaction.Member.User.AvatarURL("")},
-		Description: "Aquí están todos tus objetos coleccionados.",
+		Description: "💰 | Aquí están todos tus objetos coleccionados.",
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:   "🌟 Objetos Globales",

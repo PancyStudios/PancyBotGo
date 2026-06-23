@@ -23,7 +23,7 @@ func createWarningsCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
 			Name:        "usuario",
-			Description: "[STAFF] Usuario a buscar (opcional)",
+			Description: "🛡️ | [STAFF] Usuario a buscar (opcional)",
 			Required:    false,
 		},
 	).RequiresDatabase()
@@ -59,7 +59,7 @@ func warningsHandler(ctx *discord.CommandContext) error {
 		// 2. Feedback inicial (Efímero como en TS)
 		embedLoading := &discordgo.MessageEmbed{
 			Title:       fmt.Sprintf("🔖 - Lista de advertencias de %s", targetUser.Username),
-			Description: "Espere un momento mientras obtenemos las advertencias...\n\n> 💫 - **Cantidad de advertencias:** Desconocido\n> 🕒 - **Fecha de consulta:** Cargando...",
+			Description: "🛡️ | Espere un momento mientras obtenemos las advertencias...\n\n> 💫 - **Cantidad de advertencias:** Desconocido\n> 🕒 - **Fecha de consulta:** Cargando...",
 			Color:       0x3498db, // Blue
 			Footer: &discordgo.MessageEmbedFooter{
 				Text:    "💫 - Developed by PancyStudios",

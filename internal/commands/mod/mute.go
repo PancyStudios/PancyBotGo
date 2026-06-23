@@ -20,13 +20,13 @@ func createMuteCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
 			Name:        "usuario",
-			Description: "Usuario a silenciar",
+			Description: "🛡️ | Usuario a silenciar",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "duracion",
-			Description: "Duración en minutos",
+			Description: "🛡️ | Duración en minutos",
 			Required:    true,
 			MinValue:    func() *float64 { v := 1.0; return &v }(),
 			MaxValue:    40320, // 28 days max
@@ -34,7 +34,7 @@ func createMuteCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "razon",
-			Description: "Razón del silencio",
+			Description: "🛡️ | Razón del silencio",
 			Required:    false,
 		},
 	).WithUserPermissions(discordgo.PermissionModerateMembers).

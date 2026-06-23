@@ -19,7 +19,7 @@ func createAsciiCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "texto",
-			Description: "Texto a convertir a ASCII",
+			Description: "🎉 | Texto a convertir a ASCII",
 			Required:    true,
 		},
 	)

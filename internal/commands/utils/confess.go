@@ -14,12 +14,12 @@ import (
 func createConfessCommand() *discord.Command {
 	return &discord.Command{
 		Name:        "confess",
-		Description: "Envía una confesión anónima al servidor",
+		Description: "🧰 | Envía una confesión anónima al servidor",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionString,
 				Name:        "confesion",
-				Description: "Tu confesión secreta",
+				Description: "🧰 | Tu confesión secreta",
 				Required:    true,
 			},
 		},

@@ -22,7 +22,7 @@ func getBuilderState(userID string) *discordgo.MessageEmbed {
 	// Default state
 	newState := &discordgo.MessageEmbed{
 		Title:       "Mi Nuevo Embed",
-		Description: "Descripción vacía.",
+		Description: "📝 | Descripción vacía.",
 		Color:       0x3498DB,
 	}
 	

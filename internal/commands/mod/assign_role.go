@@ -17,13 +17,13 @@ func createAssignRoleCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
 			Name:        "usuario",
-			Description: "Usuario al que se le asignará el rol",
+			Description: "🛡️ | Usuario al que se le asignará el rol",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionRole,
 			Name:        "rol",
-			Description: "Rol que se asignará",
+			Description: "🛡️ | Rol que se asignará",
 			Required:    true,
 		},
 	).WithUserPermissions(discordgo.PermissionManageRoles).

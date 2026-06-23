@@ -23,7 +23,7 @@ func CreateCodeListCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "filtro",
-			Description: "Filtrar códigos por estado",
+			Description: "💻 | Filtrar códigos por estado",
 			Required:    false,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{
@@ -43,7 +43,7 @@ func CreateCodeListCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "tipo",
-			Description: "Filtrar códigos por tipo",
+			Description: "💻 | Filtrar códigos por tipo",
 			Required:    false,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{
@@ -117,7 +117,7 @@ func codelistHandler(ctx *discord.CommandContext) error {
 		if len(filteredCodes) == 0 {
 			embed := &discordgo.MessageEmbed{
 				Title:       "📋 Lista de Códigos Premium",
-				Description: "No se encontraron códigos con los filtros especificados.",
+				Description: "💻 | No se encontraron códigos con los filtros especificados.",
 				Color:       0xFFFF00, // Amarillo
 				Timestamp:   time.Now().Format(time.RFC3339),
 			}

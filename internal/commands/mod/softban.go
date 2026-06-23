@@ -17,13 +17,13 @@ func createSoftbanCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
 			Name:        "usuario",
-			Description: "Usuario a hacer softban",
+			Description: "🛡️ | Usuario a hacer softban",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "razon",
-			Description: "Razón del softban",
+			Description: "🛡️ | Razón del softban",
 			Required:    false,
 		},
 	).WithUserPermissions(discordgo.PermissionBanMembers).

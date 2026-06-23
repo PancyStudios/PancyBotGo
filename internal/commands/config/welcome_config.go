@@ -14,31 +14,31 @@ import (
 func welcomeSubcommand() *discordgo.ApplicationCommandOption {
 	return &discordgo.ApplicationCommandOption{
 		Name:        "welcome",
-		Description: "Configura el sistema de bienvenidas",
+		Description: "⚙️ | Configura el sistema de bienvenidas",
 		Type:        discordgo.ApplicationCommandOptionSubCommand,
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionBoolean,
 				Name:        "enable",
-				Description: "Activar o desactivar las bienvenidas",
+				Description: "⚙️ | Activar o desactivar las bienvenidas",
 				Required:    true,
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionChannel,
 				Name:        "channel",
-				Description: "Canal donde se enviarán las bienvenidas",
+				Description: "⚙️ | Canal donde se enviarán las bienvenidas",
 				Required:    false,
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionString,
 				Name:        "message",
-				Description: "Mensaje de bienvenida (usa {user} para mencionar al usuario)",
+				Description: "⚙️ | Mensaje de bienvenida (usa {user} para mencionar al usuario)",
 				Required:    false,
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionBoolean,
 				Name:        "is_dm",
-				Description: "¿Enviar por mensaje directo en lugar del canal?",
+				Description: "⚙️ | ¿Enviar por mensaje directo en lugar del canal?",
 				Required:    false,
 			},
 		},

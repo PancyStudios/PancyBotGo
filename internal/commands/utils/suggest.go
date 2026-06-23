@@ -14,12 +14,12 @@ import (
 func createSuggestCommand() *discord.Command {
 	return &discord.Command{
 		Name:        "suggest",
-		Description: "Envía una sugerencia para el servidor",
+		Description: "🧰 | Envía una sugerencia para el servidor",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionString,
 				Name:        "sugerencia",
-				Description: "Tu sugerencia",
+				Description: "🧰 | Tu sugerencia",
 				Required:    true,
 			},
 		},

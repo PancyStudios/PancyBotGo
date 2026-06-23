@@ -18,7 +18,7 @@ func createWithdrawCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "tipo",
-			Description: "Elige si quieres retirar economía Local o Global",
+			Description: "💰 | Elige si quieres retirar economía Local o Global",
 			Required:    true,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{Name: "Local (Servidor)", Value: "local"},
@@ -28,7 +28,7 @@ func createWithdrawCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "cantidad",
-			Description: "Cantidad a retirar",
+			Description: "💰 | Cantidad a retirar",
 			Required:    true,
 		},
 	)

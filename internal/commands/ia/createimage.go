@@ -24,7 +24,7 @@ func createCreateImageCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "prompt",
-			Description: "Descripción de la imagen a generar",
+			Description: "🤖 | Descripción de la imagen a generar",
 			Required:    true,
 		},
 	)

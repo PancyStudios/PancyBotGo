@@ -7,7 +7,7 @@ import (
 func createEmbedDeleteCommand() *discord.Command {
 	return &discord.Command{
 		Name:        "delete",
-		Description: "Elimina tu progreso actual de creación de embed",
+		Description: "📝 | Elimina tu progreso actual de creación de embed",
 		Run: func(ctx *discord.CommandContext) error {
 			user := ctx.User()
 			clearBuilderState(user.ID)

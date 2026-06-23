@@ -20,37 +20,37 @@ func CreateShopAddCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "nombre",
-			Description: "Nombre del objeto global",
+			Description: "💻 | Nombre del objeto global",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "descripcion",
-			Description: "Descripción del objeto global",
+			Description: "💻 | Descripción del objeto global",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "precio",
-			Description: "Precio de compra (en estrellas)",
+			Description: "💻 | Precio de compra (en estrellas)",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "efecto",
-			Description: "Efecto (ej. EXPAND_BANK, STAR_TICKET)",
+			Description: "💻 | Efecto (ej. EXPAND_BANK, STAR_TICKET)",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionNumber,
 			Name:        "valor_efecto",
-			Description: "Valor asociado al efecto (ej. 1000 para expandir banco en 1000)",
+			Description: "💻 | Valor asociado al efecto (ej. 1000 para expandir banco en 1000)",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "emoji",
-			Description: "Emoji que representa al objeto",
+			Description: "💻 | Emoji que representa al objeto",
 			Required:    false,
 		},
 	)
@@ -66,7 +66,7 @@ func CreateShopRemoveCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "id",
-			Description: "ID del objeto global a eliminar",
+			Description: "💻 | ID del objeto global a eliminar",
 			Required:    true,
 		},
 	)

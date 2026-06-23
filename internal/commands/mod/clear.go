@@ -18,7 +18,7 @@ func createClearCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "cantidad",
-			Description: "Cantidad de mensajes a eliminar (hasta 99999)",
+			Description: "🛡️ | Cantidad de mensajes a eliminar (hasta 99999)",
 			Required:    true,
 			MinValue:    func() *float64 { v := 1.0; return &v }(),
 			MaxValue:    99999,

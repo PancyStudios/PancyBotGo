@@ -10,7 +10,7 @@ import (
 func createInviteCommand() *discord.Command {
 	return &discord.Command{
 		Name:        "invite",
-		Description: "Obten el enlace de invitacion del bot",
+		Description: "🧰 | Obten el enlace de invitacion del bot",
 		Run: func(ctx *discord.CommandContext) error {
 			clientID := ctx.Session.State.User.ID
 			inviteURL := fmt.Sprintf("https://discord.com/api/oauth2/authorize?client_id=%s&permissions=8&scope=bot%%20applications.commands", clientID)

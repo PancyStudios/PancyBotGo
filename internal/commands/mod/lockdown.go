@@ -17,7 +17,7 @@ func createLockdownCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionBoolean,
 			Name:        "estado",
-			Description: "True para bloquear, False para desbloquear",
+			Description: "🛡️ | True para bloquear, False para desbloquear",
 			Required:    true,
 		},
 	).WithUserPermissions(discordgo.PermissionManageChannels).

@@ -20,7 +20,7 @@ func createRobCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "tipo",
-			Description: "Elige economía Local o Global",
+			Description: "💰 | Elige economía Local o Global",
 			Required:    true,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{Name: "Local (Servidor)", Value: "local"},
@@ -30,7 +30,7 @@ func createRobCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
 			Name:        "victima",
-			Description: "El usuario al que quieres robar",
+			Description: "💰 | El usuario al que quieres robar",
 			Required:    true,
 		},
 	)

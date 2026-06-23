@@ -14,25 +14,25 @@ import (
 func autoroleSubcommand() *discordgo.ApplicationCommandOption {
 	return &discordgo.ApplicationCommandOption{
 		Name:        "autorole",
-		Description: "Configura el sistema de auto-rol",
+		Description: "⚙️ | Configura el sistema de auto-rol",
 		Type:        discordgo.ApplicationCommandOptionSubCommand,
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionBoolean,
 				Name:        "enable",
-				Description: "Activar o desactivar auto-rol",
+				Description: "⚙️ | Activar o desactivar auto-rol",
 				Required:    true,
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionRole,
 				Name:        "role",
-				Description: "Rol a asignar (requerido si se activa)",
+				Description: "⚙️ | Rol a asignar (requerido si se activa)",
 				Required:    false,
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionInteger,
 				Name:        "delay",
-				Description: "Retraso en ms antes de asignar (ej. 5000 para 5s)",
+				Description: "⚙️ | Retraso en ms antes de asignar (ej. 5000 para 5s)",
 				Required:    false,
 			},
 		},

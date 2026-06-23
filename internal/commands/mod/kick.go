@@ -19,13 +19,13 @@ func createKickCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
 			Name:        "usuario",
-			Description: "Usuario a expulsar",
+			Description: "🛡️ | Usuario a expulsar",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "razon",
-			Description: "Razón de la expulsión",
+			Description: "🛡️ | Razón de la expulsión",
 			Required:    false,
 		},
 	).WithUserPermissions(discordgo.PermissionKickMembers).

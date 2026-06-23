@@ -24,7 +24,7 @@ func CreateBlacklistAddCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "tipo",
-			Description: "Tipo de blacklist",
+			Description: "💻 | Tipo de blacklist",
 			Required:    true,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{
@@ -40,13 +40,13 @@ func CreateBlacklistAddCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "id",
-			Description: "ID del usuario o servidor",
+			Description: "💻 | ID del usuario o servidor",
 			Required:    true,
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "razon",
-			Description: "Razón del blacklist",
+			Description: "💻 | Razón del blacklist",
 			Required:    false,
 		},
 	)
@@ -63,7 +63,7 @@ func CreateBlacklistRemoveCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:         discordgo.ApplicationCommandOptionString,
 			Name:         "id",
-			Description:  "ID del usuario o servidor",
+			Description: "💻 | ID del usuario o servidor",
 			Required:     true,
 			Autocomplete: true,
 		},
@@ -81,7 +81,7 @@ func CreateBlacklistListCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "tipo",
-			Description: "Filtrar por tipo",
+			Description: "💻 | Filtrar por tipo",
 			Required:    false,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{
@@ -335,7 +335,7 @@ func blacklistListHandler(ctx *discord.CommandContext) error {
 		if len(entries) == 0 {
 			embed := &discordgo.MessageEmbed{
 				Title:       "📋 Blacklist",
-				Description: "No hay entradas en la blacklist con los filtros especificados.",
+				Description: "💻 | No hay entradas en la blacklist con los filtros especificados.",
 				Color:       0xFFFF00,
 				Timestamp:   time.Now().Format(time.RFC3339),
 			}
