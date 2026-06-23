@@ -153,6 +153,9 @@ func (c *ExtendedClient) Start() error {
 
 		// Register commands with Discord
 		c.CommandHandler.RegisterCommands()
+
+		// Señal para que Pterodactyl marque el servidor como "Running"
+		fmt.Println("Server marked as running...")
 	})
 
 	// Add interaction handler
