@@ -162,6 +162,7 @@ func main() {
 	// Register MQTT handlers for remote control via API
 	lavalink.RegisterMusicHandlers(mqttClient, lavalinkClient)
 	api.RegisterAPIHandlers(mqttClient, discordClient)
+	api.RegisterDevHandlers(mqttClient, discordClient)
 
 	logger.Success("PancyBot Go iniciado correctamente!", "Main")
 
