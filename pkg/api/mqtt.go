@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 
+	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/mqtt"
 )
@@ -52,6 +53,117 @@ func RegisterAPIHandlers(mc *mqtt.MqttCommunicator, discordClient *discord.Exten
 			"id":   guild.ID,
 			"name": guild.Name,
 			"icon": guild.Icon,
+		}, nil
+	})
+
+	// get-levels-leaderboard
+	mc.On("get-levels-leaderboard", func(payload map[string]interface{}) (interface{}, error) {
+		if discordClient == nil || discordClient.Session == nil {
+			return nil, fmt.Errorf("discord client not ready")
+		}
+
+		guildIDInter, ok := payload["guildId"]
+		if !ok {
+			return nil, fmt.Errorf("missing guildId")
+		}
+
+		guildID, ok := guildIDInter.(string)
+		if !ok {
+			return nil, fmt.Errorf("guildId must be a string")
+		}
+
+		limit := int64(10)
+		if limitInter, ok := payload["limit"]; ok {
+			if l, ok := limitInter.(float64); ok {
+				limit = int64(l)
+			}
+		}
+
+		profiles, err := database.GetTopLevels(guildID, limit)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching leaderboard: %w", err)
+		}
+
+		type LeaderboardEntry struct {
+			UserID        string `json:"userId"`
+			Username      string `json:"username"`
+			AvatarURL     string `json:"avatarUrl"`
+			Level         int64  `json:"level"`
+			XP            int64  `json:"xp"`
+			TotalMessages int64  `json:"totalMessages"`
+		}
+
+		var result []LeaderboardEntry
+		for _, p := range profiles {
+			username := "Usuario Desconocido"
+			avatar := ""
+
+			// Try to get user info from state, fallback to API
+			member, err := discordClient.Session.State.Member(guildID, p.UserID)
+			if err == nil && member != nil && member.User != nil {
+				username = member.User.Username
+				avatar = member.User.AvatarURL("")
+			} else {
+				user, err := discordClient.Session.User(p.UserID)
+				if err == nil && user != nil {
+					username = user.Username
+					avatar = user.AvatarURL("")
+				}
+			}
+
+			result = append(result, LeaderboardEntry{
+				UserID:        p.UserID,
+				Username:      username,
+				AvatarURL:     avatar,
+				Level:         p.Level,
+				XP:            p.XP,
+				TotalMessages: p.TotalMessages,
+			})
+		}
+
+		return result, nil
+	})
+
+	// get-user-level
+	mc.On("get-user-level", func(payload map[string]interface{}) (interface{}, error) {
+		if discordClient == nil || discordClient.Session == nil {
+			return nil, fmt.Errorf("discord client not ready")
+		}
+
+		guildIDInter, ok := payload["guildId"]
+		if !ok {
+			return nil, fmt.Errorf("missing guildId")
+		}
+
+		userIDInter, ok := payload["userId"]
+		if !ok {
+			return nil, fmt.Errorf("missing userId")
+		}
+
+		guildID, ok := guildIDInter.(string)
+		if !ok {
+			return nil, fmt.Errorf("guildId must be a string")
+		}
+
+		userID, ok := userIDInter.(string)
+		if !ok {
+			return nil, fmt.Errorf("userId must be a string")
+		}
+
+		profile, err := database.GetLocalLevelProfile(guildID, userID)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching user level: %w", err)
+		}
+
+		nextLevel := profile.Level + 1
+		requiredXP := nextLevel * nextLevel * 100
+
+		return map[string]interface{}{
+			"userId":        profile.UserID,
+			"level":         profile.Level,
+			"xp":            profile.XP,
+			"requiredXp":    requiredXP,
+			"totalMessages": profile.TotalMessages,
 		}, nil
 	})
 }
