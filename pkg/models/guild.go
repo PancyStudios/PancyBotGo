@@ -1,5 +1,11 @@
 package models
 
+import (
+	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
+)
+
 // GuildDocument represents the main document for a guild in MongoDB
 type GuildDocument struct {
 	ID            string             `bson:"_id" json:"id"`
@@ -12,9 +18,9 @@ type GuildDocument struct {
 
 // LevelsConfig holds user level system settings
 type LevelsConfig struct {
-	Enable           bool   `bson:"enable" json:"enable"`
-	LevelUpChannel   string `bson:"levelUpChannel" json:"levelUpChannel"`     // Empty for same channel
-	LevelUpMessage   string `bson:"levelUpMessage" json:"levelUpMessage"`     // Available placeholders: {user}, {level}
+	Enable         bool   `bson:"enable" json:"enable"`
+	LevelUpChannel string `bson:"levelUpChannel" json:"levelUpChannel"` // Empty for same channel
+	LevelUpMessage string `bson:"levelUpMessage" json:"levelUpMessage"` // Available placeholders: {user}, {level}
 }
 
 // ProtectionConfig holds security settings like antibots and antiraid
@@ -41,6 +47,30 @@ type ProtectionConfig struct {
 type AntibotsConfig struct {
 	Enable bool   `bson:"enable" json:"enable"`
 	Type   string `bson:"_type" json:"_type"`
+}
+
+// UnmarshalBSONValue handles decoding when antibots is a string in legacy data
+func (a *AntibotsConfig) UnmarshalBSONValue(t bsontype.Type, data []byte) error {
+	if t == bsontype.String {
+		var s string
+		if err := bson.UnmarshalValue(t, data, &s); err != nil {
+			return err
+		}
+		a.Enable = (s == "enable" || s == "true")
+		return nil
+	}
+
+	if t == bsontype.EmbeddedDocument {
+		type Alias AntibotsConfig
+		var alias Alias
+		if err := bson.UnmarshalValue(t, data, &alias); err != nil {
+			return err
+		}
+		*a = AntibotsConfig(alias)
+		return nil
+	}
+
+	return fmt.Errorf("cannot decode %v into AntibotsConfig", t)
 }
 
 type AntiTokensConfig struct {
