@@ -16,6 +16,7 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/models"
 	"github.com/bwmarrin/discordgo"
 	"github.com/goccy/go-json"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // checkGuildBlacklist verifica si un guild está en la blacklist
@@ -78,6 +79,23 @@ func onGuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
 				logger.Error(fmt.Sprintf("Error saliendo del servidor blacklisted %s: %v", g.ID, err), "Guild")
 			}
 			return
+		}
+	}()
+
+	// Inicializar configuración por defecto si no existe
+	go func() {
+		defer errors.RecoverMiddleware()()
+		doc, err := database.GlobalGuildDM.Get(bson.M{"_id": g.ID})
+		if err != nil || doc == nil {
+			newDoc := &models.GuildDocument{
+				ID: g.ID,
+			}
+			_, err = database.GlobalGuildDM.Set(bson.M{"_id": g.ID}, newDoc)
+			if err != nil {
+				logger.Error(fmt.Sprintf("Error creando configuración inicial para el guild %s: %v", g.ID, err), "Guild")
+			} else {
+				logger.Info(fmt.Sprintf("Configuración inicial creada para el guild %s", g.ID), "Guild")
+			}
 		}
 	}()
 
