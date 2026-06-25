@@ -19,17 +19,134 @@ type LevelsConfig struct {
 
 // ProtectionConfig holds security settings like antibots and antiraid
 type ProtectionConfig struct {
-	Antibots string         `bson:"antibots" json:"antibots"` // "all", "only_nv", "only_v", or "" (disabled)
-	AntiRaid AntiRaidConfig `bson:"antiRaid" json:"antiRaid"`
+	Antibots             AntibotsConfig       `bson:"antibots" json:"antibots"`
+	AntiRaid             AntiRaidConfig       `bson:"antiraid" json:"antiraid"` // TS uses antiraid lowercase
+	AntiTokens           AntiTokensConfig     `bson:"antitokens" json:"antitokens"`
+	AntiJoins            AntiJoinsConfig      `bson:"antijoins" json:"antijoins"`
+	MarkMalicious        MarkMaliciousConfig  `bson:"markMalicious" json:"markMalicious"`
+	WarnEntry            bool                 `bson:"warnEntry" json:"warnEntry"`
+	KickMalicious        KickMaliciousConfig  `bson:"kickMalicious" json:"kickMalicious"`
+	OwnSystem            OwnSystemConfig      `bson:"ownSystem" json:"ownSystem"`
+	Verification         VerificationConfig   `bson:"verification" json:"verification"`
+	CannotEnterTwice     CannotEnterTwiceConf `bson:"cannotEnterTwice" json:"cannotEnterTwice"`
+	PurgeWebhooksAttacks PurgeWebhooksConfig  `bson:"purgeWebhooksAttacks" json:"purgeWebhooksAttacks"`
+	IntelligentSOS       IntelligentSOSConfig `bson:"intelligentSOS" json:"intelligentSOS"`
+	IntelligentAntiflood bool                 `bson:"intelligentAntiflood" json:"intelligentAntiflood"`
+	Antiflood            bool                 `bson:"antiflood" json:"antiflood"`
+	BloqEntritiesByName  BloqEntritiesConfig  `bson:"bloqEntritiesByName" json:"bloqEntritiesByName"`
+	BloqNewCreatedUsers  BloqNewCreatedConfig `bson:"bloqNewCreatedUsers" json:"bloqNewCreatedUsers"`
+	Raidmode             RaidmodeConfig       `bson:"raidmode" json:"raidmode"`
+}
+
+type AntibotsConfig struct {
+	Enable bool   `bson:"enable" json:"enable"`
+	Type   string `bson:"_type" json:"_type"`
+}
+
+type AntiTokensConfig struct {
+	Enable         bool     `bson:"enable" json:"enable"`
+	UsersEntrities []string `bson:"usersEntrities" json:"usersEntrities"`
+	EntritiesCount int      `bson:"entritiesCount" json:"entritiesCount"`
+}
+
+type AntiJoinsConfig struct {
+	Enable            bool     `bson:"enable" json:"enable"`
+	RememberEntrities []string `bson:"rememberEntrities" json:"rememberEntrities"`
+}
+
+type MarkMaliciousConfig struct {
+	Enable            bool     `bson:"enable" json:"enable"`
+	Type              string   `bson:"_type" json:"_type"`
+	RememberEntrities []string `bson:"rememberEntrities" json:"rememberEntrities"`
+}
+
+type KickMaliciousConfig struct {
+	Enable            bool     `bson:"enable" json:"enable"`
+	RememberEntrities []string `bson:"rememberEntrities" json:"rememberEntrities"`
+}
+
+type OwnSystemConfig struct {
+	Enable bool `bson:"enable" json:"enable"`
+	Events struct {
+		MessageCreate     []string `bson:"messageCreate" json:"messageCreate"`
+		MessageDelete     []string `bson:"messageDelete" json:"messageDelete"`
+		MessageUpdate     []string `bson:"messageUpdate" json:"messageUpdate"`
+		ChannelCreate     []string `bson:"channelCreate" json:"channelCreate"`
+		ChannelDelete     []string `bson:"channelDelete" json:"channelDelete"`
+		ChannelUpdate     []string `bson:"channelUpdate" json:"channelUpdate"`
+		RoleCreate        []string `bson:"roleCreate" json:"roleCreate"`
+		RoleDelete        []string `bson:"roleDelete" json:"roleDelete"`
+		RoleUpdate        []string `bson:"roleUpdate" json:"roleUpdate"`
+		EmojiCreate       []string `bson:"emojiCreate" json:"emojiCreate"`
+		EmojiDelete       []string `bson:"emojiDelete" json:"emojiDelete"`
+		EmojiUpdate       []string `bson:"emojiUpdate" json:"emojiUpdate"`
+		StickerCreate     []string `bson:"stickerCreate" json:"stickerCreate"`
+		StickerDelete     []string `bson:"stickerDelete" json:"stickerDelete"`
+		StickerUpdate     []string `bson:"stickerUpdate" json:"stickerUpdate"`
+		GuildMemberAdd    []string `bson:"guildMemberAdd" json:"guildMemberAdd"`
+		GuildMemberRemove []string `bson:"guildMemberRemove" json:"guildMemberRemove"`
+		GuildMemberUpdate []string `bson:"guildMemberUpdate" json:"guildMemberUpdate"`
+		GuildBanAdd       []string `bson:"guildBanAdd" json:"guildBanAdd"`
+		GuildBanRemove    []string `bson:"guildBanRemove" json:"guildBanRemove"`
+		InviteCreate      []string `bson:"inviteCreate" json:"inviteCreate"`
+		InviteDelete      []string `bson:"inviteDelete" json:"inviteDelete"`
+		ThreadCreate      []string `bson:"threadCreate" json:"threadCreate"`
+		ThreadDelete      []string `bson:"threadDelete" json:"threadDelete"`
+	} `bson:"events" json:"events"`
+}
+
+type VerificationConfig struct {
+	Enable  bool   `bson:"enable" json:"enable"`
+	Type    string `bson:"_type" json:"_type"`
+	Channel string `bson:"channel" json:"channel"`
+	Role    string `bson:"role" json:"role"`
+}
+
+type CannotEnterTwiceConf struct {
+	Enable bool     `bson:"enable" json:"enable"`
+	Users  []string `bson:"users" json:"users"`
+}
+
+type PurgeWebhooksConfig struct {
+	Enable         bool   `bson:"enable" json:"enable"`
+	Amount         int    `bson:"amount" json:"amount"`
+	RememberOwners string `bson:"rememberOwners" json:"rememberOwners"`
+}
+
+type IntelligentSOSConfig struct {
+	Enable   bool `bson:"enable" json:"enable"`
+	Cooldown bool `bson:"cooldown" json:"cooldown"`
+}
+
+type BloqEntritiesConfig struct {
+	Enable bool     `bson:"enable" json:"enable"`
+	Names  []string `bson:"names" json:"names"`
+}
+
+type BloqNewCreatedConfig struct {
+	Time string `bson:"time" json:"time"`
+}
+
+type RaidmodeConfig struct {
+	Enable        bool   `bson:"enable" json:"enable"`
+	TimeToDisable string `bson:"timeToDisable" json:"timeToDisable"`
+	Password      string `bson:"password" json:"password"`
+	ActivedDate   int    `bson:"activedDate" json:"activedDate"`
 }
 
 // AntiRaidConfig holds the configuration for raid protection
 type AntiRaidConfig struct {
-	Enable            bool   `bson:"enable" json:"enable"`
-	Action            string `bson:"action" json:"action"`                       // "kick" or "ban"
-	MinAccountAgeDays int    `bson:"minAccountAgeDays" json:"minAccountAgeDays"` // Days
-	JoinLimit         int    `bson:"joinLimit" json:"joinLimit"`                 // Max joins
-	TimeWindow        int    `bson:"timeWindow" json:"timeWindow"`               // In seconds
+	Enable            bool `bson:"enable" json:"enable"`
+	Amount            int  `bson:"amount" json:"amount"`
+	SaveBotsEntrities struct {
+		AuthorOfEntry string `bson:"authorOfEntry" json:"authorOfEntry"`
+		Bot           string `bson:"_bot" json:"_bot"`
+	} `bson:"saveBotsEntrities" json:"saveBotsEntrities"`
+	// Additional fields added by the Go bot:
+	Action            string `bson:"action,omitempty" json:"action,omitempty"`
+	MinAccountAgeDays int    `bson:"minAccountAgeDays,omitempty" json:"minAccountAgeDays,omitempty"`
+	JoinLimit         int    `bson:"joinLimit,omitempty" json:"joinLimit,omitempty"`
+	TimeWindow        int    `bson:"timeWindow,omitempty" json:"timeWindow,omitempty"`
 }
 
 // GuildConfiguration holds general configuration for the bot in a guild
@@ -150,4 +267,163 @@ type AutomoderatorActions struct {
 	ManyEmojis  int    `bson:"manyEmojis" json:"manyEmojis"`
 	ManyPings   int    `bson:"manyPings" json:"manyPings"`
 	ManyWords   int    `bson:"manyWords" json:"manyWords"`
+}
+
+// NewDefaultGuildDocument creates a new GuildDocument with all default values initialized
+func NewDefaultGuildDocument(guildID string) *GuildDocument {
+	return &GuildDocument{
+		ID: guildID,
+		Configuration: GuildConfiguration{
+			Version:        "1.0.0",
+			Prefix:         "pan!",
+			Language:       "es",
+			Whitelist:      []string{},
+			Logs:           []string{},
+			LogsChannel:    "",
+			IgnoreChannels: []string{},
+			Password: PasswordConfig{
+				Enable:          false,
+				Password:        "",
+				UsersWithAccess: []string{},
+			},
+			SubData: SubDataConfig{
+				ShowDetailsInCmdsCommand:         "lessDetails",
+				PingMessage:                      "allDetails",
+				DontRepeatTheAutomoderatorAction: false,
+			},
+		},
+		Greetings: Greetings{
+			Welcome: WelcomeConfig{
+				Enable:  false,
+				Channel: "",
+				Message: "",
+				IsDM:    false,
+			},
+			Farewell: FarewellConfig{
+				Enable:  false,
+				Channel: "",
+				Message: "",
+			},
+			Autorole: AutoroleConfig{
+				Enable: false,
+				Roles:  []string{},
+				Delay:  0,
+			},
+		},
+		Moderation: ModeratorData{
+			Logs: ModLogsConfig{
+				Warns: LogChannelConfig{Enable: false, Channel: ""},
+				Mutes: LogChannelConfig{Enable: false, Channel: ""},
+				Kicks: LogChannelConfig{Enable: false, Channel: ""},
+				Bans:  LogChannelConfig{Enable: false, Channel: ""},
+			},
+			DataModeration: DataModerationConfig{
+				MuteRole:     "",
+				ForceReasons: []string{},
+				Timers:       []interface{}{},
+				BadWords:     []string{},
+				Events: ModEventsConfig{
+					ManyPings:      false,
+					CapitalLetters: false,
+					ManyEmojis:     false,
+					ManyWords:      false,
+					LinkDetect:     false,
+					Ghostping:      false,
+					NsfwFilter:     false,
+					IpLoggerFilter: false,
+				},
+			},
+			Automoderator: AutomoderatorConfig{
+				Enable: false,
+				Actions: AutomoderatorActions{
+					Warns:       []int{},
+					MuteTime:    []int{},
+					Action:      "",
+					FloodDetect: 0,
+					ManyEmojis:  0,
+					ManyPings:   0,
+					ManyWords:   0,
+				},
+				Events: ModEventsConfig{
+					ManyPings:      false,
+					CapitalLetters: false,
+					ManyEmojis:     false,
+					ManyWords:      false,
+					LinkDetect:     false,
+					Ghostping:      false,
+					NsfwFilter:     false,
+					IpLoggerFilter: false,
+				},
+			},
+		},
+		Protection: ProtectionConfig{
+			AntiRaid: AntiRaidConfig{
+				Enable: false,
+				Amount: 0,
+				SaveBotsEntrities: struct {
+					AuthorOfEntry string `bson:"authorOfEntry" json:"authorOfEntry"`
+					Bot           string `bson:"_bot" json:"_bot"`
+				}{"", ""},
+			},
+			Antibots: AntibotsConfig{Enable: false, Type: "all"},
+			AntiTokens: AntiTokensConfig{
+				Enable:         false,
+				UsersEntrities: []string{},
+				EntritiesCount: 0,
+			},
+			AntiJoins: AntiJoinsConfig{Enable: false, RememberEntrities: []string{}},
+			MarkMalicious: MarkMaliciousConfig{
+				Enable:            true,
+				Type:              "changeNickname",
+				RememberEntrities: []string{},
+			},
+			WarnEntry:     true,
+			KickMalicious: KickMaliciousConfig{Enable: false, RememberEntrities: []string{}},
+			OwnSystem: OwnSystemConfig{
+				Enable: false,
+				Events: struct {
+					MessageCreate     []string `bson:"messageCreate" json:"messageCreate"`
+					MessageDelete     []string `bson:"messageDelete" json:"messageDelete"`
+					MessageUpdate     []string `bson:"messageUpdate" json:"messageUpdate"`
+					ChannelCreate     []string `bson:"channelCreate" json:"channelCreate"`
+					ChannelDelete     []string `bson:"channelDelete" json:"channelDelete"`
+					ChannelUpdate     []string `bson:"channelUpdate" json:"channelUpdate"`
+					RoleCreate        []string `bson:"roleCreate" json:"roleCreate"`
+					RoleDelete        []string `bson:"roleDelete" json:"roleDelete"`
+					RoleUpdate        []string `bson:"roleUpdate" json:"roleUpdate"`
+					EmojiCreate       []string `bson:"emojiCreate" json:"emojiCreate"`
+					EmojiDelete       []string `bson:"emojiDelete" json:"emojiDelete"`
+					EmojiUpdate       []string `bson:"emojiUpdate" json:"emojiUpdate"`
+					StickerCreate     []string `bson:"stickerCreate" json:"stickerCreate"`
+					StickerDelete     []string `bson:"stickerDelete" json:"stickerDelete"`
+					StickerUpdate     []string `bson:"stickerUpdate" json:"stickerUpdate"`
+					GuildMemberAdd    []string `bson:"guildMemberAdd" json:"guildMemberAdd"`
+					GuildMemberRemove []string `bson:"guildMemberRemove" json:"guildMemberRemove"`
+					GuildMemberUpdate []string `bson:"guildMemberUpdate" json:"guildMemberUpdate"`
+					GuildBanAdd       []string `bson:"guildBanAdd" json:"guildBanAdd"`
+					GuildBanRemove    []string `bson:"guildBanRemove" json:"guildBanRemove"`
+					InviteCreate      []string `bson:"inviteCreate" json:"inviteCreate"`
+					InviteDelete      []string `bson:"inviteDelete" json:"inviteDelete"`
+					ThreadCreate      []string `bson:"threadCreate" json:"threadCreate"`
+					ThreadDelete      []string `bson:"threadDelete" json:"threadDelete"`
+				}{
+					[]string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{},
+				},
+			},
+			Verification:         VerificationConfig{Enable: false, Type: "", Channel: "", Role: ""},
+			CannotEnterTwice:     CannotEnterTwiceConf{Enable: false, Users: []string{}},
+			PurgeWebhooksAttacks: PurgeWebhooksConfig{Enable: false, Amount: 0, RememberOwners: "Nadie"},
+			IntelligentSOS:       IntelligentSOSConfig{Enable: false, Cooldown: false},
+			IntelligentAntiflood: false,
+			Antiflood:            true,
+			BloqEntritiesByName:  BloqEntritiesConfig{Enable: false, Names: []string{"raider", "doxer", "hacker", "infecter"}},
+			BloqNewCreatedUsers:  BloqNewCreatedConfig{Time: "1h"},
+			Raidmode:             RaidmodeConfig{Enable: false, TimeToDisable: "1d", Password: "Nothing", ActivedDate: 0},
+		},
+		Levels: LevelsConfig{
+			Enable:         true,
+			LevelUpChannel: "",
+			LevelUpMessage: "",
+		},
+	}
 }
