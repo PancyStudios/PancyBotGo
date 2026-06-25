@@ -58,9 +58,11 @@ func antibotsHandler(ctx *discord.CommandContext) error {
 	}
 
 	if option == "disabled" {
-		guildData.Protection.Antibots = ""
+		guildData.Protection.Antibots.Enable = false
+		guildData.Protection.Antibots.Type = ""
 	} else {
-		guildData.Protection.Antibots = option
+		guildData.Protection.Antibots.Enable = true
+		guildData.Protection.Antibots.Type = option
 	}
 
 	_, err = database.GlobalGuildDM.Set(bson.M{"_id": ctx.Interaction.GuildID}, guildData)

@@ -43,14 +43,14 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 
 		// Anti-Raid Logic
 		antiRaid := &guildDoc.Protection.AntiRaid
-		
+
 		// 1. Min Account Age
 		if antiRaid.MinAccountAgeDays > 0 {
 			idInt, err := strconv.ParseInt(m.User.ID, 10, 64)
 			if err == nil {
 				createdAt := time.UnixMilli((idInt >> 22) + 1420070400000)
 				ageDays := int(time.Since(createdAt).Hours() / 24)
-				
+
 				if ageDays < antiRaid.MinAccountAgeDays {
 					reason := fmt.Sprintf("Anti-Raid: Cuenta muy reciente (%d días < %d días)", ageDays, antiRaid.MinAccountAgeDays)
 					if antiRaid.Action == "ban" {
@@ -82,7 +82,7 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 			joins := raidCache[m.GuildID]
 			now := time.Now()
 			window := time.Duration(antiRaid.TimeWindow) * time.Second
-			
+
 			var validJoins []time.Time
 			for _, j := range joins {
 				if now.Sub(j) <= window {
@@ -98,9 +98,9 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 				// Trigger Panic Mode!
 				antiRaid.Enable = true
 				database.GlobalGuildDM.Set(bson.M{"_id": m.GuildID}, guildDoc)
-				
+
 				logger.Warn(fmt.Sprintf("🚨 POSIBLE RAID DETECTADO en %s! Modo Pánico activado automáticamente.", m.GuildID), "AntiRaid")
-				
+
 				// Kick current user
 				reason := "Anti-Raid: Límite de uniones superado (Modo Pánico Auto-Activado)"
 				if antiRaid.Action == "ban" {
@@ -108,13 +108,13 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 				} else {
 					s.GuildMemberDeleteWithReason(m.GuildID, m.User.ID, reason)
 				}
-				
+
 				// Try to alert in system channel or logs channel
 				alertChannel := guildDoc.Configuration.LogsChannel
 				if alertChannel == "" {
 					alertChannel = guild.SystemChannelID
 				}
-				
+
 				embedAlert := discord.NewEmbed().
 					SetColor(0xFF0000). // Red
 					SetTitle("🚨 ¡ALERTA DE RAID MASIVO!").
@@ -124,7 +124,7 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 				if alertChannel != "" {
 					s.ChannelMessageSendEmbed(alertChannel, embedAlert)
 				}
-				
+
 				// Alert the owner via DM
 				dmChannel, err := s.UserChannelCreate(guild.OwnerID)
 				if err == nil {
@@ -135,18 +135,18 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 		}
 
 		// Antibots logic
-		if m.User.Bot {
-			if guildDoc.Protection.Antibots == "all" {
+		if m.User.Bot && guildDoc.Protection.Antibots.Enable {
+			if guildDoc.Protection.Antibots.Type == "all" {
 				s.GuildMemberDeleteWithReason(m.GuildID, m.User.ID, "Anti-Bots: Todos los bots están bloqueados")
 				logger.Info(fmt.Sprintf("🤖 Bot %s expulsado por Anti-Bots (all)", m.User.Username), "Member")
 				return
-			} else if guildDoc.Protection.Antibots == "only_nv" {
+			} else if guildDoc.Protection.Antibots.Type == "only_nv" {
 				if m.User.PublicFlags&discordgo.UserFlagVerifiedBot == 0 {
 					s.GuildMemberDeleteWithReason(m.GuildID, m.User.ID, "Anti-Bots: Bot no verificado")
 					logger.Info(fmt.Sprintf("🤖 Bot %s expulsado por Anti-Bots (only_nv)", m.User.Username), "Member")
 					return
 				}
-			} else if guildDoc.Protection.Antibots == "only_v" {
+			} else if guildDoc.Protection.Antibots.Type == "only_v" {
 				if m.User.PublicFlags&discordgo.UserFlagVerifiedBot != 0 {
 					s.GuildMemberDeleteWithReason(m.GuildID, m.User.ID, "Anti-Bots: Bot verificado no permitido")
 					logger.Info(fmt.Sprintf("🤖 Bot %s expulsado por Anti-Bots (only_v)", m.User.Username), "Member")

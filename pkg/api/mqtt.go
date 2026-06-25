@@ -1,7 +1,10 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
+	"runtime"
+	"time"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
@@ -10,7 +13,7 @@ import (
 
 // RegisterAPIHandlers registers all MQTT endpoints for the REST API
 func RegisterAPIHandlers(mc *mqtt.MqttCommunicator, discordClient *discord.ExtendedClient) {
-	
+
 	// get-bot-guild-ids
 	mc.On("get-bot-guild-ids", func(payload map[string]interface{}) (interface{}, error) {
 		if discordClient == nil || discordClient.Session == nil || discordClient.Session.State == nil {
@@ -24,7 +27,7 @@ func RegisterAPIHandlers(mc *mqtt.MqttCommunicator, discordClient *discord.Exten
 		for _, g := range discordClient.Session.State.Guilds {
 			ids = append(ids, g.ID)
 		}
-		
+
 		return ids, nil
 	})
 
@@ -38,7 +41,7 @@ func RegisterAPIHandlers(mc *mqtt.MqttCommunicator, discordClient *discord.Exten
 		if !ok {
 			return nil, fmt.Errorf("missing guildId")
 		}
-		
+
 		guildID, ok := guildIDInter.(string)
 		if !ok {
 			return nil, fmt.Errorf("guildId must be a string")
@@ -165,5 +168,62 @@ func RegisterAPIHandlers(mc *mqtt.MqttCommunicator, discordClient *discord.Exten
 			"requiredXp":    requiredXP,
 			"totalMessages": profile.TotalMessages,
 		}, nil
+	})
+
+	// get-stats
+	mc.On("get-stats", func(payload map[string]interface{}) (interface{}, error) {
+		if discordClient == nil || discordClient.Session == nil || discordClient.Session.State == nil {
+			return nil, fmt.Errorf("discord client not ready")
+		}
+
+		discordClient.Session.State.RLock()
+		guilds := len(discordClient.Session.State.Guilds)
+		users := 0
+		channels := 0
+		for _, g := range discordClient.Session.State.Guilds {
+			users += g.MemberCount
+			channels += len(g.Channels)
+		}
+		discordClient.Session.State.RUnlock()
+
+		var memStats runtime.MemStats
+		runtime.ReadMemStats(&memStats)
+
+		ping := discordClient.Session.HeartbeatLatency()
+		uptime := time.Since(discordClient.StartTime).Milliseconds()
+
+		commandsSize := 0
+		if discordClient.Commands != nil {
+			commandsSize = discordClient.Commands.Size()
+		}
+
+		dbStatus := "Desconectado"
+		if database.Get() != nil && database.Get().Connected() {
+			dbStatus = "Conectado"
+		}
+
+		stats := map[string]interface{}{
+			"guilds":      guilds,
+			"users":       users,
+			"channels":    channels,
+			"uptime":      uptime,
+			"commands":    commandsSize,
+			"nodeVersion": runtime.Version(),
+			"botVersion":  "1.0.0",
+			"ping":        fmt.Sprintf("%dms", ping.Milliseconds()),
+			"memory":      float64(memStats.Alloc) / 1024 / 1024,
+			"cpu":         0,
+			"platform":    runtime.GOOS,
+			"arch":        runtime.GOARCH,
+			"release":     "PancyBotGo",
+			"database":    dbStatus,
+		}
+
+		bytes, err := json.Marshal(stats)
+		if err != nil {
+			return nil, err
+		}
+
+		return string(bytes), nil
 	})
 }
