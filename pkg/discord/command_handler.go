@@ -2,6 +2,7 @@
 package discord
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/config"

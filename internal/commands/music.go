@@ -32,7 +32,6 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 		},
 	).WithAutoComplete(playAutoComplete).RequiresVoice()
 	client.CommandHandler.RegisterCommand(playCmd)
-	client.CommandHandler.AddGlobalCommand(playCmd.ToApplicationCommand())
 
 	// Pause command
 	pauseCmd := discord.NewCommand(
@@ -42,7 +41,6 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 		pauseHandler,
 	).RequiresVoice()
 	client.CommandHandler.RegisterCommand(pauseCmd)
-	client.CommandHandler.AddGlobalCommand(pauseCmd.ToApplicationCommand())
 
 	// Skip command
 	skipCmd := discord.NewCommand(
@@ -52,7 +50,6 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 		skipHandler,
 	).RequiresVoice()
 	client.CommandHandler.RegisterCommand(skipCmd)
-	client.CommandHandler.AddGlobalCommand(skipCmd.ToApplicationCommand())
 
 	// Stop command
 	stopCmd := discord.NewCommand(
@@ -62,7 +59,6 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 		stopHandler,
 	).RequiresVoice()
 	client.CommandHandler.RegisterCommand(stopCmd)
-	client.CommandHandler.AddGlobalCommand(stopCmd.ToApplicationCommand())
 
 	// Queue command
 	queueCmd := discord.NewCommand(
@@ -72,7 +68,6 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 		queueHandler,
 	)
 	client.CommandHandler.RegisterCommand(queueCmd)
-	client.CommandHandler.AddGlobalCommand(queueCmd.ToApplicationCommand())
 
 	// Volume command
 	volumeCmd := discord.NewCommand(
@@ -91,7 +86,6 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 		},
 	).RequiresVoice()
 	client.CommandHandler.RegisterCommand(volumeCmd)
-	client.CommandHandler.AddGlobalCommand(volumeCmd.ToApplicationCommand())
 
 	// NowPlaying command
 	npCmd := discord.NewCommand(
@@ -101,7 +95,6 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 		nowPlayingHandler,
 	)
 	client.CommandHandler.RegisterCommand(npCmd)
-	client.CommandHandler.AddGlobalCommand(npCmd.ToApplicationCommand())
 }
 
 // playHandler handles the /play command

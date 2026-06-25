@@ -29,7 +29,6 @@ func Register(client *discord.ExtendedClient) {
 
 	// Register the command with the client
 	client.CommandHandler.RegisterCommand(configCmd)
-	client.CommandHandler.AddGlobalCommand(configCmd.ToApplicationCommand())
 
 	cmds := []*discord.Command{
 		suggestConfigCmd,
@@ -42,7 +41,6 @@ func Register(client *discord.ExtendedClient) {
 	for _, cmd := range cmds {
 		cmd.WithUserPermissions(discordgo.PermissionManageGuild)
 		client.CommandHandler.RegisterCommand(cmd)
-		client.CommandHandler.AddGlobalCommand(cmd.ToApplicationCommand())
 	}
 }
 
