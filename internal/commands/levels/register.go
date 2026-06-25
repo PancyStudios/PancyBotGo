@@ -11,6 +11,7 @@ func RegisterCommands(client *discord.ExtendedClient) {
 		"🌟 | Sistema de niveles y experiencia",
 		rankCommand,
 		leaderboardCommand,
+		toggleCommand,
 	)
 
 	client.CommandHandler.AddGlobalCommand(levelsGroup)

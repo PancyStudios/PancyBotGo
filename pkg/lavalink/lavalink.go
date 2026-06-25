@@ -607,7 +607,7 @@ func (c *LavalinkClient) Stop(guildID string) error {
 		node.mu.RUnlock()
 
 		if isConnected {
-			// In Lavalink v4, to stop, we set track to null
+			// In Lavalink v4, to stop, we set track to an empty object with encoded: null
 			payload := map[string]interface{}{
 				"track": map[string]interface{}{
 					"encoded": nil,
@@ -716,7 +716,7 @@ func (n *Node) updatePlayer(guildID string, payload map[string]interface{}) erro
 		scheme = "https"
 	}
 
-	url := fmt.Sprintf("%s://%s:%d/v4/sessions/%s/players/%s?noReplace=false",
+	url := fmt.Sprintf("%s://%s:%d/v4/sessions/%s/players/%s",
 		scheme, config.Host, config.Port, sessionId, guildID)
 
 	jsonData, err := json.Marshal(payload)
@@ -827,7 +827,7 @@ func (c *LavalinkClient) handleTrackStart(guildID string, payload map[string]int
 // handleTrackEnd handles track end events
 func (c *LavalinkClient) handleTrackEnd(guildID string, payload map[string]interface{}) {
 	reason, _ := payload["reason"].(string)
-	
+
 	// If the track was replaced (e.g. skipped or played immediately), ignore the end event
 	// because the new track state is already handled by Play/Skip.
 	if reason == "REPLACED" {
