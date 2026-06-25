@@ -95,6 +95,40 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 		nowPlayingHandler,
 	)
 	client.CommandHandler.RegisterCommand(npCmd)
+
+	// Radio command
+	var radioChoices []*discordgo.ApplicationCommandOptionChoice
+	for name, url := range radioStations {
+		radioChoices = append(radioChoices, &discordgo.ApplicationCommandOptionChoice{
+			Name:  name,
+			Value: url,
+		})
+	}
+
+	radioCmd := discord.NewCommand(
+		"radio",
+		"📻 | Sintoniza una estación de radio 24/7",
+		"music",
+		radioHandler,
+	).WithOptions(
+		&discordgo.ApplicationCommandOption{
+			Type:        discordgo.ApplicationCommandOptionString,
+			Name:        "estacion",
+			Description: "La estación de radio a sintonizar",
+			Required:    true,
+			Choices:     radioChoices,
+		},
+	).RequiresVoice()
+	client.CommandHandler.RegisterCommand(radioCmd)
+}
+
+// Predefined radio stations (Direct HTTP Streams to bypass YouTube)
+var radioStations = map[string]string{
+	"Lofi Hip Hop Radio":      "https://lfhh.radioca.st/stream",
+	"Nightride FM (Synthwave)": "https://stream.nightride.fm/nightride.m4a",
+	"Vaporwave Plaza":         "https://radio.plaza.one/mp3",
+	"I Love Radio (Pop/Hits)": "https://streams.ilovemusic.de/iloveradio1.mp3",
+	"I Love Dance (Electronic)": "https://streams.ilovemusic.de/iloveradio2.mp3",
 }
 
 // playHandler handles the /play command
@@ -163,16 +197,18 @@ func playHandler(ctx *discord.CommandContext) error {
 		if result.LoadType == "playlist" {
 			// Add all tracks to queue
 			for _, track := range tracks {
+				track.RequesterID = ctx.User().ID
+				track.RequesterName = ctx.User().Username
 				if err := lavalinkClient.Play(ctx.Interaction.GuildID, voiceState.ChannelID, ctx.Interaction.ChannelID, track); err != nil {
 					// Log error but continue
 					continue
 				}
 			}
-			embed := &discordgo.MessageEmbed{
-				Color:       0x5865F2,
-				Title:       "🎵 Playlist añadida a la cola",
-				Description: fmt.Sprintf("**Playlist** - %d canciones", len(tracks)),
-			}
+			embed := discord.NewEmbed().
+				SetColor(0x5865F2).
+				SetTitle("🎵 Playlist añadida a la cola").
+				SetDescription(fmt.Sprintf("**Playlist** - %d canciones", len(tracks))).
+				Build()
 			err = ctx.EditReplyEmbed(embed)
 			if err != nil {
 				return
@@ -182,6 +218,8 @@ func playHandler(ctx *discord.CommandContext) error {
 
 		// Single track
 		track := tracks[0]
+		track.RequesterID = ctx.User().ID
+		track.RequesterName = ctx.User().Username
 
 		// Play the track
 		if err := lavalinkClient.Play(ctx.Interaction.GuildID, voiceState.ChannelID, ctx.Interaction.ChannelID, track); err != nil {
@@ -192,27 +230,14 @@ func playHandler(ctx *discord.CommandContext) error {
 			return
 		}
 
-		// Create embed response
-		embed := &discordgo.MessageEmbed{
-			Color:       0x5865F2, // Blurple
-			Title:       "🎵 Añadido a la cola",
-			Description: fmt.Sprintf("[%s](%s)", track.Info.Title, track.Info.URI),
-			Thumbnail: &discordgo.MessageEmbedThumbnail{
-				URL: track.Info.ArtworkURL,
-			},
-			Fields: []*discordgo.MessageEmbedField{
-				{
-					Name:   "Artista",
-					Value:  track.Info.Author,
-					Inline: true,
-				},
-				{
-					Name:   "Duración",
-					Value:  formatDuration(track.Info.Length),
-					Inline: true,
-				},
-			},
-		}
+		embed := discord.NewEmbed().
+			SetColor(0x5865F2).
+			SetTitle("🎵 Añadido a la cola").
+			SetDescription(fmt.Sprintf("[%s](%s)", track.Info.Title, track.Info.URI)).
+			SetThumbnail(track.Info.ArtworkURL).
+			AddField("Artista", track.Info.Author, true).
+			AddField("Duración", formatDuration(track.Info.Length), true).
+			Build()
 
 		err = ctx.EditReplyEmbed(embed)
 		if err != nil {
@@ -410,31 +435,15 @@ func nowPlayingHandler(ctx *discord.CommandContext) error {
 		track := player.CurrentTrack
 		progress := float64(player.Position) / float64(track.Info.Length) * 100
 
-		embed := &discordgo.MessageEmbed{
-			Color:       0x5865F2,
-			Title:       "🎵 Reproduciendo ahora",
-			Description: fmt.Sprintf("[%s](%s)", track.Info.Title, track.Info.URI),
-			Thumbnail: &discordgo.MessageEmbedThumbnail{
-				URL: track.Info.ArtworkURL,
-			},
-			Fields: []*discordgo.MessageEmbedField{
-				{
-					Name:   "Artista",
-					Value:  track.Info.Author,
-					Inline: true,
-				},
-				{
-					Name:   "Progreso",
-					Value:  fmt.Sprintf("%s / %s (%.1f%%)", formatDuration(player.Position), formatDuration(track.Info.Length), progress),
-					Inline: true,
-				},
-				{
-					Name:   "Volumen",
-					Value:  fmt.Sprintf("%d%%", player.Volume),
-					Inline: true,
-				},
-			},
-		}
+		embed := discord.NewEmbed().
+			SetColor(0x5865F2).
+			SetTitle("🎵 Reproduciendo ahora").
+			SetDescription(fmt.Sprintf("[%s](%s)", track.Info.Title, track.Info.URI)).
+			SetThumbnail(track.Info.ArtworkURL).
+			AddField("Artista", track.Info.Author, true).
+			AddField("Progreso", fmt.Sprintf("%s / %s (%.1f%%)", formatDuration(player.Position), formatDuration(track.Info.Length), progress), true).
+			AddField("Volumen", fmt.Sprintf("%d%%", player.Volume), true).
+			Build()
 		ctx.ReplyEmbed(embed)
 		return
 	}()
@@ -498,4 +507,89 @@ func formatDuration(ms int64) string {
 	minutes := seconds / 60
 	seconds = seconds % 60
 	return fmt.Sprintf("%d:%02d", minutes, seconds)
+}
+
+// radioHandler handles the /radio command
+func radioHandler(ctx *discord.CommandContext) error {
+	go func() {
+		defer errors.RecoverMiddleware()()
+		stationURL := ctx.GetStringOption("estacion")
+
+		// Get user's voice channel
+		voiceState, err := ctx.Session.State.VoiceState(ctx.Interaction.GuildID, ctx.User().ID)
+		if err != nil || voiceState.ChannelID == "" {
+			err := ctx.ReplyEphemeral("❌ Debes estar en un canal de voz.")
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		ctx.Defer()
+
+		lavalinkClient := lavalink.Get()
+		if lavalinkClient == nil {
+			err := ctx.EditReply("❌ El sistema de música no está disponible.")
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		// Find the station name
+		var stationName string
+		for name, url := range radioStations {
+			if url == stationURL {
+				stationName = name
+				break
+			}
+		}
+
+		result, err := lavalinkClient.Search(stationURL)
+		if err != nil {
+			err := ctx.EditReply(fmt.Sprintf("❌ Error buscando la radio: %v", err))
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		tracks := result.GetTracks()
+		if result.LoadType == "empty" || len(tracks) == 0 {
+			err := ctx.EditReply("❌ No se pudo conectar a la estación de radio.")
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		track := tracks[0]
+
+		// Stop current playback to override with radio
+		if err := lavalinkClient.Stop(ctx.Interaction.GuildID); err != nil {
+			// ignore error if nothing was playing
+		}
+
+		// Play the radio track
+		if err := lavalinkClient.Play(ctx.Interaction.GuildID, voiceState.ChannelID, ctx.Interaction.ChannelID, track); err != nil {
+			err := ctx.EditReply(fmt.Sprintf("❌ Error reproduciendo: %v", err))
+			if err != nil {
+				return
+			}
+			return
+		}
+
+		embed := discord.NewEmbed().
+			SetColor(0xF1C40F).
+			SetTitle("📻 Radio Sintonizada").
+			SetDescription(fmt.Sprintf("Reproduciendo **%s** 24/7\n\n[%s](%s)", stationName, track.Info.Title, track.Info.URI)).
+			SetThumbnail(track.Info.ArtworkURL).
+			Build()
+
+		err = ctx.EditReplyEmbed(embed)
+		if err != nil {
+			return
+		}
+	}()
+	return nil
 }

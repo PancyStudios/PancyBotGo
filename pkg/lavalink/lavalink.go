@@ -50,8 +50,10 @@ type TrackInfo struct {
 
 // Track represents a playable track
 type Track struct {
-	Encoded string    `json:"encoded"`
-	Info    TrackInfo `json:"info"`
+	Encoded       string    `json:"encoded"`
+	Info          TrackInfo `json:"info"`
+	RequesterID   string    `json:"-"`
+	RequesterName string    `json:"-"`
 }
 
 // Player represents a guild music player
@@ -801,10 +803,37 @@ func (c *LavalinkClient) handleTrackStart(guildID string, payload map[string]int
 
 	// Publish MQTT event
 	c.publishMusicEvent(guildID, "playing", player)
+
+	// Announce track
+	if player.TextChannelID != "" {
+		requester := track.RequesterName
+		if requester == "" {
+			requester = "Dashboard / Auto"
+		}
+
+		embed := &discordgo.MessageEmbed{
+			Color:       0x5865F2,
+			Title:       "🎵 Reproduciendo ahora",
+			Description: fmt.Sprintf("[%s](%s)\n\n**Añadida por:** %s", track.Info.Title, track.Info.URI, requester),
+			Thumbnail: &discordgo.MessageEmbedThumbnail{
+				URL: track.Info.ArtworkURL,
+			},
+		}
+
+		c.session.ChannelMessageSendEmbed(player.TextChannelID, embed)
+	}
 }
 
 // handleTrackEnd handles track end events
 func (c *LavalinkClient) handleTrackEnd(guildID string, payload map[string]interface{}) {
+	reason, _ := payload["reason"].(string)
+	
+	// If the track was replaced (e.g. skipped or played immediately), ignore the end event
+	// because the new track state is already handled by Play/Skip.
+	if reason == "REPLACED" {
+		return
+	}
+
 	c.stopProgressUpdates(guildID)
 
 	player := c.GetPlayer(guildID)

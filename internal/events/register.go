@@ -24,6 +24,9 @@ func RegisterAll(client *discord.ExtendedClient) {
 	// Message events (create/update/delete)
 	RegisterMessageEvents(client)
 
+	// Channel events (anti-nuke)
+	RegisterChannelEvents(client)
+
 	// Voice events (join/leave/move)
 	RegisterVoiceEvents(client)
 

@@ -84,11 +84,11 @@ func topHandler(ctx *discord.CommandContext) error {
 		leaderboardStr = "No hay datos para mostrar en la tabla de clasificación."
 	}
 
-	embed := &discordgo.MessageEmbed{
-		Title:       embedTitle,
-		Color:       embedColor,
-		Description: leaderboardStr,
-	}
+	embed := discord.NewEmbed().
+		SetTitle(embedTitle).
+		SetColor(embedColor).
+		SetDescription(leaderboardStr).
+		Build()
 
 	ctx.ReplyEmbed(embed)
 	return nil

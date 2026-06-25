@@ -5,7 +5,6 @@ import (
 
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
-	"github.com/bwmarrin/discordgo"
 )
 
 func createShopCommand() *discord.Command {
@@ -48,23 +47,13 @@ func shopHandler(ctx *discord.CommandContext) error {
 		localItems = "El administrador del servidor no ha creado objetos locales."
 	}
 
-	embed := &discordgo.MessageEmbed{
-		Title:       "🛒 Mercado Intergaláctico",
-		Color:       0x9B59B6,
-		Description: "💰 | Usa `/buy <id>` para comprar un objeto.",
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "🌟 Mercado Global (Cuesta Estrellas)",
-				Value:  globalItems,
-				Inline: false,
-			},
-			{
-				Name:   "🏪 Tienda del Servidor (Cuesta Monedas)",
-				Value:  localItems,
-				Inline: false,
-			},
-		},
-	}
+	embed := discord.NewEmbed().
+		SetTitle("🛒 Mercado Intergaláctico").
+		SetColor(0x9B59B6).
+		SetDescription("💰 | Usa `/shop buy <id>` para comprar un objeto.").
+		AddField("🌟 Mercado Global (Cuesta Estrellas)", globalItems, false).
+		AddField("🏪 Tienda del Servidor (Cuesta Monedas)", localItems, false).
+		Build()
 
 	ctx.ReplyEmbed(embed)
 	return nil

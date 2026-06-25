@@ -98,20 +98,27 @@ func useHandler(ctx *discord.CommandContext) error {
 			delete(profile.Inventory, selectedItem.ID)
 		}
 
-		if selectedItem.Type == models.ItemTypeRole && selectedItem.RoleID != "" {
+		efectoAplicado := false
+		if selectedItem.Effect == "EXPAND_BANK" {
+			profile.BankCapacity += int64(selectedItem.EffectValue)
+			efectoAplicado = true
+		} else if selectedItem.Type == models.ItemTypeRole && selectedItem.RoleID != "" {
 			err = ctx.Session.GuildMemberRoleAdd(guildID, userID, selectedItem.RoleID)
 			if err != nil {
 				ctx.Reply("❌ No pude darte el rol asociado a este objeto. Revisa mis permisos.")
 				return nil
 			}
-			ctx.Reply(fmt.Sprintf("✨ Has usado **%s** y obtuviste un rol nuevo.", selectedItem.Name))
-			database.LocalEconomyDM.Set(bson.M{"_id": profile.ID}, profile)
-			return nil
+			efectoAplicado = true
 		}
 
 		database.LocalEconomyDM.Set(bson.M{"_id": profile.ID}, profile)
+
+		if efectoAplicado {
+			ctx.Reply(fmt.Sprintf("✅ Has usado **%s**. ¡El efecto ha sido aplicado con éxito!", selectedItem.Name))
+			return nil
+		}
 	}
 
-	ctx.Reply(fmt.Sprintf("✨ Has usado **%s**. ¡El efecto ha sido aplicado!", selectedItem.Name))
+	ctx.Reply(fmt.Sprintf("✨ Has usado **%s** pero no pareció tener ningún efecto especial.", selectedItem.Name))
 	return nil
 }

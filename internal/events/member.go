@@ -115,8 +115,20 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 					alertChannel = guild.SystemChannelID
 				}
 				
+				embedAlert := discord.NewEmbed().
+					SetColor(0xFF0000). // Red
+					SetTitle("🚨 ¡ALERTA DE RAID MASIVO!").
+					SetDescription("Se detectó un pico inusual de nuevas cuentas uniéndose al servidor.\n\nEl **Modo Pánico Anti-Raid** ha sido activado automáticamente y todas las nuevas uniones serán bloqueadas.\n\n*Un administrador debe desactivarlo con `/security antiraid toggle` cuando sea seguro.*").
+					Build()
+
 				if alertChannel != "" {
-					s.ChannelMessageSend(alertChannel, "🚨 **¡ALERTA DE RAID!**\nSe detectó un pico inusual de nuevas cuentas uniéndose al servidor. El **Modo Pánico Anti-Raid** ha sido activado automáticamente y las nuevas uniones serán bloqueadas. Un administrador debe desactivarlo con `/security antiraid toggle` cuando sea seguro.")
+					s.ChannelMessageSendEmbed(alertChannel, embedAlert)
+				}
+				
+				// Alert the owner via DM
+				dmChannel, err := s.UserChannelCreate(guild.OwnerID)
+				if err == nil {
+					s.ChannelMessageSendEmbed(dmChannel.ID, embedAlert)
 				}
 				return
 			}

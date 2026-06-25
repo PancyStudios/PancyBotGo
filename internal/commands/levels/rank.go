@@ -66,17 +66,13 @@ var rankCommand = &discord.Command{
 		
 		progressBar := createProgressBar(progressPercent, 10)
 
-		embed := &discordgo.MessageEmbed{
-			Title:       fmt.Sprintf("🌟 Rango de %s", targetUser.Username),
-			Description: fmt.Sprintf("¡Sigue chateando para subir de nivel!\n\n**Nivel Actual:** %d\n**Experiencia:** %d / %d XP\n\n%s (%.1f%%)", profile.Level, profile.XP, requiredXP, progressBar, progressPercent),
-			Color:       0x00FFFF, // Cyan
-			Thumbnail: &discordgo.MessageEmbedThumbnail{
-				URL: targetUser.AvatarURL("128"),
-			},
-			Footer: &discordgo.MessageEmbedFooter{
-				Text: fmt.Sprintf("Mensajes totales: %d", profile.TotalMessages),
-			},
-		}
+		embed := discord.NewEmbed().
+			SetTitle(fmt.Sprintf("🌟 Rango de %s", targetUser.Username)).
+			SetDescription(fmt.Sprintf("¡Sigue chateando para subir de nivel!\n\n**Nivel Actual:** %d\n**Experiencia:** %d / %d XP\n\n%s (%.1f%%)", profile.Level, profile.XP, requiredXP, progressBar, progressPercent)).
+			SetColor(0x00FFFF). // Cyan
+			SetThumbnail(targetUser.AvatarURL("128")).
+			SetFooter(fmt.Sprintf("Mensajes totales: %d", profile.TotalMessages), "").
+			Build()
 
 		return ctx.ReplyEmbed(embed)
 	},

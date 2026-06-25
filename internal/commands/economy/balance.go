@@ -2,7 +2,6 @@ package economy
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
@@ -46,25 +45,14 @@ func balanceHandler(ctx *discord.CommandContext) error {
 		return err
 	}
 
-	embed := &discordgo.MessageEmbed{
-		Title:       fmt.Sprintf("Balance de %s", targetUser.Username),
-		Color:       0xF1C40F,
-		Thumbnail:   &discordgo.MessageEmbedThumbnail{URL: targetUser.AvatarURL("")},
-		Description: "💰 | Aquí tienes el resumen de tu economía.",
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "🌐 Economía Global (Estrellas)",
-				Value:  fmt.Sprintf("**Cartera:** 🌟 %d\n**Banco:** 🏦 %d / %d", globalProfile.StarsWallet, globalProfile.StarsBank, globalProfile.BankCapacity),
-				Inline: false,
-			},
-			{
-				Name:   "🏠 Economía Local (Servidor)",
-				Value:  fmt.Sprintf("**Cartera:** 💵 %d\n**Banco:** 🏦 %d / %d", localProfile.Wallet, localProfile.Bank, localProfile.BankCapacity),
-				Inline: false,
-			},
-		},
-		Timestamp: time.Now().Format(time.RFC3339),
-	}
+	embed := discord.NewEmbed().
+		SetTitle(fmt.Sprintf("Balance de %s", targetUser.Username)).
+		SetColor(discord.ColorWarning).
+		SetThumbnail(targetUser.AvatarURL("")).
+		SetDescription("💰 | Aquí tienes el resumen de tu economía.").
+		AddField("🌐 Economía Global (Estrellas)", fmt.Sprintf("**Cartera:** 🌟 %d\n**Banco:** 🏦 %d / %d", globalProfile.StarsWallet, globalProfile.StarsBank, globalProfile.BankCapacity), false).
+		AddField("🏠 Economía Local (Servidor)", fmt.Sprintf("**Cartera:** 💵 %d\n**Banco:** 🏦 %d / %d", localProfile.Wallet, localProfile.Bank, localProfile.BankCapacity), false).
+		Build()
 
 	ctx.ReplyEmbed(embed)
 	return nil

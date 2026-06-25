@@ -109,14 +109,39 @@ func (ctx *CommandContext) IsDev() bool {
 	return false
 }
 
-// Reply sends a reply to the interaction
+// Reply sends an embedded reply to the interaction
 func (ctx *CommandContext) Reply(content string) error {
+	return ctx.ReplyEmbed(SimpleEmbed(content))
+}
+
+// ReplyText sends a plain text reply to the interaction
+func (ctx *CommandContext) ReplyText(content string) error {
 	return ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: content,
 		},
 	})
+}
+
+// ReplySuccess sends a success embed reply
+func (ctx *CommandContext) ReplySuccess(content string) error {
+	return ctx.ReplyEmbed(NewSuccessEmbed("Éxito", content))
+}
+
+// ReplyError sends an error embed reply
+func (ctx *CommandContext) ReplyError(content string) error {
+	return ctx.ReplyEmbed(NewErrorEmbed("Error", content))
+}
+
+// ReplyWarning sends a warning embed reply
+func (ctx *CommandContext) ReplyWarning(content string) error {
+	return ctx.ReplyEmbed(NewWarningEmbed("Advertencia", content))
+}
+
+// ReplyInfo sends an info embed reply
+func (ctx *CommandContext) ReplyInfo(content string) error {
+	return ctx.ReplyEmbed(NewInfoEmbed("Información", content))
 }
 
 // ReplyEmbed sends an embed reply to the interaction
@@ -129,8 +154,13 @@ func (ctx *CommandContext) ReplyEmbed(embed *discordgo.MessageEmbed) error {
 	})
 }
 
-// ReplyEphemeral sends an ephemeral reply visible only to the user
+// ReplyEphemeral sends an ephemeral embedded reply visible only to the user
 func (ctx *CommandContext) ReplyEphemeral(content string) error {
+	return ctx.ReplyEphemeralEmbed(SimpleEmbed(content))
+}
+
+// ReplyEphemeralText sends an ephemeral plain text reply visible only to the user
+func (ctx *CommandContext) ReplyEphemeralText(content string) error {
 	return ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -158,8 +188,13 @@ func (ctx *CommandContext) Defer() error {
 	})
 }
 
-// EditReply edits the original interaction response
+// EditReply edits the original interaction response with an embed
 func (ctx *CommandContext) EditReply(content string) error {
+	return ctx.EditReplyEmbed(SimpleEmbed(content))
+}
+
+// EditReplyText edits the original interaction response with plain text
+func (ctx *CommandContext) EditReplyText(content string) error {
 	_, err := ctx.Session.InteractionResponseEdit(ctx.Interaction.Interaction, &discordgo.WebhookEdit{
 		Content: &content,
 	})

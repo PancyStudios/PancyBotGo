@@ -46,6 +46,29 @@ func createAdminShopCommand() *discord.Command {
 					Description: "💰 | Emoji que representa al objeto",
 					Required:    false,
 				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "efecto",
+					Description: "✨ | Efecto (NONE, EXPAND_BANK, GIVE_ROLE)",
+					Required:    false,
+					Choices: []*discordgo.ApplicationCommandOptionChoice{
+						{Name: "Ninguno", Value: "NONE"},
+						{Name: "Expandir Banco", Value: "EXPAND_BANK"},
+						{Name: "Otorgar Rol", Value: "GIVE_ROLE"},
+					},
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionNumber,
+					Name:        "valor_efecto",
+					Description: "✨ | Valor numérico del efecto (ej. 1000 para capacidad de banco)",
+					Required:    false,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionRole,
+					Name:        "rol_id",
+					Description: "✨ | El rol a otorgar (solo si el efecto es GIVE_ROLE)",
+					Required:    false,
+				},
 			},
 		},
 		&discordgo.ApplicationCommandOption{
@@ -73,6 +96,9 @@ func adminShopHandler(ctx *discord.CommandContext) error {
 		desc := ""
 		price := int64(0)
 		emoji := "📦"
+		effect := "NONE"
+		effectValue := float64(0)
+		roleID := ""
 
 		for _, opt := range subcommand.Options {
 			switch opt.Name {
@@ -84,12 +110,25 @@ func adminShopHandler(ctx *discord.CommandContext) error {
 				price = opt.IntValue()
 			case "emoji":
 				emoji = opt.StringValue()
+			case "efecto":
+				effect = opt.StringValue()
+			case "valor_efecto":
+				effectValue = opt.FloatValue()
+			case "rol_id":
+				roleID = opt.RoleValue(ctx.Session, ctx.Interaction.GuildID).ID
 			}
 		}
 
 		if price <= 0 {
-			ctx.Reply("❌ " + "El precio debe ser mayor a 0.")
+			ctx.Reply("❌ El precio debe ser mayor a 0.")
 			return nil
+		}
+
+		itemType := models.ItemTypeCollectible
+		if effect == "GIVE_ROLE" {
+			itemType = models.ItemTypeRole
+		} else if effect != "NONE" {
+			itemType = models.ItemTypeConsumable
 		}
 
 		item := models.Item{
@@ -99,9 +138,12 @@ func adminShopHandler(ctx *discord.CommandContext) error {
 			Description: desc,
 			Price:       price,
 			SellPrice:   price / 2,
-			Type:        models.ItemTypeCollectible,
+			Type:        itemType,
 			Emoji:       emoji,
 			Stock:       -1,
+			Effect:      effect,
+			EffectValue: effectValue,
+			RoleID:      roleID,
 		}
 
 		err := database.SaveItem(item)

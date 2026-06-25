@@ -6,7 +6,6 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/models"
-	"github.com/bwmarrin/discordgo"
 )
 
 func createInventoryCommand() *discord.Command {
@@ -62,24 +61,14 @@ func inventoryHandler(ctx *discord.CommandContext) error {
 		localInvStr = "No tienes objetos del servidor."
 	}
 
-	embed := &discordgo.MessageEmbed{
-		Title:       fmt.Sprintf("🎒 Inventario de %s", ctx.Interaction.Member.User.Username),
-		Color:       0x3498DB,
-		Thumbnail:   &discordgo.MessageEmbedThumbnail{URL: ctx.Interaction.Member.User.AvatarURL("")},
-		Description: "💰 | Aquí están todos tus objetos coleccionados.",
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "🌟 Objetos Globales",
-				Value:  globalInvStr,
-				Inline: false,
-			},
-			{
-				Name:   "🏠 Objetos Locales",
-				Value:  localInvStr,
-				Inline: false,
-			},
-		},
-	}
+	embed := discord.NewEmbed().
+		SetTitle(fmt.Sprintf("🎒 Inventario de %s", ctx.Interaction.Member.User.Username)).
+		SetColor(0x3498DB).
+		SetThumbnail(ctx.Interaction.Member.User.AvatarURL("")).
+		SetDescription("💰 | Aquí están todos tus objetos coleccionados.").
+		AddField("🌟 Objetos Globales", globalInvStr, false).
+		AddField("🏠 Objetos Locales", localInvStr, false).
+		Build()
 
 	ctx.ReplyEmbed(embed)
 	return nil
