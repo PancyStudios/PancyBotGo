@@ -145,32 +145,28 @@ func (ch *CommandHandler) RegisterCommands() {
 	copy(slashCommandsDev, ch.slashCommandsDev)
 	ch.mu.RUnlock()
 
-	for _, cmd := range slashCommands {
-		_, err := ch.client.Session.ApplicationCommandCreate(
-			ch.client.Session.State.User.ID,
-			"",
-			cmd,
-		)
-		if err != nil {
-			logger.Error("Error registrando comando "+cmd.Name+": "+err.Error(), "CommandHandler")
-		}
+	_, err := ch.client.Session.ApplicationCommandBulkOverwrite(
+		ch.client.Session.State.User.ID,
+		"",
+		slashCommands,
+	)
+	if err != nil {
+		logger.Error("Error en BulkOverwrite global: "+err.Error(), "CommandHandler")
+	} else {
+		logger.Success("✅ Comandos globales registrados y sincronizados.", "CommandHandler")
 	}
-
-	logger.Success("✅ Comandos globales registrados.", "CommandHandler")
 
 	// Register dev commands in dev guild
 	if cfg.DevGuildID != "" && len(slashCommandsDev) > 0 {
 		logger.Info("🔄 Registrando comandos de desarrollo en el servidor "+cfg.DevGuildID+"...", "CommandHandler")
 
-		for _, cmd := range slashCommandsDev {
-			_, err := ch.client.Session.ApplicationCommandCreate(
-				ch.client.Session.State.User.ID,
-				cfg.DevGuildID,
-				cmd,
-			)
-			if err != nil {
-				logger.Error("Error registrando comando de desarrollo "+cmd.Name+": "+err.Error(), "CommandHandler")
-			}
+		_, err := ch.client.Session.ApplicationCommandBulkOverwrite(
+			ch.client.Session.State.User.ID,
+			cfg.DevGuildID,
+			slashCommandsDev,
+		)
+		if err != nil {
+			logger.Error("Error en BulkOverwrite dev: "+err.Error(), "CommandHandler")
 		}
 
 		logger.Success("✅ Comandos de desarrollo registrados.", "CommandHandler")
