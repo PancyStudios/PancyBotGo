@@ -28,9 +28,8 @@ func createBalanceCommand() *discord.Command {
 func balanceHandler(ctx *discord.CommandContext) error {
 	targetUser := ctx.Interaction.Member.User
 	
-	// CommandContext doesn't have an explicit option for user object, but we can extract it
-	if len(ctx.Interaction.ApplicationCommandData().Options) > 0 {
-		targetUser = ctx.Interaction.ApplicationCommandData().Options[0].UserValue(ctx.Session)
+	if ctx.HasOption("usuario") {
+		targetUser = ctx.GetUserOption("usuario")
 	}
 
 	// Get local profile

@@ -44,8 +44,8 @@ func payHandler(ctx *discord.CommandContext) error {
 	ecoType := ctx.GetStringOption("tipo")
 	
 	var targetUser *discordgo.User
-	if len(ctx.Interaction.ApplicationCommandData().Options) > 1 {
-		targetUser = ctx.Interaction.ApplicationCommandData().Options[1].UserValue(ctx.Session)
+	if ctx.HasOption("usuario") {
+		targetUser = ctx.GetUserOption("usuario")
 	}
 	
 	amount := ctx.GetIntOption("cantidad")

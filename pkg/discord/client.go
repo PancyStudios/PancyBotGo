@@ -9,6 +9,7 @@ import (
 
 	"github.com/PancyStudios/PancyBotGo/pkg/config"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord/premium"
+	"github.com/PancyStudios/PancyBotGo/pkg/errors"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/bwmarrin/discordgo"
 )
@@ -174,6 +175,8 @@ func (c *ExtendedClient) Start() error {
 
 // handleInteraction handles incoming Discord interactions
 func (c *ExtendedClient) handleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	defer errors.RecoverMiddleware()()
+	
 	if i.Type == discordgo.InteractionApplicationCommandAutocomplete {
 		data := i.ApplicationCommandData()
 		commandName := data.Name

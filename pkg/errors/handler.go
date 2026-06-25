@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -128,11 +129,32 @@ func (h *ErrorHandler) IncrementError() {
 	logger.Error(fmt.Sprintf("Error count: %d", count), "AntiCrash")
 }
 
-// HandlePanic handles a recovered panic
+// HandlePanic handles a recovered panic and generates a crash dump
 func (h *ErrorHandler) HandlePanic(recovered interface{}) {
 	h.IncrementError()
 	logger.Debug("Unhandled Panic/Catch", "AntiCrash")
-	logger.Error(fmt.Sprintf("%v", recovered), "SYS")
+	
+	// Generate crash dump
+	os.MkdirAll("crash_dumps", 0755)
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	dumpFile := fmt.Sprintf("crash_dumps/crash_dump_%s.txt", timestamp)
+	
+	stack := debug.Stack()
+	dumpContent := fmt.Sprintf("=== PANCYBOT CRASH DUMP ===\nTime: %s\nPanic: %v\n\nStack Trace:\n%s\n", time.Now().Format(time.RFC3339), recovered, string(stack))
+	
+	if err := os.WriteFile(dumpFile, []byte(dumpContent), 0644); err == nil {
+		logger.Error(fmt.Sprintf("Panic salvado! Crash dump generado en: %s", dumpFile), "AntiCrash")
+	} else {
+		logger.Error(fmt.Sprintf("Panic salvado pero falló al escribir el dump: %v", err), "AntiCrash")
+	}
+
+	logger.Error(fmt.Sprintf("PANIC: %v", recovered), "SYS")
+	
+	// Report to webhook
+	h.Report(ReportErrorOptions{
+		Error:   "PANIC / Unhandled Exception",
+		Message: fmt.Sprintf("Se ha recuperado de un crasheo fatal.\n**Error:** `%v`\n**Crash Dump:** `%s`", recovered, dumpFile),
+	})
 }
 
 // Report sends an error report to the Discord webhook
