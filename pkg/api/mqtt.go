@@ -52,10 +52,32 @@ func RegisterAPIHandlers(mc *mqtt.MqttCommunicator, discordClient *discord.Exten
 			return nil, fmt.Errorf("guild not found")
 		}
 
+		var roles []map[string]interface{}
+		for _, r := range guild.Roles {
+			roles = append(roles, map[string]interface{}{
+				"id":    r.ID,
+				"name":  r.Name,
+				"color": r.Color,
+			})
+		}
+
+		var channels []map[string]interface{}
+		for _, c := range guild.Channels {
+			// Solamente canales de texto (Type 0)
+			if c.Type == 0 {
+				channels = append(channels, map[string]interface{}{
+					"id":   c.ID,
+					"name": c.Name,
+				})
+			}
+		}
+
 		return map[string]interface{}{
-			"id":   guild.ID,
-			"name": guild.Name,
-			"icon": guild.Icon,
+			"id":       guild.ID,
+			"name":     guild.Name,
+			"icon":     guild.Icon,
+			"roles":    roles,
+			"channels": channels,
 		}, nil
 	})
 

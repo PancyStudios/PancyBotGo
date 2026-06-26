@@ -121,14 +121,14 @@ func handleUserLeveling(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Comprobar cooldown (60 segundos)
+	// Comprobar cooldown (3 segundos)
 	now := time.Now()
-	if now.Sub(profile.LastMessageTime) < 60*time.Second {
+	if now.Sub(profile.LastMessageTime) < 3*time.Second {
 		return
 	}
 
-	// Añadir XP aleatorio (15 a 25)
-	addedXP := int64(15 + (now.UnixNano() % 11)) // simple pseudo-random
+	// Añadir XP aleatorio (1 a 15)
+	addedXP := int64(1 + (now.UnixNano() % 15)) // simple pseudo-random
 	profile.XP += addedXP
 	profile.TotalMessages += 1
 	profile.LastMessageTime = now
@@ -151,16 +151,28 @@ func handleUserLeveling(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Enviar mensaje de Level Up si es necesario
 	if levelUp {
+		// Asignar roles de recompensa
+		for _, reward := range guildData.Levels.Rewards {
+			if reward.Level == profile.Level {
+				err := s.GuildMemberRoleAdd(m.GuildID, m.Author.ID, reward.RoleID)
+				if err != nil {
+					logger.Error(fmt.Sprintf("No se pudo asignar rol de nivel %d a %s: %v", profile.Level, m.Author.ID, err), "Levels")
+				} else {
+					logger.Info(fmt.Sprintf("Rol %s asignado a %s por alcanzar el nivel %d", reward.RoleID, m.Author.ID, profile.Level), "Levels")
+				}
+			}
+		}
+
 		chID := m.ChannelID
 		if guildData.Levels.LevelUpChannel != "" {
 			chID = guildData.Levels.LevelUpChannel
 		}
-		
+
 		msgContent := guildData.Levels.LevelUpMessage
 		if msgContent == "" {
 			msgContent = "¡Felicidades {user}, has avanzado al **Nivel {level}**! 🎉"
 		}
-		
+
 		msgContent = strings.ReplaceAll(msgContent, "{user}", fmt.Sprintf("<@%s>", m.Author.ID))
 		msgContent = strings.ReplaceAll(msgContent, "{level}", fmt.Sprintf("%d", profile.Level))
 

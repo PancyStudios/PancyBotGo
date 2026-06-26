@@ -16,11 +16,18 @@ type GuildDocument struct {
 	Levels        LevelsConfig       `bson:"levels" json:"levels"`
 }
 
+// LevelReward represents a role given at a specific level
+type LevelReward struct {
+	Level  int64  `bson:"level" json:"level"`
+	RoleID string `bson:"roleId" json:"roleId"`
+}
+
 // LevelsConfig holds user level system settings
 type LevelsConfig struct {
-	Enable         bool   `bson:"enable" json:"enable"`
-	LevelUpChannel string `bson:"levelUpChannel" json:"levelUpChannel"` // Empty for same channel
-	LevelUpMessage string `bson:"levelUpMessage" json:"levelUpMessage"` // Available placeholders: {user}, {level}
+	Enable         bool          `bson:"enable" json:"enable"`
+	LevelUpChannel string        `bson:"levelUpChannel" json:"levelUpChannel"` // Empty for same channel
+	LevelUpMessage string        `bson:"levelUpMessage" json:"levelUpMessage"` // Available placeholders: {user}, {level}
+	Rewards        []LevelReward `bson:"rewards" json:"rewards"`
 }
 
 // ProtectionConfig holds security settings like antibots and antiraid
