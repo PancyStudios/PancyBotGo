@@ -121,10 +121,32 @@ func handleUserLeveling(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Comprobar cooldown (3 segundos)
 	now := time.Now()
-	if now.Sub(profile.LastMessageTime) < 3*time.Second {
+
+	// Comprobar si está en enfriamiento
+	if now.Before(profile.CooldownUntil) {
 		return
+	}
+
+	// Comprobar ventana de spam (4 mensajes en 3 segundos)
+	if now.Sub(profile.SpamWindowStart) > 3*time.Second {
+		// Resetear la ventana
+		profile.SpamWindowStart = now
+		profile.SpamCount = 1
+	} else {
+		profile.SpamCount++
+		if profile.SpamCount >= 4 {
+			// Activar cooldown de 5 segundos
+			profile.CooldownUntil = now.Add(5 * time.Second)
+			profile.SpamCount = 0 // Resetear cuenta para después del cooldown
+
+			// Guardar el perfil para que el cooldown haga efecto, y no dar XP
+			_, err = database.LocalLevelsDM.Set(bson.M{"_id": profile.ID}, profile)
+			if err != nil {
+				logger.Error(fmt.Sprintf("Error guardando cooldown para %s: %v", m.Author.ID, err), "Levels")
+			}
+			return
+		}
 	}
 
 	// Añadir XP aleatorio (1 a 15)
