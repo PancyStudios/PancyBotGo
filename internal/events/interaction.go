@@ -151,18 +151,18 @@ func handleFeedbackModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 func handleVerifyUser(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": i.GuildID})
-	if err != nil || guildDoc == nil || guildDoc.Configuration.SubData.VerifyRole == "" {
+	if err != nil || guildDoc == nil || !guildDoc.Protection.Verification.Enable || guildDoc.Protection.Verification.Role == "" {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "❌ El rol de verificación no está configurado en este servidor.",
+				Content: "❌ El sistema de verificación no está activo o el rol no está configurado en este servidor.",
 				Flags:   discordgo.MessageFlagsEphemeral,
 			},
 		})
 		return
 	}
 
-	verifyRoleID := guildDoc.Configuration.SubData.VerifyRole
+	verifyRoleID := guildDoc.Protection.Verification.Role
 
 	// Check if user already has the role
 	hasRole := false
