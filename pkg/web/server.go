@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -18,9 +17,8 @@ import (
 
 // Server represents the web server
 type Server struct {
-	engine           *gin.Engine
-	webhookURL       string
-	allowedHostRegex *regexp.Regexp
+	engine     *gin.Engine
+	webhookURL string
 }
 
 var (
@@ -49,9 +47,8 @@ func NewServer(webhookURL string) *Server {
 	engine.Use(gin.Recovery())
 
 	s := &Server{
-		engine:           engine,
-		webhookURL:       webhookURL,
-		allowedHostRegex: regexp.MustCompile(`^(.+\.)?miau\.media|^localhost(:\d+)?$|^127\.0\.0\.1(:\d+)?$|^172\.18\.0\.1(:\d+)?$`),
+		engine:     engine,
+		webhookURL: webhookURL,
 	}
 
 	// Apply middlewares
@@ -79,7 +76,7 @@ func (s *Server) logsMiddleware() gin.HandlerFunc {
 
 		host := c.Request.Host
 
-		if s.allowedHostRegex.MatchString(host) {
+		if isAllowedHost(host) {
 			logger.Info(fmt.Sprintf("[LOG] Nueva solicitud: %s %s", c.Request.Method, c.Request.URL.Path), "WebServer")
 
 			// Send to webhook
