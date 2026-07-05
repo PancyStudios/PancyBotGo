@@ -342,3 +342,44 @@ func onGuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
 		}
 	}
 }
+
+// buildCustomEmbed converte un CustomEmbed del DB a un discordgo.MessageEmbed e interpola variables
+func buildCustomEmbed(customEmbed database.CustomEmbed, user *discordgo.User, guild *discordgo.Guild) *discordgo.MessageEmbed {
+	replaceVars := func(s string) string {
+		s = strings.ReplaceAll(s, "{user}", fmt.Sprintf("<@%s>", user.ID))
+		s = strings.ReplaceAll(s, "{user.id}", user.ID)
+		s = strings.ReplaceAll(s, "{user.name}", user.Username)
+		s = strings.ReplaceAll(s, "{user.avatar}", user.AvatarURL("256"))
+		
+		s = strings.ReplaceAll(s, "{server}", guild.Name)
+		s = strings.ReplaceAll(s, "{server.name}", guild.Name)
+		s = strings.ReplaceAll(s, "{server.id}", guild.ID)
+		s = strings.ReplaceAll(s, "{server.icon}", guild.IconURL("256"))
+		s = strings.ReplaceAll(s, "{server.members}", fmt.Sprintf("%d", guild.MemberCount))
+		
+		// Retro-compatibilidad
+		s = strings.ReplaceAll(s, "{username}", user.Username)
+		s = strings.ReplaceAll(s, "{guild.id}", guild.ID)
+		s = strings.ReplaceAll(s, "{guild.name}", guild.Name)
+		return s
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title:       replaceVars(customEmbed.Title),
+		Description: replaceVars(customEmbed.Description),
+		Color:       customEmbed.Color,
+	}
+	if customEmbed.Thumbnail != "" {
+		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: replaceVars(customEmbed.Thumbnail)}
+	}
+	if customEmbed.Image != "" {
+		embed.Image = &discordgo.MessageEmbedImage{URL: replaceVars(customEmbed.Image)}
+	}
+	if customEmbed.AuthorName != "" || customEmbed.AuthorIcon != "" {
+		embed.Author = &discordgo.MessageEmbedAuthor{Name: replaceVars(customEmbed.AuthorName), IconURL: replaceVars(customEmbed.AuthorIcon)}
+	}
+	if customEmbed.FooterText != "" || customEmbed.FooterIcon != "" {
+		embed.Footer = &discordgo.MessageEmbedFooter{Text: replaceVars(customEmbed.FooterText), IconURL: replaceVars(customEmbed.FooterIcon)}
+	}
+	return embed
+}
