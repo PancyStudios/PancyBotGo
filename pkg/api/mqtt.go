@@ -50,6 +50,13 @@ func RegisterAPIHandlers(mc *mqtt.MqttCommunicator, discordClient *discord.Exten
 			return nil, fmt.Errorf("missing guildId or userId")
 		}
 
+		// Prevent bots that are not in the guild from responding with an error
+		_, err := discordClient.Session.State.Guild(guildID)
+		if err != nil {
+			// Silently ignore if this specific bot is not in the guild
+			return nil, fmt.Errorf("bot not in guild")
+		}
+
 		guildDoc, err := database.GlobalGuildDM.Get(bson.M{"id": guildID})
 		if err != nil || guildDoc == nil || !guildDoc.Protection.Verification.Enable || guildDoc.Protection.Verification.Role == "" {
 			return nil, fmt.Errorf("verification disabled or role not configured")
