@@ -9,6 +9,7 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/mqtt"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // RegisterAPIHandlers registers all MQTT endpoints for the REST API
@@ -29,6 +30,28 @@ func RegisterAPIHandlers(mc *mqtt.MqttCommunicator, discordClient *discord.Exten
 		}
 
 		return ids, nil
+	})
+
+	// verify-user-web
+	mc.On("verify-user-web", func(payload map[string]interface{}) (interface{}, error) {
+		guildID, _ := payload["guildId"].(string)
+		userID, _ := payload["userId"].(string)
+
+		if guildID == "" || userID == "" {
+			return nil, fmt.Errorf("missing guildId or userId")
+		}
+
+		guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": guildID})
+		if err != nil || guildDoc == nil || !guildDoc.Protection.Verification.Enable || guildDoc.Protection.Verification.Role == "" {
+			return nil, fmt.Errorf("verification disabled or role not configured")
+		}
+
+		err = discordClient.Session.GuildMemberRoleAdd(guildID, userID, guildDoc.Protection.Verification.Role)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add role: %v", err)
+		}
+
+		return map[string]interface{}{"success": true}, nil
 	})
 
 	// get-guild-info

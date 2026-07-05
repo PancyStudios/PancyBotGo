@@ -71,16 +71,26 @@ func verificationHandler(ctx *discord.CommandContext) error {
 		SetColor(0x2ecc71).
 		Build()
 
+	// Determine button type
+	var verifyButton discordgo.MessageComponent
+	if guildDoc.Protection.Verification.Type == "web" {
+		verifyButton = discordgo.Button{
+			Label: "🌐 Verificar en la Web",
+			Style: discordgo.LinkButton,
+			URL:   fmt.Sprintf("https://pancy.miau.media/verify/%s", guildDoc.ID),
+		}
+	} else {
+		verifyButton = discordgo.Button{
+			Label:    "✅ Verificarme",
+			Style:    discordgo.SuccessButton,
+			CustomID: "btn_verify_user",
+		}
+	}
+
 	// Create Action Row with button
 	components := []discordgo.MessageComponent{
 		discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{
-				discordgo.Button{
-					Label:    "✅ Verificarme",
-					Style:    discordgo.SuccessButton,
-					CustomID: "btn_verify_user",
-				},
-			},
+			Components: []discordgo.MessageComponent{verifyButton},
 		},
 	}
 

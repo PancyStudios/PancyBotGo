@@ -149,10 +149,11 @@ type OwnSystemConfig struct {
 }
 
 type VerificationConfig struct {
-	Enable  bool   `bson:"enable" json:"enable"`
-	Type    string `bson:"_type" json:"_type"`
-	Channel string `bson:"channel" json:"channel"`
-	Role    string `bson:"role" json:"role"`
+	Enable            bool   `bson:"enable" json:"enable"`
+	Type              string `bson:"_type" json:"_type"`
+	Channel           string `bson:"channel" json:"channel"`
+	Role              string `bson:"role" json:"role"`
+	MinAccountAgeDays int    `bson:"minAccountAgeDays" json:"minAccountAgeDays"`
 }
 
 type CannotEnterTwiceConf struct {
@@ -465,7 +466,7 @@ func NewDefaultGuildDocument(guildID string) *GuildDocument {
 					[]string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, []string{},
 				},
 			},
-			Verification:         VerificationConfig{Enable: false, Type: "", Channel: "", Role: ""},
+			Verification:         VerificationConfig{Enable: false, Type: "button", Channel: "", Role: "", MinAccountAgeDays: 0},
 			CannotEnterTwice:     CannotEnterTwiceConf{Enable: false, Users: []string{}},
 			PurgeWebhooksAttacks: PurgeWebhooksConfig{Enable: false, Amount: 0, RememberOwners: "Nadie"},
 			IntelligentSOS:       IntelligentSOSConfig{Enable: false, Cooldown: false},

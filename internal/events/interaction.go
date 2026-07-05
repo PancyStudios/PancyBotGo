@@ -4,6 +4,8 @@ package events
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/PancyStudios/PancyBotGo/internal/commands/embeds"
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
@@ -163,6 +165,28 @@ func handleVerifyUser(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 
 	verifyRoleID := guildDoc.Protection.Verification.Role
+
+	// Check Account Age if configured
+	if guildDoc.Protection.Verification.MinAccountAgeDays > 0 {
+		// Snowflake to Timestamp formula
+		// Timestamp = (Snowflake >> 22) + DiscordEpoch (1420070400000)
+		idInt, _ := strconv.ParseInt(i.Member.User.ID, 10, 64)
+		timestampMs := (idInt >> 22) + 1420070400000
+		createdAt := time.UnixMilli(timestampMs)
+		accountAge := time.Since(createdAt)
+		
+		minAgeDuration := time.Duration(guildDoc.Protection.Verification.MinAccountAgeDays) * 24 * time.Hour
+		if accountAge < minAgeDuration {
+			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: fmt.Sprintf("❌ Tu cuenta es demasiado reciente. Debe tener al menos **%d días** de antigüedad para verificarte.", guildDoc.Protection.Verification.MinAccountAgeDays),
+					Flags:   discordgo.MessageFlagsEphemeral,
+				},
+			})
+			return
+		}
+	}
 
 	// Check if user already has the role
 	hasRole := false
