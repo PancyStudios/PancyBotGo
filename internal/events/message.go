@@ -115,7 +115,7 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func handleAutomoderation(s *discordgo.Session, m *discordgo.MessageCreate) bool {
 	// Verificar si el servidor tiene configuración
-	guildData, err := database.GlobalGuildDM.Get(bson.M{"_id": m.GuildID})
+	guildData, err := database.GlobalGuildDM.Get(bson.M{"id": m.GuildID})
 	if err != nil || guildData == nil {
 		return false
 	}
@@ -181,7 +181,7 @@ func handleAutomoderation(s *discordgo.Session, m *discordgo.MessageCreate) bool
 
 func handleUserLeveling(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Verificar si el servidor tiene activado el sistema
-	guildData, err := database.GlobalGuildDM.Get(bson.M{"_id": m.GuildID})
+	guildData, err := database.GlobalGuildDM.Get(bson.M{"id": m.GuildID})
 	if err != nil || guildData == nil || !guildData.Levels.Enable {
 		return
 	}

@@ -50,7 +50,7 @@ func RegisterAPIHandlers(mc *mqtt.MqttCommunicator, discordClient *discord.Exten
 			return nil, fmt.Errorf("missing guildId or userId")
 		}
 
-		guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": guildID})
+		guildDoc, err := database.GlobalGuildDM.Get(bson.M{"id": guildID})
 		if err != nil || guildDoc == nil || !guildDoc.Protection.Verification.Enable || guildDoc.Protection.Verification.Role == "" {
 			return nil, fmt.Errorf("verification disabled or role not configured")
 		}

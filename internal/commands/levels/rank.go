@@ -2,6 +2,7 @@ package levels
 
 import (
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
@@ -27,7 +28,7 @@ var rankCommand = &discord.Command{
 		}
 
 		// Verificar si el sistema está activado
-		guildData, err := database.GlobalGuildDM.Get(map[string]interface{}{"_id": guildID})
+		guildData, err := database.GlobalGuildDM.Get(bson.M{"id": guildID})
 		if err != nil || guildData == nil || !guildData.Levels.Enable {
 			return ctx.ReplyEphemeral("❌ El sistema de niveles está desactivado en este servidor.")
 		}

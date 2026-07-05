@@ -2,6 +2,7 @@ package levels
 
 import (
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
@@ -59,7 +60,7 @@ var rewardsCommand = &discord.Command{
 		}
 
 		subcommand := ctx.Interaction.ApplicationCommandData().Options[0]
-		guildData, err := database.GlobalGuildDM.Get(map[string]interface{}{"_id": guildID})
+		guildData, err := database.GlobalGuildDM.Get(bson.M{"id": guildID})
 		if err != nil {
 			return ctx.ReplyEphemeral(fmt.Sprintf("❌ Error al obtener la configuración del servidor: %v", err))
 		}
@@ -86,7 +87,7 @@ var rewardsCommand = &discord.Command{
 				})
 			}
 
-			_, err = database.GlobalGuildDM.Set(map[string]interface{}{"_id": guildID}, guildData)
+			_, err = database.GlobalGuildDM.Set(bson.M{"id": guildID}, guildData)
 			if err != nil {
 				return ctx.ReplyEphemeral("❌ Error al guardar la configuración.")
 			}
@@ -111,7 +112,7 @@ var rewardsCommand = &discord.Command{
 			}
 
 			guildData.Levels.Rewards = newRewards
-			_, err = database.GlobalGuildDM.Set(map[string]interface{}{"_id": guildID}, guildData)
+			_, err = database.GlobalGuildDM.Set(bson.M{"id": guildID}, guildData)
 			if err != nil {
 				return ctx.ReplyEphemeral("❌ Error al guardar la configuración.")
 			}

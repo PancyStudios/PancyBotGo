@@ -8,7 +8,8 @@ import (
 
 // GuildDocument represents the main document for a guild in MongoDB
 type GuildDocument struct {
-	ID            string             `bson:"_id" json:"id"`
+	ID            string             `bson:"id" json:"id"`
+	ObjectID      interface{}        `bson:"_id,omitempty" json:"-"`
 	Configuration GuildConfiguration `bson:"configuration" json:"configuration"`
 	Greetings     Greetings          `bson:"greetings" json:"greetings"`
 	Moderation    ModeratorData      `bson:"moderation" json:"moderation"`

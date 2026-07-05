@@ -26,7 +26,7 @@ func createConfessCommand() *discord.Command {
 		Run: func(ctx *discord.CommandContext) error {
 			confesion := ctx.GetStringOption("confesion")
 
-			guildData, err := database.GlobalGuildDM.Get(bson.M{"_id": ctx.Interaction.GuildID})
+			guildData, err := database.GlobalGuildDM.Get(bson.M{"id": ctx.Interaction.GuildID})
 			if err != nil || guildData == nil || guildData.Configuration.SubData.ConfessionChannel == "" {
 				return ctx.ReplyEphemeral("❌ El sistema de confesiones no está configurado en este servidor.")
 			}

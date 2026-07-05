@@ -26,7 +26,7 @@ func createSuggestCommand() *discord.Command {
 		Run: func(ctx *discord.CommandContext) error {
 			sugerencia := ctx.GetStringOption("sugerencia")
 
-			guildData, err := database.GlobalGuildDM.Get(bson.M{"_id": ctx.Interaction.GuildID})
+			guildData, err := database.GlobalGuildDM.Get(bson.M{"id": ctx.Interaction.GuildID})
 			if err != nil || guildData == nil || guildData.Configuration.SubData.SuggestChannel == "" {
 				return ctx.ReplyEphemeral("❌ El sistema de sugerencias no está configurado en este servidor.")
 			}

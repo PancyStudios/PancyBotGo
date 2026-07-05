@@ -52,7 +52,7 @@ func antibotsHandler(ctx *discord.CommandContext) error {
 		return ctx.ReplyEphemeral("❌ La base de datos no está conectada.")
 	}
 
-	guildData, err := database.GlobalGuildDM.Get(bson.M{"_id": ctx.Interaction.GuildID})
+	guildData, err := database.GlobalGuildDM.Get(bson.M{"id": ctx.Interaction.GuildID})
 	if err != nil {
 		return ctx.ReplyEphemeral(fmt.Sprintf("❌ Error al obtener los datos del servidor: %v", err))
 	}
@@ -65,7 +65,7 @@ func antibotsHandler(ctx *discord.CommandContext) error {
 		guildData.Protection.Antibots.Type = option
 	}
 
-	_, err = database.GlobalGuildDM.Set(bson.M{"_id": ctx.Interaction.GuildID}, guildData)
+	_, err = database.GlobalGuildDM.Set(bson.M{"id": ctx.Interaction.GuildID}, guildData)
 	if err != nil {
 		return ctx.ReplyEphemeral(fmt.Sprintf("❌ Error al guardar en la base de datos: %v", err))
 	}

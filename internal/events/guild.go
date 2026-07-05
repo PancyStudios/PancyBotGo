@@ -85,10 +85,10 @@ func onGuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
 	// Inicializar configuración por defecto si no existe
 	go func() {
 		defer errors.RecoverMiddleware()()
-		doc, err := database.GlobalGuildDM.Get(bson.M{"_id": g.ID})
+		doc, err := database.GlobalGuildDM.Get(bson.M{"id": g.ID})
 		if err != nil || doc == nil {
 			newDoc := models.NewDefaultGuildDocument(g.ID)
-			_, err = database.GlobalGuildDM.Set(bson.M{"_id": g.ID}, newDoc)
+			_, err = database.GlobalGuildDM.Set(bson.M{"id": g.ID}, newDoc)
 			if err != nil {
 				logger.Error(fmt.Sprintf("Error creando configuración inicial para el guild %s: %v", g.ID, err), "Guild")
 			} else {

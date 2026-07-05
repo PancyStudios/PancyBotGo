@@ -69,7 +69,7 @@ func handleWelcome(ctx *discord.CommandContext, options []*discordgo.Application
 		return ctx.ReplyEphemeral("❌ Este comando solo puede usarse en un servidor.")
 	}
 
-	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": guildID})
+	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"id": guildID})
 	if err != nil {
 		return ctx.ReplyEphemeral(fmt.Sprintf("❌ Error obteniendo configuración: %v", err))
 	}
@@ -101,7 +101,7 @@ func handleWelcome(ctx *discord.CommandContext, options []*discordgo.Application
 		guildDoc.Greetings.Welcome.IsDM = isDM
 	}
 
-	_, err = database.GlobalGuildDM.Set(bson.M{"_id": guildID}, guildDoc)
+	_, err = database.GlobalGuildDM.Set(bson.M{"id": guildID}, guildDoc)
 	if err != nil {
 		return ctx.ReplyEphemeral(fmt.Sprintf("❌ Error guardando configuración: %v", err))
 	}

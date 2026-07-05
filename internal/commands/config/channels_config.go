@@ -31,7 +31,7 @@ func createSuggestConfigCommand() *discord.Command {
 			}
 			channelID := channelOpt.ID
 
-			guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": ctx.Interaction.GuildID})
+			guildDoc, err := database.GlobalGuildDM.Get(bson.M{"id": ctx.Interaction.GuildID})
 			if err != nil {
 				return ctx.ReplyEphemeral("❌ Ocurrió un error al cargar la configuración.")
 			}
@@ -40,7 +40,7 @@ func createSuggestConfigCommand() *discord.Command {
 			}
 
 			guildDoc.Configuration.SubData.SuggestChannel = channelID
-			_, err = database.GlobalGuildDM.Set(bson.M{"_id": ctx.Interaction.GuildID}, guildDoc)
+			_, err = database.GlobalGuildDM.Set(bson.M{"id": ctx.Interaction.GuildID}, guildDoc)
 
 			if err != nil {
 				logger.Error(fmt.Sprintf("Error actualizando base de datos: %v", err), "Config")
@@ -72,7 +72,7 @@ func createConfessConfigCommand() *discord.Command {
 			}
 			channelID := channelOpt.ID
 
-			guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": ctx.Interaction.GuildID})
+			guildDoc, err := database.GlobalGuildDM.Get(bson.M{"id": ctx.Interaction.GuildID})
 			if err != nil {
 				return ctx.ReplyEphemeral("❌ Ocurrió un error al cargar la configuración.")
 			}
@@ -81,7 +81,7 @@ func createConfessConfigCommand() *discord.Command {
 			}
 
 			guildDoc.Configuration.SubData.ConfessionChannel = channelID
-			_, err = database.GlobalGuildDM.Set(bson.M{"_id": ctx.Interaction.GuildID}, guildDoc)
+			_, err = database.GlobalGuildDM.Set(bson.M{"id": ctx.Interaction.GuildID}, guildDoc)
 
 			if err != nil {
 				logger.Error(fmt.Sprintf("Error actualizando base de datos: %v", err), "Config")
@@ -113,7 +113,7 @@ func createVerifyChannelCommand() *discord.Command {
 			}
 			channelID := channelOpt.ID
 
-			guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": ctx.Interaction.GuildID})
+			guildDoc, err := database.GlobalGuildDM.Get(bson.M{"id": ctx.Interaction.GuildID})
 			if err != nil {
 				return ctx.ReplyEphemeral("❌ Ocurrió un error al cargar la configuración.")
 			}
@@ -122,7 +122,7 @@ func createVerifyChannelCommand() *discord.Command {
 			}
 
 			guildDoc.Configuration.SubData.VerifyChannel = channelID
-			_, err = database.GlobalGuildDM.Set(bson.M{"_id": ctx.Interaction.GuildID}, guildDoc)
+			_, err = database.GlobalGuildDM.Set(bson.M{"id": ctx.Interaction.GuildID}, guildDoc)
 
 			if err != nil {
 				logger.Error(fmt.Sprintf("Error actualizando base de datos: %v", err), "Config")
@@ -153,7 +153,7 @@ func createVerifyRoleCommand() *discord.Command {
 			}
 			roleID := roleOpt.ID
 
-			guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": ctx.Interaction.GuildID})
+			guildDoc, err := database.GlobalGuildDM.Get(bson.M{"id": ctx.Interaction.GuildID})
 			if err != nil {
 				return ctx.ReplyEphemeral("❌ Ocurrió un error al cargar la configuración.")
 			}
@@ -162,7 +162,7 @@ func createVerifyRoleCommand() *discord.Command {
 			}
 
 			guildDoc.Configuration.SubData.VerifyRole = roleID
-			_, err = database.GlobalGuildDM.Set(bson.M{"_id": ctx.Interaction.GuildID}, guildDoc)
+			_, err = database.GlobalGuildDM.Set(bson.M{"id": ctx.Interaction.GuildID}, guildDoc)
 
 			if err != nil {
 				logger.Error(fmt.Sprintf("Error actualizando base de datos: %v", err), "Config")
@@ -179,7 +179,7 @@ func createSendVerifyCommand() *discord.Command {
 		Name:        "config-sendverify",
 		Description: "⚙️ | Envía el panel de verificación al canal configurado",
 		Run: func(ctx *discord.CommandContext) error {
-			guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": ctx.Interaction.GuildID})
+			guildDoc, err := database.GlobalGuildDM.Get(bson.M{"id": ctx.Interaction.GuildID})
 			if err != nil || guildDoc == nil || guildDoc.Configuration.SubData.VerifyChannel == "" || guildDoc.Configuration.SubData.VerifyRole == "" {
 				return ctx.ReplyEphemeral("❌ Debes configurar primero el canal (`/config verifychannel`) y el rol (`/config verifyrole`).")
 			}

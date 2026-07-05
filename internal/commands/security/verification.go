@@ -37,7 +37,7 @@ func verificationHandler(ctx *discord.CommandContext) error {
 	}
 
 	// Fetch guild data
-	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": ctx.Interaction.GuildID})
+	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"id": ctx.Interaction.GuildID})
 	if err != nil || guildDoc == nil {
 		return ctx.ReplyEmbed(discord.NewEmbed().
 			SetColor(0xFF0000).

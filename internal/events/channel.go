@@ -27,7 +27,7 @@ func onChannelDelete(s *discordgo.Session, c *discordgo.ChannelDelete) {
 		return
 	}
 
-	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": c.GuildID})
+	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"id": c.GuildID})
 	if err != nil || guildDoc == nil {
 		return
 	}
@@ -62,7 +62,7 @@ func onChannelDelete(s *discordgo.Session, c *discordgo.ChannelDelete) {
 		// Activate Panic Mode
 		antiRaid := &guildDoc.Protection.AntiRaid
 		antiRaid.Enable = true
-		database.GlobalGuildDM.Set(bson.M{"_id": c.GuildID}, guildDoc)
+		database.GlobalGuildDM.Set(bson.M{"id": c.GuildID}, guildDoc)
 
 		// Find the culprit via Audit Logs
 		auditLog, err := s.GuildAuditLog(c.GuildID, "", "", int(discordgo.AuditLogActionChannelDelete), 10)

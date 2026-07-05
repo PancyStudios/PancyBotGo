@@ -77,7 +77,7 @@ func createAntiraidCommand() *discord.Command {
 func antiraidHandler(ctx *discord.CommandContext) error {
 	subcommand := ctx.Interaction.ApplicationCommandData().Options[0].Name
 
-	guildData, err := database.GlobalGuildDM.Get(bson.M{"_id": ctx.Interaction.GuildID})
+	guildData, err := database.GlobalGuildDM.Get(bson.M{"id": ctx.Interaction.GuildID})
 	if err != nil {
 		return ctx.ReplyEphemeral("❌ Ocurrió un error al cargar la configuración del servidor.")
 	}
@@ -137,7 +137,7 @@ func antiraidHandler(ctx *discord.CommandContext) error {
 		response = fmt.Sprintf("⚡ Ahora la acción contra raiders será: **%s**", actionName)
 	}
 
-	_, err = database.GlobalGuildDM.Set(bson.M{"_id": ctx.Interaction.GuildID}, guildData)
+	_, err = database.GlobalGuildDM.Set(bson.M{"id": ctx.Interaction.GuildID}, guildData)
 	if err != nil {
 		return ctx.ReplyEphemeral("❌ Ocurrió un error al guardar la configuración.")
 	}

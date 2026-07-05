@@ -152,7 +152,7 @@ func handleFeedbackModal(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func handleVerifyUser(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": i.GuildID})
+	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"id": i.GuildID})
 	if err != nil || guildDoc == nil || !guildDoc.Protection.Verification.Enable || guildDoc.Protection.Verification.Role == "" {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,

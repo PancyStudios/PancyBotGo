@@ -39,7 +39,7 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 	}
 
 	// Fetch guild settings from DB
-	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": m.GuildID})
+	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"id": m.GuildID})
 	if err == nil && guildDoc != nil {
 
 		// Anti-Raid Logic
@@ -98,7 +98,7 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 			if raidCount >= antiRaid.JoinLimit {
 				// Trigger Panic Mode!
 				antiRaid.Enable = true
-				database.GlobalGuildDM.Set(bson.M{"_id": m.GuildID}, guildDoc)
+				database.GlobalGuildDM.Set(bson.M{"id": m.GuildID}, guildDoc)
 
 				logger.Warn(fmt.Sprintf("🚨 POSIBLE RAID DETECTADO en %s! Modo Pánico activado automáticamente.", m.GuildID), "AntiRaid")
 
@@ -264,7 +264,7 @@ func onGuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRemove) {
 	}
 
 	// Fetch guild settings from DB
-	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": m.GuildID})
+	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"id": m.GuildID})
 	if err == nil && guildDoc != nil {
 		// Farewell logic
 		if guildDoc.Greetings.Farewell.Enable {
