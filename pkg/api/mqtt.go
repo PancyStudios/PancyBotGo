@@ -32,6 +32,15 @@ func RegisterAPIHandlers(mc *mqtt.MqttCommunicator, discordClient *discord.Exten
 		return ids, nil
 	})
 
+	// update-guild-cache
+	mc.On("update-guild-cache", func(payload map[string]interface{}) (interface{}, error) {
+		guildID, _ := payload["guildId"].(string)
+		if guildID != "" {
+			database.GlobalGuildDM.ClearCache()
+		}
+		return map[string]interface{}{"success": true}, nil
+	})
+
 	// verify-user-web
 	mc.On("verify-user-web", func(payload map[string]interface{}) (interface{}, error) {
 		guildID, _ := payload["guildId"].(string)
