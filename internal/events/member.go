@@ -10,6 +10,7 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
+	"github.com/PancyStudios/PancyBotGo/pkg/models"
 	"github.com/bwmarrin/discordgo"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -344,7 +345,7 @@ func onGuildMemberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUpdate) {
 }
 
 // buildCustomEmbed converte un CustomEmbed del DB a un discordgo.MessageEmbed e interpola variables
-func buildCustomEmbed(customEmbed database.CustomEmbed, user *discordgo.User, guild *discordgo.Guild) *discordgo.MessageEmbed {
+func buildCustomEmbed(customEmbed models.CustomEmbed, user *discordgo.User, guild *discordgo.Guild) *discordgo.MessageEmbed {
 	replaceVars := func(s string) string {
 		s = strings.ReplaceAll(s, "{user}", fmt.Sprintf("<@%s>", user.ID))
 		s = strings.ReplaceAll(s, "{user.id}", user.ID)

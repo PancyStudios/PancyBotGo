@@ -14,14 +14,15 @@ func createVerificationCommand() *discord.Command {
 	return discord.NewCommand(
 		"verification",
 		"Gestiona el sistema de verificación del servidor",
-		discordgo.ApplicationCommandTypeChatInput,
+		"security",
 		verificationHandler,
-	).
-		AddOption(&discordgo.ApplicationCommandOption{
+	).WithOptions(
+		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
 			Name:        "panel",
 			Description: "Envía el panel interactivo de verificación al canal configurado",
-		})
+		},
+	)
 }
 
 // verificationHandler handles the /security verification command
@@ -32,7 +33,7 @@ func verificationHandler(ctx *discord.CommandContext) error {
 			SetColor(0xFF0000).
 			SetTitle("❌ Acceso Denegado").
 			SetDescription("Necesitas permisos de Administrador para usar este comando.").
-			Build(), true)
+			Build())
 	}
 
 	// Fetch guild data
@@ -41,7 +42,7 @@ func verificationHandler(ctx *discord.CommandContext) error {
 		return ctx.ReplyEmbed(discord.NewEmbed().
 			SetColor(0xFF0000).
 			SetDescription("❌ Error al cargar la configuración del servidor.").
-			Build(), true)
+			Build())
 	}
 
 	// Check if verification is enabled and configured
@@ -50,7 +51,7 @@ func verificationHandler(ctx *discord.CommandContext) error {
 			SetColor(0xFF0000).
 			SetTitle("❌ Sistema Inactivo").
 			SetDescription("El sistema de verificación está desactivado. Habilítalo en el **Dashboard**.").
-			Build(), true)
+			Build())
 	}
 
 	if guildDoc.Protection.Verification.Channel == "" || guildDoc.Protection.Verification.Role == "" {
@@ -58,7 +59,7 @@ func verificationHandler(ctx *discord.CommandContext) error {
 			SetColor(0xFF0000).
 			SetTitle("❌ Configuración Incompleta").
 			SetDescription("Asegúrate de configurar un Canal y un Rol de verificación en el **Dashboard**.").
-			Build(), true)
+			Build())
 	}
 
 	channelID := guildDoc.Protection.Verification.Channel
@@ -93,11 +94,11 @@ func verificationHandler(ctx *discord.CommandContext) error {
 		return ctx.ReplyEmbed(discord.NewEmbed().
 			SetColor(0xFF0000).
 			SetDescription(fmt.Sprintf("❌ Error al enviar el panel al canal <#%s>. Revisa mis permisos.", channelID)).
-			Build(), true)
+			Build())
 	}
 
 	return ctx.ReplyEmbed(discord.NewEmbed().
 		SetColor(0x00FF00).
 		SetDescription(fmt.Sprintf("✅ Panel de verificación enviado correctamente a <#%s>.", channelID)).
-		Build(), true)
+		Build())
 }
