@@ -197,7 +197,6 @@ func (mc *MqttCommunicator) On(requestTopic string, callback RequestHandler) {
 			logger.Error(fmt.Sprintf("Error parsing MQTT request: %v", err), "MQTT")
 			return
 		}
-
 		// Extract actual topic from received topic
 		receivedTopic := msg.Topic()
 		actualTopic := strings.TrimPrefix(receivedTopic, "pancy/request/")

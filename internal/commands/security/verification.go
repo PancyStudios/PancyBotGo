@@ -77,7 +77,7 @@ func verificationHandler(ctx *discord.CommandContext) error {
 		verifyButton = discordgo.Button{
 			Label: "🌐 Verificar en la Web",
 			Style: discordgo.LinkButton,
-			URL:   fmt.Sprintf("https://pancy.miau.media/verify/%s", guildDoc.ID),
+			URL:   fmt.Sprintf("https://pancybot.miau.media/verify/%s", guildDoc.ID),
 		}
 	} else {
 		verifyButton = discordgo.Button{
