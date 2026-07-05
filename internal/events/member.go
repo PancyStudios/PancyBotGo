@@ -157,40 +157,55 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 
 		// Welcome logic
 		if guildDoc.Greetings.Welcome.Enable {
-			message := guildDoc.Greetings.Welcome.Message
-			if message == "" {
-				message = fmt.Sprintf("¡Bienvenido/a {user} a **%s**!", guild.Name)
+			messageText := guildDoc.Greetings.Welcome.Message
+			if messageText != "" {
+				messageText = strings.ReplaceAll(messageText, "{user}", fmt.Sprintf("<@%s>", m.User.ID))
+				messageText = strings.ReplaceAll(messageText, "{server}", guild.Name)
 			}
-
-			// Replace {user} with mention
-			message = strings.ReplaceAll(message, "{user}", fmt.Sprintf("<@%s>", m.User.ID))
 
 			channelID := guildDoc.Greetings.Welcome.Channel
 			if channelID == "" {
 				channelID = guild.SystemChannelID
 			}
 
-			welcomeEmbed := &discordgo.MessageEmbed{
-				Title:       "¡Bienvenido/a! 🎉",
-				Description: message,
-				Color:       0x00ff00,
-				Thumbnail: &discordgo.MessageEmbedThumbnail{
-					URL: m.User.AvatarURL("128"),
-				},
-				Footer: &discordgo.MessageEmbedFooter{
-					Text:    fmt.Sprintf("Ahora somos %d miembros", guild.MemberCount),
-					IconURL: guild.IconURL("64"),
-				},
-				Timestamp: time.Now().Format(time.RFC3339),
+			var welcomeEmbed *discordgo.MessageEmbed
+
+			// Revisar si usa Custom Embed
+			if guildDoc.Greetings.Welcome.EmbedID != "" {
+				for _, ce := range guildDoc.Embeds {
+					if ce.ID == guildDoc.Greetings.Welcome.EmbedID {
+						welcomeEmbed = buildCustomEmbed(ce, m.User, guild)
+						break
+					}
+				}
+			}
+
+			// Fallback si no hay custom embed pero tampoco hay texto, enviamos un embed por defecto
+			if welcomeEmbed == nil && messageText == "" {
+				welcomeEmbed = &discordgo.MessageEmbed{
+					Title:       "¡Bienvenido/a! 🎉",
+					Description: fmt.Sprintf("¡Bienvenido/a <@%s> a **%s**!", m.User.ID, guild.Name),
+					Color:       0x00ff00,
+					Thumbnail:   &discordgo.MessageEmbedThumbnail{URL: m.User.AvatarURL("128")},
+					Footer:      &discordgo.MessageEmbedFooter{Text: fmt.Sprintf("Ahora somos %d miembros", guild.MemberCount), IconURL: guild.IconURL("64")},
+					Timestamp:   time.Now().Format(time.RFC3339),
+				}
+			}
+
+			sendData := &discordgo.MessageSend{
+				Content: messageText,
+			}
+			if welcomeEmbed != nil {
+				sendData.Embeds = []*discordgo.MessageEmbed{welcomeEmbed}
 			}
 
 			if guildDoc.Greetings.Welcome.IsDM {
 				channel, err := s.UserChannelCreate(m.User.ID)
 				if err == nil {
-					s.ChannelMessageSendEmbed(channel.ID, welcomeEmbed)
+					s.ChannelMessageSendComplex(channel.ID, sendData)
 				}
 			} else if channelID != "" {
-				s.ChannelMessageSendEmbed(channelID, welcomeEmbed)
+				s.ChannelMessageSendComplex(channelID, sendData)
 			}
 		}
 
@@ -250,33 +265,48 @@ func onGuildMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRemove) {
 	// Fetch guild settings from DB
 	guildDoc, err := database.GlobalGuildDM.Get(bson.M{"_id": m.GuildID})
 	if err == nil && guildDoc != nil {
+		// Farewell logic
 		if guildDoc.Greetings.Farewell.Enable {
-			message := guildDoc.Greetings.Farewell.Message
-			if message == "" {
-				message = fmt.Sprintf("👋 **{user}** ha salido del servidor.")
+			messageText := guildDoc.Greetings.Farewell.Message
+			if messageText != "" {
+				messageText = strings.ReplaceAll(messageText, "{user}", m.User.Username)
+				messageText = strings.ReplaceAll(messageText, "{server}", guild.Name)
 			}
-
-			// Replace {user} with username (not mention since they left)
-			message = strings.ReplaceAll(message, "{user}", m.User.Username)
 
 			channelID := guildDoc.Greetings.Farewell.Channel
 			if channelID == "" {
 				channelID = guild.SystemChannelID
 			}
 
-			if channelID != "" {
-				farewellEmbed := &discordgo.MessageEmbed{
-					Description: message,
-					Color:       0xe74c3c,
-					Thumbnail: &discordgo.MessageEmbedThumbnail{
-						URL: m.User.AvatarURL("64"),
-					},
-					Footer: &discordgo.MessageEmbedFooter{
-						Text: fmt.Sprintf("Ahora somos %d miembros", guild.MemberCount),
-					},
-					Timestamp: time.Now().Format(time.RFC3339),
+			var farewellEmbed *discordgo.MessageEmbed
+
+			if guildDoc.Greetings.Farewell.EmbedID != "" {
+				for _, ce := range guildDoc.Embeds {
+					if ce.ID == guildDoc.Greetings.Farewell.EmbedID {
+						farewellEmbed = buildCustomEmbed(ce, m.User, guild)
+						break
+					}
 				}
-				s.ChannelMessageSendEmbed(channelID, farewellEmbed)
+			}
+
+			if farewellEmbed == nil && messageText == "" {
+				farewellEmbed = &discordgo.MessageEmbed{
+					Title:       "Despedida 👋",
+					Description: fmt.Sprintf("**%s** ha salido del servidor.", m.User.Username),
+					Color:       0xff0000,
+					Thumbnail:   &discordgo.MessageEmbedThumbnail{URL: m.User.AvatarURL("128")},
+				}
+			}
+
+			sendData := &discordgo.MessageSend{
+				Content: messageText,
+			}
+			if farewellEmbed != nil {
+				sendData.Embeds = []*discordgo.MessageEmbed{farewellEmbed}
+			}
+
+			if channelID != "" {
+				s.ChannelMessageSendComplex(channelID, sendData)
 			}
 		}
 	} else {

@@ -14,6 +14,22 @@ type GuildDocument struct {
 	Moderation    ModeratorData      `bson:"moderation" json:"moderation"`
 	Protection    ProtectionConfig   `bson:"protection" json:"protection"`
 	Levels        LevelsConfig       `bson:"levels" json:"levels"`
+	Embeds        []CustomEmbed      `bson:"embeds" json:"embeds"`
+}
+
+// CustomEmbed represents a user-created embed
+type CustomEmbed struct {
+	ID          string `bson:"id" json:"id"`
+	Name        string `bson:"name" json:"name"`
+	Title       string `bson:"title" json:"title"`
+	Description string `bson:"description" json:"description"`
+	Color       int    `bson:"color" json:"color"`
+	Thumbnail   string `bson:"thumbnail" json:"thumbnail"`
+	Image       string `bson:"image" json:"image"`
+	FooterText  string `bson:"footerText" json:"footerText"`
+	FooterIcon  string `bson:"footerIcon" json:"footerIcon"`
+	AuthorName  string `bson:"authorName" json:"authorName"`
+	AuthorIcon  string `bson:"authorIcon" json:"authorIcon"`
 }
 
 // LevelReward represents a role given at a specific level
@@ -229,6 +245,7 @@ type WelcomeConfig struct {
 	Enable  bool   `bson:"enable" json:"enable"`
 	Channel string `bson:"channel" json:"channel"`
 	Message string `bson:"message" json:"message"`
+	EmbedID string `bson:"embedId" json:"embedId"`
 	IsDM    bool   `bson:"isDM" json:"isDM"`
 }
 
@@ -237,6 +254,7 @@ type FarewellConfig struct {
 	Enable  bool   `bson:"enable" json:"enable"`
 	Channel string `bson:"channel" json:"channel"`
 	Message string `bson:"message" json:"message"`
+	EmbedID string `bson:"embedId" json:"embedId"`
 }
 
 // AutoroleConfig holds autorole settings

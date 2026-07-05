@@ -102,10 +102,81 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
-	// ------------------ SISTEMA DE NIVELES ------------------
 	if m.GuildID != "" {
+		// ------------------ AUTOMODERACIÓN ------------------
+		if handleAutomoderation(s, m) {
+			return // Mensaje fue borrado, no procesar más
+		}
+
+		// ------------------ SISTEMA DE NIVELES ------------------
 		handleUserLeveling(s, m)
 	}
+}
+
+func handleAutomoderation(s *discordgo.Session, m *discordgo.MessageCreate) bool {
+	// Verificar si el servidor tiene configuración
+	guildData, err := database.GlobalGuildDM.Get(bson.M{"_id": m.GuildID})
+	if err != nil || guildData == nil {
+		return false
+	}
+
+	content := m.Content
+	contentLower := strings.ToLower(content)
+
+	// 1. Filtro de Malas Palabras
+	if len(guildData.Moderation.DataModeration.BadWords) > 0 {
+		for _, badword := range guildData.Moderation.DataModeration.BadWords {
+			if badword == "" {
+				continue
+			}
+			// Búsqueda simple de subcadena
+			if strings.Contains(contentLower, strings.ToLower(badword)) {
+				// Borrar el mensaje
+				err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+				if err == nil {
+					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("⚠️ <@%s>, tu mensaje fue eliminado porque contenía lenguaje inapropiado.", m.Author.ID))
+					logger.Info(fmt.Sprintf("🛡️ Mensaje de %s borrado por mala palabra: %s", m.Author.Username, badword), "Automod")
+					return true
+				}
+			}
+		}
+	}
+
+	// 2. Anti-Links
+	if guildData.Moderation.DataModeration.Events.LinkDetect {
+		if strings.Contains(contentLower, "http://") || strings.Contains(contentLower, "https://") {
+			// Borrar el mensaje
+			err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+			if err == nil {
+				s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("🔗 <@%s>, no está permitido enviar enlaces en este servidor.", m.Author.ID))
+				logger.Info(fmt.Sprintf("🛡️ Mensaje de %s borrado por Anti-Links", m.Author.Username), "Automod")
+				return true
+			}
+		}
+	}
+
+	// 3. Anti-Caps (Mayúsculas)
+	if guildData.Moderation.DataModeration.Events.CapitalLetters {
+		if len(content) > 10 { // Solo revisar mensajes de más de 10 caracteres
+			upperCount := 0
+			for _, r := range content {
+				if r >= 'A' && r <= 'Z' {
+					upperCount++
+				}
+			}
+			// Si más del 70% es mayúscula
+			if float64(upperCount)/float64(len(content)) > 0.7 {
+				err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+				if err == nil {
+					s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("🔠 <@%s>, por favor no grites (demasiadas mayúsculas).", m.Author.ID))
+					logger.Info(fmt.Sprintf("🛡️ Mensaje de %s borrado por Anti-Caps", m.Author.Username), "Automod")
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 func handleUserLeveling(s *discordgo.Session, m *discordgo.MessageCreate) {
