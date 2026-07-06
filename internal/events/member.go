@@ -210,6 +210,21 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 			}
 		}
 
+		// Ping On Join (PoJ) - Ghost Ping
+		if len(guildDoc.PingOnJoin) > 0 {
+			for _, poj := range guildDoc.PingOnJoin {
+				if poj.ChannelID != "" && poj.RoleID != "" {
+					msg, err := s.ChannelMessageSend(poj.ChannelID, fmt.Sprintf("<@&%s>", poj.RoleID))
+					if err == nil {
+						go func(msgID, channelID string) {
+							time.Sleep(1 * time.Second)
+							s.ChannelMessageDelete(channelID, msgID)
+						}(msg.ID, poj.ChannelID)
+					}
+				}
+			}
+		}
+
 		// Autorole logic
 		if guildDoc.Greetings.Autorole.Enable && len(guildDoc.Greetings.Autorole.Roles) > 0 {
 			applyRole := func() {

@@ -12,6 +12,7 @@ func Register(client *discord.ExtendedClient) {
 	verifyChannelCmd := createVerifyChannelCommand()
 	verifyRoleCmd := createVerifyRoleCommand()
 	sendVerifyCmd := createSendVerifyCommand()
+	pojCmd := createPojCommand()
 
 	// Create the base /config command
 	configCmd := discord.NewCommand(
@@ -36,6 +37,7 @@ func Register(client *discord.ExtendedClient) {
 		verifyChannelCmd,
 		verifyRoleCmd,
 		sendVerifyCmd,
+		pojCmd,
 	}
 
 	for _, cmd := range cmds {

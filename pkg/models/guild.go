@@ -16,6 +16,7 @@ type GuildDocument struct {
 	Protection    ProtectionConfig   `bson:"protection" json:"protection"`
 	Levels        LevelsConfig       `bson:"levels" json:"levels"`
 	Embeds        []CustomEmbed      `bson:"embeds" json:"embeds"`
+	PingOnJoin    []PingOnJoinConfig `bson:"pingOnJoin" json:"pingOnJoin"`
 }
 
 // CustomEmbed represents a user-created embed
@@ -202,6 +203,12 @@ type AntiRaidConfig struct {
 	MinAccountAgeDays int    `bson:"minAccountAgeDays,omitempty" json:"minAccountAgeDays,omitempty"`
 	JoinLimit         int    `bson:"joinLimit,omitempty" json:"joinLimit,omitempty"`
 	TimeWindow        int    `bson:"timeWindow,omitempty" json:"timeWindow,omitempty"`
+}
+
+// PingOnJoinConfig represents a Ping On Join configuration for a channel and a role
+type PingOnJoinConfig struct {
+	ChannelID string `bson:"channelId" json:"channelId"`
+	RoleID    string `bson:"roleId" json:"roleId"`
 }
 
 // GuildConfiguration holds general configuration for the bot in a guild
@@ -422,7 +429,7 @@ func NewDefaultGuildDocument(guildID string) *GuildDocument {
 					Bot           string `bson:"_bot" json:"_bot"`
 				}{"", ""},
 			},
-			Antibots: AntibotsConfig{Enable: false, Type: "all"},
+			Antibots:   AntibotsConfig{Enable: false, Type: "all"},
 			AntiTokens: AntiTokensConfig{
 				Enable:         false,
 				UsersEntrities: []string{},
@@ -482,5 +489,6 @@ func NewDefaultGuildDocument(guildID string) *GuildDocument {
 			LevelUpChannel: "",
 			LevelUpMessage: "",
 		},
+		PingOnJoin: make([]PingOnJoinConfig, 0),
 	}
 }

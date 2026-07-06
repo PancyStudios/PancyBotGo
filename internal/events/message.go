@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PancyStudios/PancyBotGo/internal/commands/config"
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
@@ -99,6 +100,26 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		err := s.MessageReactionAdd(m.ChannelID, m.ID, "❤️")
 		if err != nil {
 			logger.Debug(fmt.Sprintf("Error agregando reacción: %v", err), "Message")
+		}
+	}
+
+	// ------------------ PREFIX COMMAND ROUTER ------------------
+	if m.GuildID != "" {
+		guildData, err := database.GlobalGuildDM.Get(bson.M{"id": m.GuildID})
+		prefix := "pan!"
+		if err == nil && guildData != nil && guildData.Configuration.Prefix != "" {
+			prefix = guildData.Configuration.Prefix
+		}
+
+		if strings.HasPrefix(m.Content, prefix) {
+			args := strings.Fields(m.Content[len(prefix):])
+			if len(args) > 0 {
+				command := strings.ToLower(args[0])
+				switch command {
+				case "poj":
+					config.HandleMessagePojCommand(s, m, args[1:])
+				}
+			}
 		}
 	}
 
