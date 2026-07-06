@@ -10,12 +10,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func createTopCommand() *discord.Command {
+func createTopCommand(isGlobal bool) *discord.Command {
 	return discord.NewCommand(
 		"top",
 		"🏆 | Muestra la tabla de clasificación de millonarios",
 		"economy",
-		topHandler,
+		func(ctx *discord.CommandContext) error {
+			return topHandler(ctx, isGlobal)
+		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
@@ -30,14 +32,14 @@ func createTopCommand() *discord.Command {
 	)
 }
 
-func topHandler(ctx *discord.CommandContext) error {
-	ecoType := ctx.GetStringOption("tipo")
+func topHandler(ctx *discord.CommandContext, isGlobal bool) error {
+	
 
 	var leaderboardStr string
 	var embedTitle string
 	var embedColor int
 
-	if ecoType == "local" {
+	if !isGlobal {
 		embedTitle = "🏆 Tabla de Clasificación Local"
 		embedColor = 0x2ECC71
 

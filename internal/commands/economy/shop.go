@@ -7,16 +7,18 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 )
 
-func createShopCommand() *discord.Command {
+func createShopCommand(isGlobal bool) *discord.Command {
 	return discord.NewCommand(
 		"view",
 		"🛒 | Explora el mercado intergaláctico",
 		"economy",
-		shopHandler,
+		func(ctx *discord.CommandContext) error {
+			return shopHandler(ctx, isGlobal)
+		},
 	)
 }
 
-func shopHandler(ctx *discord.CommandContext) error {
+func shopHandler(ctx *discord.CommandContext, isGlobal bool) error {
 	items, err := database.GetItems(ctx.Interaction.GuildID)
 	if err != nil {
 		ctx.Reply("❌ " + "No se pudo cargar el catálogo de la tienda.")

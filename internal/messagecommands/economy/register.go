@@ -1,23 +1,80 @@
 package economy
 
-import "github.com/PancyStudios/PancyBotGo/internal/messagecommands"
+import (
+	"strings"
+
+	"github.com/PancyStudios/PancyBotGo/internal/messagecommands"
+)
 
 // Register economy text commands
 func Register() {
-	messagecommands.RegisterCommand("work", "Comando work", "pan!work", "General", workCommand)
-	messagecommands.RegisterCommand("rob", "Comando rob", "pan!rob", "General", robCommand)
-	messagecommands.RegisterCommand("slut", "Comando slut", "pan!slut", "General", slutCommand)
-	messagecommands.RegisterCommand("crime", "Comando crime", "pan!crime", "General", crimeCommand)
-	messagecommands.RegisterCommand("buy", "Comando buy", "pan!buy", "General", buyCommand)
-	messagecommands.RegisterCommand("deposit", "Comando deposit", "pan!deposit", "General", depositCommand)
-	messagecommands.RegisterCommand("withdraw", "Comando withdraw", "pan!withdraw", "General", withdrawCommand)
-	messagecommands.RegisterCommand("pay", "Comando pay", "pan!pay", "General", payCommand)
-	messagecommands.RegisterCommand("top", "Comando top", "pan!top", "General", topCommand)
-	messagecommands.RegisterCommand("use", "Comando use", "pan!use", "General", useCommand)
-	messagecommands.RegisterCommand("balance", "Comando balance", "pan!balance", "General", balanceCommand)
-	messagecommands.RegisterCommand("daily", "Comando daily", "pan!daily", "General", dailyCommand)
-	messagecommands.RegisterCommand("weekly", "Comando weekly", "pan!weekly", "General", weeklyCommand)
-	messagecommands.RegisterCommand("inventory", "Comando inventory", "pan!inventory", "General", inventoryCommand)
-	messagecommands.RegisterCommand("shop", "Comando shop", "pan!shop", "General", shopCommand)
-	messagecommands.RegisterCommand("adminshop", "Comando adminshop", "pan!adminshop", "General", adminShopCommand)
+	messagecommands.RegisterCommand("eco", "Comandos de economía global", "pan!eco <comando>", "Economy", func(ctx *messagecommands.MessageContext) error { return ecoRouter(ctx, true) })
+	messagecommands.RegisterCommand("ecog", "Comandos de economía local", "pan!ecog <comando>", "Economy", func(ctx *messagecommands.MessageContext) error { return ecoRouter(ctx, false) })
+
+	messagecommands.RegisterCommand("shop", "Tienda global", "pan!shop <comando>", "Economy", func(ctx *messagecommands.MessageContext) error { return shopRouter(ctx, true) })
+	messagecommands.RegisterCommand("shopg", "Tienda local", "pan!shopg <comando>", "Economy", func(ctx *messagecommands.MessageContext) error { return shopRouter(ctx, false) })
+}
+
+func ecoRouter(ctx *messagecommands.MessageContext, isGlobal bool) error {
+	if len(ctx.Args) == 0 {
+		_, err := ctx.ReplyError("Uso Incorrecto", "Debes especificar un comando. Ejemplo: `work`, `balance`, `rob`, `deposit`, `withdraw`, `pay`, `daily`, `weekly`, `crime`, `slut`, `top`")
+		return err
+	}
+
+	cmd := strings.ToLower(ctx.Args[0])
+	ctx.Args = ctx.Args[1:] // Shift args
+
+	switch cmd {
+	case "work":
+		return workCommand(ctx, isGlobal)
+	case "balance":
+		return balanceCommand(ctx, isGlobal)
+	case "rob":
+		return robCommand(ctx, isGlobal)
+	case "deposit":
+		return depositCommand(ctx, isGlobal)
+	case "withdraw":
+		return withdrawCommand(ctx, isGlobal)
+	case "pay":
+		return payCommand(ctx, isGlobal)
+	case "daily":
+		return dailyCommand(ctx, isGlobal)
+	case "weekly":
+		return weeklyCommand(ctx, isGlobal)
+	case "crime":
+		return crimeCommand(ctx, isGlobal)
+	case "slut":
+		return slutCommand(ctx, isGlobal)
+	case "top":
+		return topCommand(ctx, isGlobal)
+	default:
+		_, err := ctx.ReplyError("Comando no encontrado", "Ese comando de economía no existe.")
+		return err
+	}
+}
+
+func shopRouter(ctx *messagecommands.MessageContext, isGlobal bool) error {
+	if len(ctx.Args) == 0 {
+		return shopCommand(ctx, isGlobal) // view shop
+	}
+
+	cmd := strings.ToLower(ctx.Args[0])
+
+	switch cmd {
+	case "buy":
+		ctx.Args = ctx.Args[1:]
+		return buyCommand(ctx, isGlobal)
+	case "use":
+		ctx.Args = ctx.Args[1:]
+		return useCommand(ctx, isGlobal)
+	case "inventory", "inv":
+		ctx.Args = ctx.Args[1:]
+		return inventoryCommand(ctx, isGlobal)
+	case "admin":
+		ctx.Args = ctx.Args[1:]
+		return adminShopCommand(ctx, isGlobal)
+	default:
+		// view shop with page
+		return shopCommand(ctx, isGlobal)
+	}
 }

@@ -8,12 +8,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func createDepositCommand() *discord.Command {
+func createDepositCommand(isGlobal bool) *discord.Command {
 	return discord.NewCommand(
 		"deposit",
 		"🏦 | Deposita tus monedas en el banco",
 		"economy",
-		depositHandler,
+		func(ctx *discord.CommandContext) error {
+			return depositHandler(ctx, isGlobal)
+		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
@@ -34,8 +36,8 @@ func createDepositCommand() *discord.Command {
 	)
 }
 
-func depositHandler(ctx *discord.CommandContext) error {
-	ecoType := ctx.GetStringOption("tipo")
+func depositHandler(ctx *discord.CommandContext, isGlobal bool) error {
+	
 	amount := ctx.GetIntOption("cantidad")
 	userID := ctx.Interaction.Member.User.ID
 	guildID := ctx.Interaction.GuildID
@@ -46,7 +48,7 @@ func depositHandler(ctx *discord.CommandContext) error {
 	}
 
 	var err error
-	if ecoType == "local" {
+	if !isGlobal {
 		err = database.DepositLocal(guildID, userID, amount)
 		if err != nil {
 			if err == database.ErrInsufficientFunds {

@@ -3,24 +3,13 @@ package economy
 import (
 	"fmt"
 	"math/rand"
-	"strings"
 	"time"
 
 	"github.com/PancyStudios/PancyBotGo/internal/messagecommands"
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 )
 
-func crimeCommand(ctx *messagecommands.MessageContext) error {
-	if len(ctx.Args) == 0 {
-		_, err := ctx.ReplyError("Uso Incorrecto", "Debes especificar el tipo de economía.\nUso: `pan!crime <local|global>`")
-		return err
-	}
-
-	ecoType := strings.ToLower(ctx.Args[0])
-	if ecoType != "local" && ecoType != "global" {
-		_, err := ctx.ReplyError("Uso Incorrecto", "El tipo de economía debe ser `local` o `global`.")
-		return err
-	}
+func crimeCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
 
 	userID := ctx.Message.Author.ID
 	guildID := ctx.Message.GuildID
@@ -31,7 +20,7 @@ func crimeCommand(ctx *messagecommands.MessageContext) error {
 	var remaining time.Duration
 	var err error
 
-	if ecoType == "local" {
+	if !isGlobal {
 		isReady, remaining, err = database.CooldownLocal(guildID, userID, "crime", cooldownDuration)
 	} else {
 		isReady, remaining, err = database.CooldownStars(userID, "crime", cooldownDuration)
@@ -49,7 +38,7 @@ func crimeCommand(ctx *messagecommands.MessageContext) error {
 
 	success := rand.Float64() < 0.40
 
-	if ecoType == "local" {
+	if !isGlobal {
 		_ = database.SetCooldownLocal(guildID, userID, "crime")
 
 		if success {

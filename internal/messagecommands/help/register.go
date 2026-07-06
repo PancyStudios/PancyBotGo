@@ -5,6 +5,6 @@ import (
 )
 
 func RegisterAll() {
-	messagecommands.RegisterCommand("cmds", "Comando cmds", "pan!cmds", "General", cmdsCommand)
-	messagecommands.RegisterCommand("help", "Comando help", "pan!help", "General", cmdsCommand)
+	messagecommands.RegisterCommand("cmds", "Comando cmds", "pan!cmds", "Help", cmdsCommand)
+	messagecommands.RegisterCommand("help", "Comando help", "pan!help", "Help", cmdsCommand)
 }

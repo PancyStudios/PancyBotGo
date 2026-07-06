@@ -10,8 +10,8 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 )
 
-func robCommand(ctx *messagecommands.MessageContext) error {
-	if len(ctx.Args) < 2 {
+func robCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
+	if len(ctx.Args) < 1 {
 		_, err := ctx.ReplyError("Uso Incorrecto", "Debes especificar el tipo de economía y el usuario.\nUso: `pan!rob <local|global> @usuario`")
 		return err
 	}
@@ -22,7 +22,7 @@ func robCommand(ctx *messagecommands.MessageContext) error {
 		return err
 	}
 
-	targetUserID := ctx.ParseUser(1)
+	targetUserID := ctx.ParseUser(0)
 	if targetUserID == "" {
 		_, err := ctx.ReplyError("Uso Incorrecto", "Debes especificar un usuario válido para robar.")
 		return err
@@ -47,7 +47,7 @@ func robCommand(ctx *messagecommands.MessageContext) error {
 	var isReady bool
 	var remaining time.Duration
 
-	if ecoType == "local" {
+	if !isGlobal {
 		isReady, remaining, err = database.CooldownLocal(guildID, userID, "rob", cooldownDuration)
 	} else {
 		isReady, remaining, err = database.CooldownStars(userID, "rob", cooldownDuration)
@@ -65,7 +65,7 @@ func robCommand(ctx *messagecommands.MessageContext) error {
 
 	success := rand.Float64() < 0.40 // 40% base success rate
 
-	if ecoType == "local" {
+	if !isGlobal {
 		targetProfile, err := database.GetLocalProfile(guildID, targetUserID)
 		if err != nil || targetProfile.Wallet < 100 {
 			_, err = ctx.ReplyError("Error", "❌ Ese usuario no tiene dinero que valga la pena robar (Mínimo 100).")

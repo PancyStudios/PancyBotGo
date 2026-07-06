@@ -10,12 +10,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func createCrimeCommand() *discord.Command {
+func createCrimeCommand(isGlobal bool) *discord.Command {
 	return discord.NewCommand(
 		"crime",
 		"🔫 | Comete un crimen (cuidado con la policía)",
 		"economy",
-		crimeHandler,
+		func(ctx *discord.CommandContext) error {
+			return crimeHandler(ctx, isGlobal)
+		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
@@ -30,8 +32,8 @@ func createCrimeCommand() *discord.Command {
 	)
 }
 
-func crimeHandler(ctx *discord.CommandContext) error {
-	ecoType := ctx.GetStringOption("tipo")
+func crimeHandler(ctx *discord.CommandContext, isGlobal bool) error {
+	
 	userID := ctx.Interaction.Member.User.ID
 	guildID := ctx.Interaction.GuildID
 
@@ -41,7 +43,7 @@ func crimeHandler(ctx *discord.CommandContext) error {
 	var remaining time.Duration
 	var err error
 
-	if ecoType == "local" {
+	if !isGlobal {
 		isReady, remaining, err = database.CooldownLocal(guildID, userID, "crime", cooldownDuration)
 	} else {
 		isReady, remaining, err = database.CooldownStars(userID, "crime", cooldownDuration)
@@ -60,7 +62,7 @@ func crimeHandler(ctx *discord.CommandContext) error {
 	// 40% chance of success
 	success := rand.Float64() < 0.40
 
-	if ecoType == "local" {
+	if !isGlobal {
 		_ = database.SetCooldownLocal(guildID, userID, "crime")
 
 		if success {

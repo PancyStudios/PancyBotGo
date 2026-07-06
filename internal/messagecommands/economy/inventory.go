@@ -9,7 +9,7 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/models"
 )
 
-func inventoryCommand(ctx *messagecommands.MessageContext) error {
+func inventoryCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
 	targetUser := ctx.Message.Author
 	if len(ctx.Args) > 0 {
 		parsedUserID := ctx.ParseUser(0)

@@ -8,12 +8,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func createWithdrawCommand() *discord.Command {
+func createWithdrawCommand(isGlobal bool) *discord.Command {
 	return discord.NewCommand(
 		"withdraw",
 		"🏧 | Retira monedas de tu banco",
 		"economy",
-		withdrawHandler,
+		func(ctx *discord.CommandContext) error {
+			return withdrawHandler(ctx, isGlobal)
+		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
@@ -34,8 +36,8 @@ func createWithdrawCommand() *discord.Command {
 	)
 }
 
-func withdrawHandler(ctx *discord.CommandContext) error {
-	ecoType := ctx.GetStringOption("tipo")
+func withdrawHandler(ctx *discord.CommandContext, isGlobal bool) error {
+	
 	amount := ctx.GetIntOption("cantidad")
 	userID := ctx.Interaction.Member.User.ID
 	guildID := ctx.Interaction.GuildID
@@ -46,7 +48,7 @@ func withdrawHandler(ctx *discord.CommandContext) error {
 	}
 
 	var err error
-	if ecoType == "local" {
+	if !isGlobal {
 		err = database.WithdrawLocal(guildID, userID, amount)
 		if err != nil {
 			if err == database.ErrInsufficientFunds {

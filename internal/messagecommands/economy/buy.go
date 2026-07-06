@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func buyCommand(ctx *messagecommands.MessageContext) error {
+func buyCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
 	if len(ctx.Args) == 0 {
 		_, err := ctx.ReplyError("Uso Incorrecto", "Debes especificar el ID del objeto a comprar.\nUso: `pan!buy <id> [cantidad]`")
 		return err
@@ -19,8 +19,8 @@ func buyCommand(ctx *messagecommands.MessageContext) error {
 	itemID := ctx.Args[0]
 	qty := int64(1)
 
-	if len(ctx.Args) > 1 {
-		q, err := strconv.ParseInt(ctx.Args[1], 10, 64)
+	if len(ctx.Args) > 0 {
+		q, err := strconv.ParseInt(ctx.Args[0], 10, 64)
 		if err == nil && q > 0 {
 			qty = q
 		}

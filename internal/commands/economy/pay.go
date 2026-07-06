@@ -8,12 +8,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func createPayCommand() *discord.Command {
+func createPayCommand(isGlobal bool) *discord.Command {
 	return discord.NewCommand(
 		"pay",
 		"💵 | Paga monedas a otro usuario",
 		"economy",
-		payHandler,
+		func(ctx *discord.CommandContext) error {
+			return payHandler(ctx, isGlobal)
+		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
@@ -40,8 +42,8 @@ func createPayCommand() *discord.Command {
 	)
 }
 
-func payHandler(ctx *discord.CommandContext) error {
-	ecoType := ctx.GetStringOption("tipo")
+func payHandler(ctx *discord.CommandContext, isGlobal bool) error {
+	
 
 	var targetUser *discordgo.User
 	if ctx.HasOption("usuario") {
@@ -66,7 +68,7 @@ func payHandler(ctx *discord.CommandContext) error {
 	}
 
 	var err error
-	if ecoType == "local" {
+	if !isGlobal {
 		err = database.TransferLocalBalance(guildID, userID, targetUser.ID, amount)
 		if err != nil {
 			if err == database.ErrInsufficientFunds {

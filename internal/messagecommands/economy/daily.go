@@ -8,7 +8,7 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 )
 
-func dailyCommand(ctx *messagecommands.MessageContext) error {
+func dailyCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
 	userID := ctx.Message.Author.ID
 
 	cooldownDuration := 24 * time.Hour

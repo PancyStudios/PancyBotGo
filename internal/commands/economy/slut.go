@@ -10,12 +10,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func createSlutCommand() *discord.Command {
+func createSlutCommand(isGlobal bool) *discord.Command {
 	return discord.NewCommand(
 		"slut",
 		"👠 | Trabaja en las calles (alto riesgo)",
 		"economy",
-		slutHandler,
+		func(ctx *discord.CommandContext) error {
+			return slutHandler(ctx, isGlobal)
+		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
@@ -30,8 +32,8 @@ func createSlutCommand() *discord.Command {
 	)
 }
 
-func slutHandler(ctx *discord.CommandContext) error {
-	ecoType := ctx.GetStringOption("tipo")
+func slutHandler(ctx *discord.CommandContext, isGlobal bool) error {
+	
 	userID := ctx.Interaction.Member.User.ID
 	guildID := ctx.Interaction.GuildID
 
@@ -41,7 +43,7 @@ func slutHandler(ctx *discord.CommandContext) error {
 	var remaining time.Duration
 	var err error
 
-	if ecoType == "local" {
+	if !isGlobal {
 		isReady, remaining, err = database.CooldownLocal(guildID, userID, "slut", cooldownDuration)
 	} else {
 		isReady, remaining, err = database.CooldownStars(userID, "slut", cooldownDuration)
@@ -60,7 +62,7 @@ func slutHandler(ctx *discord.CommandContext) error {
 	// 60% chance of success
 	success := rand.Float64() < 0.60
 
-	if ecoType == "local" {
+	if !isGlobal {
 		_ = database.SetCooldownLocal(guildID, userID, "slut")
 
 		if success {

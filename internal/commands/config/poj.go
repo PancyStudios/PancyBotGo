@@ -27,13 +27,7 @@ func createPojCommand() *discord.Command {
 				{
 					Type:        discordgo.ApplicationCommandOptionChannel,
 					Name:        "canal",
-					Description: "Canal donde se hará el ping",
-					Required:    true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionRole,
-					Name:        "rol",
-					Description: "Rol que será mencionado",
+					Description: "Canal donde se hará el Ping",
 					Required:    true,
 				},
 			},
@@ -70,21 +64,13 @@ func handlePojCommand(ctx *discord.CommandContext) error {
 	subcommand := options[0]
 	switch subcommand.Name {
 	case "add":
-		var channelID, roleID string
-		for _, opt := range subcommand.Options {
-			if opt.Name == "canal" {
-				channelID = opt.ChannelValue(nil).ID
-			}
-			if opt.Name == "rol" {
-				roleID = opt.RoleValue(nil, "").ID
-			}
-		}
+		channelID := ctx.GetChannelOption("canal").ID
 
-		err := AddPojConfig(ctx.Interaction.GuildID, channelID, roleID)
+		err := AddPojConfig(ctx.Interaction.GuildID, channelID)
 		if err != nil {
-			return ctx.ReplyEphemeral("❌ Hubo un error al guardar.")
+			return ctx.Reply("❌ Hubo un error al guardar la configuración de PoJ.")
 		}
-		return ctx.Reply(fmt.Sprintf("✅ PoJ añadido: el rol <@&%s> será mencionado en <#%s>.", roleID, channelID))
+		return ctx.Reply(fmt.Sprintf("✅ PoJ añadido: el usuario nuevo será mencionado en <#%s>.", channelID))
 
 	case "remove":
 		var channelID string
@@ -108,7 +94,7 @@ func handlePojCommand(ctx *discord.CommandContext) error {
 
 		list := "🔔 **Lista de Ping On Join (PoJ)**\n"
 		for _, poj := range doc.PingOnJoin {
-			list += fmt.Sprintf("• Canal: <#%s> | Rol: <@&%s>\n", poj.ChannelID, poj.RoleID)
+			list += fmt.Sprintf("• Canal: <#%s>\n", poj.ChannelID)
 		}
 
 		return ctx.Reply(list)
@@ -118,16 +104,15 @@ func handlePojCommand(ctx *discord.CommandContext) error {
 }
 
 // AddPojConfig exports the Poj logic
-func AddPojConfig(guildID, channelID, roleID string) error {
+func AddPojConfig(guildID, channelID string) error {
 	doc, err := database.GlobalGuildDM.Get(bson.M{"id": guildID})
 	if err != nil {
 		doc = &models.GuildDocument{ID: guildID}
 	}
 
 	found := false
-	for i, poj := range doc.PingOnJoin {
+	for _, poj := range doc.PingOnJoin {
 		if poj.ChannelID == channelID {
-			doc.PingOnJoin[i].RoleID = roleID
 			found = true
 			break
 		}
@@ -135,7 +120,6 @@ func AddPojConfig(guildID, channelID, roleID string) error {
 	if !found {
 		doc.PingOnJoin = append(doc.PingOnJoin, models.PingOnJoinConfig{
 			ChannelID: channelID,
-			RoleID:    roleID,
 		})
 	}
 
@@ -160,77 +144,4 @@ func RemovePojConfig(guildID, channelID string) error {
 	return err
 }
 
-// HandleMessagePojCommand handles the pan!poj text command
-func HandleMessagePojCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
-	// Require ManageServer permission
-	perms, err := s.UserChannelPermissions(m.Author.ID, m.ChannelID)
-	if err != nil || perms&discordgo.PermissionManageGuild != discordgo.PermissionManageGuild {
-		s.ChannelMessageSend(m.ChannelID, "❌ No tienes permisos para usar este comando. Necesitas `Gestionar Servidor`.")
-		return
-	}
 
-	if len(args) == 0 {
-		s.ChannelMessageSend(m.ChannelID, "ℹ️ Uso: `pan!poj <add|remove|list>`")
-		return
-	}
-
-	subcommand := args[0]
-	switch subcommand {
-	case "add":
-		if len(args) < 3 {
-			s.ChannelMessageSend(m.ChannelID, "❌ Uso correcto: `pan!poj add <#canal> <@&rol>`")
-			return
-		}
-
-		// Clean up mentions: <#1234> -> 1234, <@&1234> -> 1234
-		channelID := args[1]
-		if len(channelID) > 4 && channelID[:2] == "<#" {
-			channelID = channelID[2 : len(channelID)-1]
-		}
-		roleID := args[2]
-		if len(roleID) > 5 && roleID[:3] == "<@&" {
-			roleID = roleID[3 : len(roleID)-1]
-		}
-
-		err := AddPojConfig(m.GuildID, channelID, roleID)
-		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, "❌ Hubo un error al guardar.")
-			return
-		}
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("✅ PoJ añadido: el rol <@&%s> será mencionado en <#%s>.", roleID, channelID))
-
-	case "remove":
-		if len(args) < 2 {
-			s.ChannelMessageSend(m.ChannelID, "❌ Uso correcto: `pan!poj remove <#canal>`")
-			return
-		}
-
-		channelID := args[1]
-		if len(channelID) > 4 && channelID[:2] == "<#" {
-			channelID = channelID[2 : len(channelID)-1]
-		}
-
-		err := RemovePojConfig(m.GuildID, channelID)
-		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, "❌ Hubo un error al remover.")
-			return
-		}
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("✅ Configuración de PoJ removida del canal <#%s>.", channelID))
-
-	case "list":
-		doc, err := database.GlobalGuildDM.Get(bson.M{"id": m.GuildID})
-		if err != nil || len(doc.PingOnJoin) == 0 {
-			s.ChannelMessageSend(m.ChannelID, "ℹ️ No hay configuraciones de Ping On Join activas.")
-			return
-		}
-
-		list := "🔔 **Lista de Ping On Join (PoJ)**\n"
-		for _, poj := range doc.PingOnJoin {
-			list += fmt.Sprintf("• Canal: <#%s> | Rol: <@&%s>\n", poj.ChannelID, poj.RoleID)
-		}
-
-		s.ChannelMessageSend(m.ChannelID, list)
-	default:
-		s.ChannelMessageSend(m.ChannelID, "❌ Subcomando desconocido. Usa `add`, `remove` o `list`.")
-	}
-}

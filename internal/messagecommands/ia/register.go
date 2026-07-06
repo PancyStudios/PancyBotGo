@@ -5,6 +5,6 @@ import (
 )
 
 func RegisterAll() {
-	messagecommands.RegisterCommand("createimage", "Comando createimage", "pan!createimage", "General", createImageCommand)
-	messagecommands.RegisterCommand("getimage", "Comando getimage", "pan!getimage", "General", getImageCommand)
+	messagecommands.RegisterCommand("createimage", "Comando createimage", "pan!createimage", "Ia", createImageCommand)
+	messagecommands.RegisterCommand("getimage", "Comando getimage", "pan!getimage", "Ia", getImageCommand)
 }

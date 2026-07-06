@@ -5,8 +5,8 @@ import (
 )
 
 func RegisterAll() {
-	messagecommands.RegisterCommand("leaderboard", "Comando leaderboard", "pan!leaderboard", "General", leaderboardCommand)
-	messagecommands.RegisterCommand("rank", "Comando rank", "pan!rank", "General", rankCommand)
-	messagecommands.RegisterCommand("rewards", "Comando rewards", "pan!rewards", "General", rewardsCommand)
-	messagecommands.RegisterCommand("togglelevels", "Comando togglelevels", "pan!togglelevels", "General", toggleCommand)
+	messagecommands.RegisterCommand("leaderboard", "Comando leaderboard", "pan!leaderboard", "Levels", leaderboardCommand)
+	messagecommands.RegisterCommand("rank", "Comando rank", "pan!rank", "Levels", rankCommand)
+	messagecommands.RegisterCommand("rewards", "Comando rewards", "pan!rewards", "Levels", rewardsCommand)
+	messagecommands.RegisterCommand("togglelevels", "Comando togglelevels", "pan!togglelevels", "Levels", toggleCommand)
 }

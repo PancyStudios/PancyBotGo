@@ -10,12 +10,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func createRobCommand() *discord.Command {
+func createRobCommand(isGlobal bool) *discord.Command {
 	return discord.NewCommand(
 		"rob",
 		"🥷 | Intenta robarle monedas a otro usuario",
 		"economy",
-		robHandler,
+		func(ctx *discord.CommandContext) error {
+			return robHandler(ctx, isGlobal)
+		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
@@ -36,8 +38,8 @@ func createRobCommand() *discord.Command {
 	)
 }
 
-func robHandler(ctx *discord.CommandContext) error {
-	ecoType := ctx.GetStringOption("tipo")
+func robHandler(ctx *discord.CommandContext, isGlobal bool) error {
+	
 
 	targetUser := ctx.GetUserOption("victima")
 	userID := ctx.Interaction.Member.User.ID
@@ -58,7 +60,7 @@ func robHandler(ctx *discord.CommandContext) error {
 	var remaining time.Duration
 	var err error
 
-	if ecoType == "local" {
+	if !isGlobal {
 		isReady, remaining, err = database.CooldownLocal(guildID, userID, "rob", cooldownDuration)
 	} else {
 		isReady, remaining, err = database.CooldownStars(userID, "rob", cooldownDuration)
@@ -77,7 +79,7 @@ func robHandler(ctx *discord.CommandContext) error {
 	// Calculate robbery logic
 	success := rand.Float64() < 0.40 // 40% base success rate
 
-	if ecoType == "local" {
+	if !isGlobal {
 		targetProfile, err := database.GetLocalProfile(guildID, targetUser.ID)
 		if err != nil || targetProfile.Wallet < 100 {
 			ctx.Reply("❌ Ese usuario no tiene dinero que valga la pena robar (Mínimo 100).")

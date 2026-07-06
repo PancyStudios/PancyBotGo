@@ -8,12 +8,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func createBalanceCommand() *discord.Command {
+func createBalanceCommand(isGlobal bool) *discord.Command {
 	return discord.NewCommand(
 		"balance",
 		"💸 | Revisa tu balance estelar y de monedas locales",
 		"economy",
-		balanceHandler,
+		func(ctx *discord.CommandContext) error {
+			return balanceHandler(ctx, isGlobal)
+		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
@@ -24,7 +26,7 @@ func createBalanceCommand() *discord.Command {
 	)
 }
 
-func balanceHandler(ctx *discord.CommandContext) error {
+func balanceHandler(ctx *discord.CommandContext, isGlobal bool) error {
 	targetUser := ctx.Interaction.Member.User
 
 	if ctx.HasOption("usuario") {

@@ -3,7 +3,6 @@ package economy
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/PancyStudios/PancyBotGo/internal/messagecommands"
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
@@ -11,23 +10,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func topCommand(ctx *messagecommands.MessageContext) error {
-	if len(ctx.Args) == 0 {
-		_, err := ctx.ReplyError("Uso Incorrecto", "Debes especificar el tipo de economía.\nUso: `pan!top <local|global>`")
-		return err
-	}
-
-	ecoType := strings.ToLower(ctx.Args[0])
-	if ecoType != "local" && ecoType != "global" {
-		_, err := ctx.ReplyError("Uso Incorrecto", "El tipo de economía debe ser `local` o `global`.")
-		return err
-	}
+func topCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
 
 	var leaderboardStr string
 	var embedTitle string
 	var embedColor int
 
-	if ecoType == "local" {
+	if !isGlobal {
 		embedTitle = "🏆 Tabla de Clasificación Local"
 		embedColor = 0x2ECC71
 

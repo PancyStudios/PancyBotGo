@@ -8,16 +8,18 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 )
 
-func createDailyCommand() *discord.Command {
+func createDailyCommand(isGlobal bool) *discord.Command {
 	return discord.NewCommand(
 		"daily",
 		"📅 | Reclama tu recompensa diaria",
 		"economy",
-		dailyHandler,
+		func(ctx *discord.CommandContext) error {
+			return dailyHandler(ctx, isGlobal)
+		},
 	)
 }
 
-func dailyHandler(ctx *discord.CommandContext) error {
+func dailyHandler(ctx *discord.CommandContext, isGlobal bool) error {
 	userID := ctx.Interaction.Member.User.ID
 
 	cooldownDuration := 24 * time.Hour

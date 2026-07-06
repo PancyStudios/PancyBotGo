@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func adminShopCommand(ctx *messagecommands.MessageContext) error {
+func adminShopCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
 	if !ctx.HasPermission(discordgo.PermissionAdministrator) {
 		_, err := ctx.ReplyError("Acceso Denegado", "No tienes permiso para administrar la tienda local.")
 		return err
@@ -24,11 +24,11 @@ func adminShopCommand(ctx *messagecommands.MessageContext) error {
 	}
 
 	action := strings.ToLower(ctx.Args[0])
-	
+
 	if action == "add" {
 		fullArgs := strings.Join(ctx.Args[1:], " ")
 		parts := strings.Split(fullArgs, "|")
-		
+
 		for i := range parts {
 			parts[i] = strings.TrimSpace(parts[i])
 		}
@@ -40,7 +40,7 @@ func adminShopCommand(ctx *messagecommands.MessageContext) error {
 
 		name := parts[0]
 		desc := parts[1]
-		
+
 		price, err := strconv.ParseInt(parts[2], 10, 64)
 		if err != nil || price <= 0 {
 			_, err = ctx.ReplyError("Error", "❌ El precio debe ser un número mayor a 0.")
@@ -108,12 +108,12 @@ func adminShopCommand(ctx *messagecommands.MessageContext) error {
 		return err
 
 	} else if action == "delete" {
-		if len(ctx.Args) < 2 {
+		if len(ctx.Args) < 1 {
 			_, err := ctx.ReplyError("Uso Incorrecto", "Debes proporcionar el ID del objeto a eliminar.\nUso: `pan!adminshop delete <id>`")
 			return err
 		}
 
-		id := ctx.Args[1]
+		id := ctx.Args[0]
 
 		items, err := database.GetItems(ctx.Message.GuildID)
 		if err != nil {

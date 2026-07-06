@@ -5,5 +5,5 @@ import (
 )
 
 func RegisterAll() {
-	messagecommands.RegisterCommand("redeem", "Comando redeem", "pan!redeem", "General", redeemCommand)
+	messagecommands.RegisterCommand("redeem", "Comando redeem", "pan!redeem", "Premium", redeemCommand)
 }

@@ -213,8 +213,8 @@ func onGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 		// Ping On Join (PoJ) - Ghost Ping
 		if len(guildDoc.PingOnJoin) > 0 {
 			for _, poj := range guildDoc.PingOnJoin {
-				if poj.ChannelID != "" && poj.RoleID != "" {
-					msg, err := s.ChannelMessageSend(poj.ChannelID, fmt.Sprintf("<@&%s>", poj.RoleID))
+				if poj.ChannelID != "" {
+					msg, err := s.ChannelMessageSend(poj.ChannelID, fmt.Sprintf("<@%s>", m.User.ID))
 					if err == nil {
 						go func(msgID, channelID string) {
 							time.Sleep(1 * time.Second)

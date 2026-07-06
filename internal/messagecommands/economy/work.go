@@ -3,24 +3,13 @@ package economy
 import (
 	"fmt"
 	"math/rand"
-	"strings"
 	"time"
 
 	"github.com/PancyStudios/PancyBotGo/internal/messagecommands"
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 )
 
-func workCommand(ctx *messagecommands.MessageContext) error {
-	if len(ctx.Args) == 0 {
-		_, err := ctx.ReplyError("Uso Incorrecto", "Debes especificar el tipo de economía.\nUso: `pan!work <local|global>`")
-		return err
-	}
-
-	ecoType := strings.ToLower(ctx.Args[0])
-	if ecoType != "local" && ecoType != "global" {
-		_, err := ctx.ReplyError("Uso Incorrecto", "El tipo de economía debe ser `local` o `global`.")
-		return err
-	}
+func workCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
 
 	userID := ctx.Message.Author.ID
 	guildID := ctx.Message.GuildID
@@ -31,7 +20,7 @@ func workCommand(ctx *messagecommands.MessageContext) error {
 	var remaining time.Duration
 	var err error
 
-	if ecoType == "local" {
+	if !isGlobal {
 		isReady, remaining, err = database.CooldownLocal(guildID, userID, "work", cooldownDuration)
 	} else {
 		isReady, remaining, err = database.CooldownStars(userID, "work", cooldownDuration)
@@ -49,7 +38,7 @@ func workCommand(ctx *messagecommands.MessageContext) error {
 
 	amount := int64(rand.Intn(200) + 50)
 
-	if ecoType == "local" {
+	if !isGlobal {
 		_, err = database.AddLocalBalance(guildID, userID, amount, false)
 		if err != nil {
 			_, err = ctx.ReplyError("Error", "❌ Error al procesar el pago local.")

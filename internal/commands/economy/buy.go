@@ -10,12 +10,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func createBuyCommand() *discord.Command {
+func createBuyCommand(isGlobal bool) *discord.Command {
 	return discord.NewCommand(
 		"buy",
 		"🛍️ | Compra un objeto del mercado estelar o local",
 		"economy",
-		buyHandler,
+		func(ctx *discord.CommandContext) error {
+			return buyHandler(ctx, isGlobal)
+		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
@@ -32,7 +34,7 @@ func createBuyCommand() *discord.Command {
 	)
 }
 
-func buyHandler(ctx *discord.CommandContext) error {
+func buyHandler(ctx *discord.CommandContext, isGlobal bool) error {
 	itemID := ctx.GetStringOption("id")
 	qty := int64(1)
 

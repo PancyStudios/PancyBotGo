@@ -24,20 +24,22 @@ func pojCommand(ctx *messagecommands.MessageContext) error {
 	subcommand := ctx.Args[0]
 	switch subcommand {
 	case "add":
-		if len(ctx.Args) < 3 {
-			_, err := ctx.ReplyError("Uso Incorrecto", "Uso correcto: `pan!poj add <#canal> <@&rol>`")
+		if len(ctx.Args) < 2 {
+			_, err := ctx.ReplyError("Uso Incorrecto", "Uso correcto: `pan!poj add <#canal>`")
+			return err
+		}
+		channelID := ctx.ParseChannel(1)
+		if channelID == "" {
+			_, err := ctx.ReplyError("Canal Inválido", "Por favor menciona un canal válido.")
 			return err
 		}
 
-		channelID := messagecommands.CleanMention(ctx.Args[1])
-		roleID := messagecommands.CleanMention(ctx.Args[2])
-
-		err := appconfig.AddPojConfig(ctx.Message.GuildID, channelID, roleID)
+		err := appconfig.AddPojConfig(ctx.Message.GuildID, channelID)
 		if err != nil {
-			_, err = ctx.ReplyError("Error", "❌ Hubo un error al guardar.")
+			_, err = ctx.ReplyError("Error", "Hubo un error al guardar.")
 			return err
 		}
-		_, err = ctx.ReplySuccess("Éxito", fmt.Sprintf("✅ PoJ añadido: el rol <@&%s> será mencionado en <#%s>.", roleID, channelID))
+		_, err = ctx.ReplySuccess("Éxito", fmt.Sprintf("✅ PoJ añadido: el usuario nuevo será mencionado en <#%s>.", channelID))
 		return err
 
 	case "remove":
@@ -58,16 +60,16 @@ func pojCommand(ctx *messagecommands.MessageContext) error {
 	case "list":
 		doc, err := database.GlobalGuildDM.Get(bson.M{"id": ctx.Message.GuildID})
 		if err != nil || len(doc.PingOnJoin) == 0 {
-			_, err = ctx.Reply("ℹ️ No hay configuraciones de Ping On Join activas.")
+			_, err = ctx.ReplyError("PoJ", "No hay configuraciones activas.")
 			return err
 		}
 
 		list := "🔔 **Lista de Ping On Join (PoJ)**\n"
 		for _, poj := range doc.PingOnJoin {
-			list += fmt.Sprintf("• Canal: <#%s> | Rol: <@&%s>\n", poj.ChannelID, poj.RoleID)
+			list += fmt.Sprintf("• Canal: <#%s>\n", poj.ChannelID)
 		}
 
-		_, err = ctx.Reply(list)
+		_, err = ctx.ReplySuccess("Ping On Join", list)
 		return err
 	default:
 		_, err := ctx.ReplyError("Comando Desconocido", "❌ Subcomando desconocido. Usa `add`, `remove` o `list`.")

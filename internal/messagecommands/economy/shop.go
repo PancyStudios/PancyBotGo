@@ -8,7 +8,7 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 )
 
-func shopCommand(ctx *messagecommands.MessageContext) error {
+func shopCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
 	items, err := database.GetItems(ctx.Message.GuildID)
 	if err != nil {
 		_, err = ctx.ReplyError("Error", "❌ No se pudo cargar el catálogo de la tienda.")

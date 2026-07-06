@@ -9,8 +9,8 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 )
 
-func payCommand(ctx *messagecommands.MessageContext) error {
-	if len(ctx.Args) < 3 {
+func payCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
+	if len(ctx.Args) < 2 {
 		_, err := ctx.ReplyError("Uso Incorrecto", "Debes especificar el tipo de economía, el usuario y la cantidad.\nUso: `pan!pay <local|global> @usuario <cantidad>`")
 		return err
 	}
@@ -21,13 +21,13 @@ func payCommand(ctx *messagecommands.MessageContext) error {
 		return err
 	}
 
-	targetUserID := ctx.ParseUser(1)
+	targetUserID := ctx.ParseUser(0)
 	if targetUserID == "" {
 		_, err := ctx.ReplyError("Uso Incorrecto", "Debes especificar un usuario válido.")
 		return err
 	}
 
-	amount, err := strconv.ParseInt(ctx.Args[2], 10, 64)
+	amount, err := strconv.ParseInt(ctx.Args[1], 10, 64)
 	if err != nil || amount <= 0 {
 		_, err := ctx.ReplyError("Error", "❌ La cantidad debe ser un número mayor a 0.")
 		return err
@@ -47,7 +47,7 @@ func payCommand(ctx *messagecommands.MessageContext) error {
 		return err
 	}
 
-	if ecoType == "local" {
+	if !isGlobal {
 		err = database.TransferLocalBalance(guildID, userID, targetUserID, amount)
 		if err != nil {
 			if err == database.ErrInsufficientFunds {

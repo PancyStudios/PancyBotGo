@@ -9,8 +9,8 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 )
 
-func depositCommand(ctx *messagecommands.MessageContext) error {
-	if len(ctx.Args) < 2 {
+func depositCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
+	if len(ctx.Args) < 1 {
 		_, err := ctx.ReplyError("Uso Incorrecto", "Debes especificar el tipo de economía y la cantidad.\nUso: `pan!deposit <local|global> <cantidad>`")
 		return err
 	}
@@ -21,7 +21,7 @@ func depositCommand(ctx *messagecommands.MessageContext) error {
 		return err
 	}
 
-	amount, err := strconv.ParseInt(ctx.Args[1], 10, 64)
+	amount, err := strconv.ParseInt(ctx.Args[0], 10, 64)
 	if err != nil || amount <= 0 {
 		_, err := ctx.ReplyError("Error", "❌ La cantidad debe ser un número mayor a 0.")
 		return err
@@ -30,7 +30,7 @@ func depositCommand(ctx *messagecommands.MessageContext) error {
 	userID := ctx.Message.Author.ID
 	guildID := ctx.Message.GuildID
 
-	if ecoType == "local" {
+	if !isGlobal {
 		err = database.DepositLocal(guildID, userID, amount)
 		if err != nil {
 			if err == database.ErrInsufficientFunds {

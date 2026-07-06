@@ -5,7 +5,7 @@ import (
 )
 
 func RegisterAll() {
-	messagecommands.RegisterCommand("antibots", "Comando antibots", "pan!antibots", "General", antibotsCommand)
-	messagecommands.RegisterCommand("antiraid", "Comando antiraid", "pan!antiraid", "General", antiraidCommand)
-	messagecommands.RegisterCommand("verification", "Comando verification", "pan!verification", "General", verificationCommand)
+	messagecommands.RegisterCommand("antibots", "Comando antibots", "pan!antibots", "Security", antibotsCommand)
+	messagecommands.RegisterCommand("antiraid", "Comando antiraid", "pan!antiraid", "Security", antiraidCommand)
+	messagecommands.RegisterCommand("verification", "Comando verification", "pan!verification", "Security", verificationCommand)
 }

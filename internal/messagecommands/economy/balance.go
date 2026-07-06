@@ -8,7 +8,7 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 )
 
-func balanceCommand(ctx *messagecommands.MessageContext) error {
+func balanceCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
 	targetUser := ctx.Message.Author
 	if len(ctx.Args) > 0 {
 		parsedUserID := ctx.ParseUser(0)

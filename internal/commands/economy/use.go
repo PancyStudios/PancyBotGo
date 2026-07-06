@@ -10,12 +10,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func createUseCommand() *discord.Command {
+func createUseCommand(isGlobal bool) *discord.Command {
 	return discord.NewCommand(
 		"use",
 		"✨ | Usa un objeto mágico de tu inventario",
 		"economy",
-		useHandler,
+		func(ctx *discord.CommandContext) error {
+			return useHandler(ctx, isGlobal)
+		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
@@ -26,7 +28,7 @@ func createUseCommand() *discord.Command {
 	)
 }
 
-func useHandler(ctx *discord.CommandContext) error {
+func useHandler(ctx *discord.CommandContext, isGlobal bool) error {
 	itemID := ctx.GetStringOption("id")
 	userID := ctx.Interaction.Member.User.ID
 	guildID := ctx.Interaction.GuildID

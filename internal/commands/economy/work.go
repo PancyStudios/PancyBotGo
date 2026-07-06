@@ -10,12 +10,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func createWorkCommand() *discord.Command {
+func createWorkCommand(isGlobal bool) *discord.Command {
 	return discord.NewCommand(
 		"work",
 		"💼 | Trabaja honradamente para ganar monedas",
 		"economy",
-		workHandler,
+		func(ctx *discord.CommandContext) error {
+			return workHandler(ctx, isGlobal)
+		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionString,
@@ -30,8 +32,8 @@ func createWorkCommand() *discord.Command {
 	)
 }
 
-func workHandler(ctx *discord.CommandContext) error {
-	ecoType := ctx.GetStringOption("tipo")
+func workHandler(ctx *discord.CommandContext, isGlobal bool) error {
+	
 	userID := ctx.Interaction.Member.User.ID
 	guildID := ctx.Interaction.GuildID
 
@@ -41,7 +43,7 @@ func workHandler(ctx *discord.CommandContext) error {
 	var remaining time.Duration
 	var err error
 
-	if ecoType == "local" {
+	if !isGlobal {
 		isReady, remaining, err = database.CooldownLocal(guildID, userID, "work", cooldownDuration)
 	} else {
 		isReady, remaining, err = database.CooldownStars(userID, "work", cooldownDuration)
@@ -59,7 +61,7 @@ func workHandler(ctx *discord.CommandContext) error {
 
 	amount := int64(rand.Intn(200) + 50)
 
-	if ecoType == "local" {
+	if !isGlobal {
 		_, err = database.AddLocalBalance(guildID, userID, amount, false)
 		if err != nil {
 			ctx.Reply("❌ " + "Error al procesar el pago local.")

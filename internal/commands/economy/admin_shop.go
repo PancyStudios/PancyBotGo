@@ -10,12 +10,14 @@ import (
 	"github.com/google/uuid"
 )
 
-func createAdminShopCommand() *discord.Command {
+func createAdminShopCommand(isGlobal bool) *discord.Command {
 	cmd := discord.NewCommand(
 		"admin",
 		"🛠️ | Administra la tienda local del servidor",
 		"economy",
-		adminShopHandler,
+		func(ctx *discord.CommandContext) error {
+			return adminShopHandler(ctx, isGlobal)
+		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -88,7 +90,7 @@ func createAdminShopCommand() *discord.Command {
 	return cmd
 }
 
-func adminShopHandler(ctx *discord.CommandContext) error {
+func adminShopHandler(ctx *discord.CommandContext, isGlobal bool) error {
 	subcommand := ctx.Interaction.ApplicationCommandData().Options[0]
 
 	if subcommand.Name == "add" {
