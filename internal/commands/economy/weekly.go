@@ -40,9 +40,9 @@ func weeklyHandler(ctx *discord.CommandContext) error {
 		ctx.Reply("❌ Error al procesar la recompensa.")
 		return err
 	}
-	
+
 	_ = database.SetCooldownStars(userID, "weekly")
-	
+
 	ctx.Reply(fmt.Sprintf("¡Increíble! Has reclamado tu jugosa recompensa semanal de **🌟 %d estrellas**.", amount))
 	return nil
 }

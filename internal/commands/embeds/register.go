@@ -22,7 +22,7 @@ func RegisterEmbedsCommands(client *discord.ExtendedClient) {
 
 	// Solo para usuarios con permisos de ManageMessages (opcional, configurarlo desde discord)
 	// En discordgo se configuran los default permissions
-	
+
 	defaultPerms := int64(8192) // Manage Messages
 	embedGroup.DefaultMemberPermissions = &defaultPerms
 

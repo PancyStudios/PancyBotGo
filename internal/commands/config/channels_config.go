@@ -17,10 +17,10 @@ func createSuggestConfigCommand() *discord.Command {
 		Description: "⚙️ | Configura el canal de sugerencias",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
-				Type:        discordgo.ApplicationCommandOptionChannel,
-				Name:        "canal",
-				Description: "⚙️ | El canal donde se enviarán las sugerencias",
-				Required:    true,
+				Type:         discordgo.ApplicationCommandOptionChannel,
+				Name:         "canal",
+				Description:  "⚙️ | El canal donde se enviarán las sugerencias",
+				Required:     true,
 				ChannelTypes: []discordgo.ChannelType{discordgo.ChannelTypeGuildText},
 			},
 		},
@@ -58,10 +58,10 @@ func createConfessConfigCommand() *discord.Command {
 		Description: "⚙️ | Configura el canal de confesiones",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
-				Type:        discordgo.ApplicationCommandOptionChannel,
-				Name:        "canal",
-				Description: "⚙️ | El canal donde se enviarán las confesiones",
-				Required:    true,
+				Type:         discordgo.ApplicationCommandOptionChannel,
+				Name:         "canal",
+				Description:  "⚙️ | El canal donde se enviarán las confesiones",
+				Required:     true,
 				ChannelTypes: []discordgo.ChannelType{discordgo.ChannelTypeGuildText},
 			},
 		},
@@ -99,10 +99,10 @@ func createVerifyChannelCommand() *discord.Command {
 		Description: "⚙️ | Configura el canal de verificación",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
-				Type:        discordgo.ApplicationCommandOptionChannel,
-				Name:        "canal",
-				Description: "⚙️ | El canal donde se enviará el panel de verificación",
-				Required:    true,
+				Type:         discordgo.ApplicationCommandOptionChannel,
+				Name:         "canal",
+				Description:  "⚙️ | El canal donde se enviará el panel de verificación",
+				Required:     true,
 				ChannelTypes: []discordgo.ChannelType{discordgo.ChannelTypeGuildText},
 			},
 		},

@@ -11,6 +11,21 @@ import (
 
 	"github.com/PancyStudios/PancyBotGo/internal/commands"
 	"github.com/PancyStudios/PancyBotGo/internal/events"
+	msgconfig "github.com/PancyStudios/PancyBotGo/internal/messagecommands/config"
+	"github.com/PancyStudios/PancyBotGo/internal/messagecommands/economy"
+	funMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/fun"
+	modMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/mod"
+	utilsMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/utils"
+	helpMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/help"
+	iaMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/ia"
+	levelsMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/levels"
+	devMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/dev"
+	embedsMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/embeds"
+	musicMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/music"
+	premiumMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/premium"
+	reactionMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/reaction"
+	securityMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/security"
+	"github.com/PancyStudios/PancyBotGo/pkg/api"
 	"github.com/PancyStudios/PancyBotGo/pkg/cli"
 	"github.com/PancyStudios/PancyBotGo/pkg/config"
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
@@ -21,7 +36,6 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/mqtt"
 	"github.com/PancyStudios/PancyBotGo/pkg/scheduler"
 	"github.com/PancyStudios/PancyBotGo/pkg/web"
-	"github.com/PancyStudios/PancyBotGo/pkg/api"
 )
 
 func main() {
@@ -123,6 +137,24 @@ func main() {
 
 	// Register commands using the new commands package
 	commands.RegisterAll(discordClient)
+
+	// Register text commands (Prefix)
+	msgconfig.Register()
+	economy.Register()
+	funMsgCommands.Register()
+	modMsgCommands.Register()
+	utilsMsgCommands.Register()
+	helpMsgCommands.RegisterAll()
+	iaMsgCommands.RegisterAll()
+	levelsMsgCommands.RegisterAll()
+	devMsgCommands.RegisterAll()
+	embedsMsgCommands.RegisterAll()
+	musicMsgCommands.RegisterAll()
+	premiumMsgCommands.RegisterAll()
+	reactionMsgCommands.RegisterAll()
+	securityMsgCommands.RegisterAll()
+
+	logger.Info("Initialising Discord Bot...", "App")
 
 	// Register events using the new events package
 	events.RegisterAll(discordClient)

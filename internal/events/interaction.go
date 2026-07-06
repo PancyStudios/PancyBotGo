@@ -174,7 +174,7 @@ func handleVerifyUser(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		timestampMs := (idInt >> 22) + 1420070400000
 		createdAt := time.UnixMilli(timestampMs)
 		accountAge := time.Since(createdAt)
-		
+
 		minAgeDuration := time.Duration(guildDoc.Protection.Verification.MinAccountAgeDays) * 24 * time.Hour
 		if accountAge < minAgeDuration {
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -229,4 +229,3 @@ func handleVerifyUser(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		},
 	})
 }
-

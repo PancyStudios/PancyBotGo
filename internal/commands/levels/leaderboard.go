@@ -47,7 +47,7 @@ var leaderboardCommand = &discord.Command{
 			case 2:
 				medal = "🥉"
 			}
-			
+
 			description += fmt.Sprintf("%s **#%d** <@%s> - Nivel %d (%d XP)\n", medal, i+1, profile.UserID, profile.Level, profile.XP)
 		}
 

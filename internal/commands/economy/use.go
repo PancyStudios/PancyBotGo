@@ -59,7 +59,7 @@ func useHandler(ctx *discord.CommandContext) error {
 			ctx.Reply("❌ No tienes ese objeto en tu inventario global.")
 			return nil
 		}
-		
+
 		// Use it
 		profile.Inventory[selectedItem.ID] -= 1
 		if profile.Inventory[selectedItem.ID] == 0 {
@@ -82,7 +82,7 @@ func useHandler(ctx *discord.CommandContext) error {
 			ctx.Reply(fmt.Sprintf("✨ Has usado **%s**. ¡Tu capacidad estelar o balance ha mejorado!", selectedItem.Name))
 			return nil
 		}
-		
+
 	} else {
 		// Local Item
 		profile, _ := database.GetLocalProfile(guildID, userID)

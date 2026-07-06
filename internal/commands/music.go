@@ -124,10 +124,10 @@ func RegisterMusicCommands(client *discord.ExtendedClient) {
 
 // Predefined radio stations (Direct HTTP Streams to bypass YouTube)
 var radioStations = map[string]string{
-	"Lofi Hip Hop Radio":      "https://lfhh.radioca.st/stream",
-	"Nightride FM (Synthwave)": "https://stream.nightride.fm/nightride.m4a",
-	"Vaporwave Plaza":         "https://radio.plaza.one/mp3",
-	"I Love Radio (Pop/Hits)": "https://streams.ilovemusic.de/iloveradio1.mp3",
+	"Lofi Hip Hop Radio":        "https://lfhh.radioca.st/stream",
+	"Nightride FM (Synthwave)":  "https://stream.nightride.fm/nightride.m4a",
+	"Vaporwave Plaza":           "https://radio.plaza.one/mp3",
+	"I Love Radio (Pop/Hits)":   "https://streams.ilovemusic.de/iloveradio1.mp3",
 	"I Love Dance (Electronic)": "https://streams.ilovemusic.de/iloveradio2.mp3",
 }
 

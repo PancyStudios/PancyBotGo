@@ -35,7 +35,7 @@ func createBuyCommand() *discord.Command {
 func buyHandler(ctx *discord.CommandContext) error {
 	itemID := ctx.GetStringOption("id")
 	qty := int64(1)
-	
+
 	optQty := ctx.GetIntOption("cantidad")
 	if optQty > 0 {
 		qty = int64(optQty)
@@ -74,7 +74,7 @@ func buyHandler(ctx *discord.CommandContext) error {
 			ctx.Reply("❌ " + "No tienes suficientes estrellas para comprar esto.")
 			return nil
 		}
-		
+
 		profile, _ := database.GetGlobalProfile(ctx.Interaction.Member.User.ID)
 		profile.Inventory[selectedItem.ID] += int(qty)
 		database.GlobalEconomyDM.Set(bson.M{"_id": profile.UserID}, profile)
@@ -86,13 +86,13 @@ func buyHandler(ctx *discord.CommandContext) error {
 			ctx.Reply("❌ " + "No tienes suficientes monedas locales para comprar esto.")
 			return nil
 		}
-		
+
 		profile, _ := database.GetLocalProfile(ctx.Interaction.GuildID, ctx.Interaction.Member.User.ID)
 		profile.Inventory[selectedItem.ID] += int(qty)
 		database.LocalEconomyDM.Set(bson.M{"_id": profile.ID}, profile)
 
 		ctx.Reply(fmt.Sprintf("Has comprado **x%d %s** por 💵 %d monedas locales.", qty, selectedItem.Name, totalCost))
 	}
-	
+
 	return nil
 }

@@ -14,16 +14,16 @@ func createEmbedSendCommand() *discord.Command {
 		Description: "📝 | Envía el embed que estás creando actualmente",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
-				Type:        discordgo.ApplicationCommandOptionChannel,
-				Name:        "canal",
-				Description: "📝 | Canal donde enviar el embed (opcional, por defecto el actual)",
-				Required:    false,
+				Type:         discordgo.ApplicationCommandOptionChannel,
+				Name:         "canal",
+				Description:  "📝 | Canal donde enviar el embed (opcional, por defecto el actual)",
+				Required:     false,
 				ChannelTypes: []discordgo.ChannelType{discordgo.ChannelTypeGuildText, discordgo.ChannelTypeGuildNews},
 			},
 		},
 		Run: func(ctx *discord.CommandContext) error {
 			user := ctx.User()
-			
+
 			// Get embed state
 			builderMutex.RLock()
 			embedState, exists := builderStateMap[user.ID]

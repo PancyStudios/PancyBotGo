@@ -13,17 +13,17 @@ func main() {
 	defer browser.MustClose()
 
 	page := stealth.MustPage(browser)
-	
+
 	fmt.Println("Navigating to craiyon.com...")
 	page.MustNavigate("https://www.craiyon.com")
-	
+
 	// Wait until the Cloudflare challenge is passed
 	page.MustWaitLoad()
 	fmt.Println("Page loaded. Waiting 5s...")
 	time.Sleep(5 * time.Second)
 
 	fmt.Println("Running fetch for API...")
-	
+
 	js := `
 		async () => {
 			let res = await fetch("https://api.craiyon.com/v4", {
@@ -42,12 +42,12 @@ func main() {
 			return await res.json();
 		}
 	`
-	
+
 	res, err := page.Eval(js)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
-	
+
 	fmt.Printf("Result: %v\n", res.Value.String())
 }

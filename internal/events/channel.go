@@ -73,7 +73,7 @@ func onChannelDelete(s *discordgo.Session, c *discordgo.ChannelDelete) {
 		}
 
 		guild, err := s.Guild(c.GuildID)
-		
+
 		var culpritName string
 		if culpritID != "" {
 			user, err := s.User(culpritID)
@@ -87,7 +87,7 @@ func onChannelDelete(s *discordgo.Session, c *discordgo.ChannelDelete) {
 				// Put in Quarantine (Timeout for 28 days)
 				until := time.Now().Add(28 * 24 * time.Hour)
 				errTimeout := s.GuildMemberTimeout(c.GuildID, culpritID, &until)
-				
+
 				if errTimeout != nil {
 					// Fallback: Strip all roles
 					member, err := s.GuildMember(c.GuildID, culpritID)

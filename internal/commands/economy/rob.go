@@ -38,7 +38,7 @@ func createRobCommand() *discord.Command {
 
 func robHandler(ctx *discord.CommandContext) error {
 	ecoType := ctx.GetStringOption("tipo")
-	
+
 	targetUser := ctx.GetUserOption("victima")
 	userID := ctx.Interaction.Member.User.ID
 	guildID := ctx.Interaction.GuildID
@@ -139,6 +139,6 @@ func robHandler(ctx *discord.CommandContext) error {
 			ctx.Reply(fmt.Sprintf("🚔 ¡Te atraparon robando estrellas de %s! Fuiste multado por **🌟 %d estrellas**, las cuales se le entregaron a tu víctima.", targetUser.Mention(), fine))
 		}
 	}
-	
+
 	return nil
 }

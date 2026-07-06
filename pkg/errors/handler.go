@@ -133,15 +133,15 @@ func (h *ErrorHandler) IncrementError() {
 func (h *ErrorHandler) HandlePanic(recovered interface{}) {
 	h.IncrementError()
 	logger.Debug("Unhandled Panic/Catch", "AntiCrash")
-	
+
 	// Generate crash dump
 	os.MkdirAll("crash_dumps", 0755)
 	timestamp := time.Now().Format("2006-01-02_15-04-05")
 	dumpFile := fmt.Sprintf("crash_dumps/crash_dump_%s.txt", timestamp)
-	
+
 	stack := debug.Stack()
 	dumpContent := fmt.Sprintf("=== PANCYBOT CRASH DUMP ===\nTime: %s\nPanic: %v\n\nStack Trace:\n%s\n", time.Now().Format(time.RFC3339), recovered, string(stack))
-	
+
 	if err := os.WriteFile(dumpFile, []byte(dumpContent), 0644); err == nil {
 		logger.Error(fmt.Sprintf("Panic salvado! Crash dump generado en: %s", dumpFile), "AntiCrash")
 	} else {
@@ -149,7 +149,7 @@ func (h *ErrorHandler) HandlePanic(recovered interface{}) {
 	}
 
 	logger.Error(fmt.Sprintf("PANIC: %v", recovered), "SYS")
-	
+
 	// Report to webhook
 	h.Report(ReportErrorOptions{
 		Error:   "PANIC / Unhandled Exception",

@@ -62,7 +62,7 @@ func slutHandler(ctx *discord.CommandContext) error {
 
 	if ecoType == "local" {
 		_ = database.SetCooldownLocal(guildID, userID, "slut")
-		
+
 		if success {
 			amount := int64(rand.Intn(500) + 100)
 			database.AddLocalBalance(guildID, userID, amount, false)
@@ -74,7 +74,7 @@ func slutHandler(ctx *discord.CommandContext) error {
 		}
 	} else {
 		_ = database.SetCooldownStars(userID, "slut")
-		
+
 		if success {
 			amount := int64(rand.Intn(400) + 100)
 			database.AddStars(userID, amount, false)

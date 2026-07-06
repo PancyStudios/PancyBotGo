@@ -32,7 +32,7 @@ func createSuggestCommand() *discord.Command {
 			}
 
 			suggestChannel := guildData.Configuration.SubData.SuggestChannel
-			
+
 			user := ctx.User()
 
 			embed := &discordgo.MessageEmbed{

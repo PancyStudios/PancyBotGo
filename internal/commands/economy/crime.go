@@ -62,7 +62,7 @@ func crimeHandler(ctx *discord.CommandContext) error {
 
 	if ecoType == "local" {
 		_ = database.SetCooldownLocal(guildID, userID, "crime")
-		
+
 		if success {
 			amount := int64(rand.Intn(400) + 200)
 			database.AddLocalBalance(guildID, userID, amount, false)
@@ -74,7 +74,7 @@ func crimeHandler(ctx *discord.CommandContext) error {
 		}
 	} else {
 		_ = database.SetCooldownStars(userID, "crime")
-		
+
 		if success {
 			amount := int64(rand.Intn(300) + 150)
 			database.AddStars(userID, amount, false)

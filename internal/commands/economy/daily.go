@@ -40,9 +40,9 @@ func dailyHandler(ctx *discord.CommandContext) error {
 		ctx.Reply("❌ " + "Error al procesar la recompensa.")
 		return err
 	}
-	
+
 	_ = database.SetCooldownStars(userID, "daily")
-	
+
 	ctx.Reply(fmt.Sprintf("¡Felicidades! Has reclamado tu recompensa diaria de **🌟 %d estrellas**.", amount))
 	return nil
 }

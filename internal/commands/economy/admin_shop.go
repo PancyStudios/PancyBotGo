@@ -184,6 +184,6 @@ func adminShopHandler(ctx *discord.CommandContext) error {
 
 		ctx.Reply(fmt.Sprintf("✅ El objeto con ID `%s` fue eliminado de la tienda del servidor.", id))
 	}
-	
+
 	return nil
 }

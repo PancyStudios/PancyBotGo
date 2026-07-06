@@ -366,13 +366,13 @@ func buildCustomEmbed(customEmbed models.CustomEmbed, user *discordgo.User, guil
 		s = strings.ReplaceAll(s, "{user.id}", user.ID)
 		s = strings.ReplaceAll(s, "{user.name}", user.Username)
 		s = strings.ReplaceAll(s, "{user.avatar}", user.AvatarURL("256"))
-		
+
 		s = strings.ReplaceAll(s, "{server}", guild.Name)
 		s = strings.ReplaceAll(s, "{server.name}", guild.Name)
 		s = strings.ReplaceAll(s, "{server.id}", guild.ID)
 		s = strings.ReplaceAll(s, "{server.icon}", guild.IconURL("256"))
 		s = strings.ReplaceAll(s, "{server.members}", fmt.Sprintf("%d", guild.MemberCount))
-		
+
 		// Retro-compatibilidad
 		s = strings.ReplaceAll(s, "{username}", user.Username)
 		s = strings.ReplaceAll(s, "{guild.id}", guild.ID)

@@ -2,13 +2,15 @@
 // This removes stale commands from Discord and ensures only currently-defined commands are registered.
 //
 // Usage:
-//   go run cmd/sync-commands/main.go [options]
+//
+//	go run cmd/sync-commands/main.go [options]
 //
 // Options:
-//   -list           List all registered commands (global and guild)
-//   -clean          Remove all commands without registering new ones
-//   -guild <id>     Target a specific guild instead of global commands
-//   -sync           Sync commands (remove stale, register current) - default behavior
+//
+//	-list           List all registered commands (global and guild)
+//	-clean          Remove all commands without registering new ones
+//	-guild <id>     Target a specific guild instead of global commands
+//	-sync           Sync commands (remove stale, register current) - default behavior
 package main
 
 import (
@@ -139,7 +141,7 @@ func syncCommands(client *discord.ExtendedClient, guildID string) {
 		logger.Warn("⚠️  Sincronización de comandos de guild no está completamente implementada", "SyncCommands")
 		logger.Info("Solo se pueden eliminar comandos de guild. Para registrar comandos en un guild específico, modifica RegisterCommands() en command_handler.go", "SyncCommands")
 		logger.Info(fmt.Sprintf("Eliminando comandos del servidor: %s", guildID), "SyncCommands")
-		
+
 		// Remove guild commands
 		if err := client.CommandHandler.UnregisterGuildCommands(guildID); err != nil {
 			logger.Error(fmt.Sprintf("Error eliminando comandos de guild: %v", err), "SyncCommands")

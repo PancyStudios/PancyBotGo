@@ -26,7 +26,7 @@ var categoryEmojis = map[string]string{
 
 func main() {
 	root := "/home/turbis/GolandProjects/PancyBotGo/internal/commands"
-	
+
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -42,7 +42,7 @@ func main() {
 		if len(parts) < 2 {
 			return nil
 		}
-		
+
 		category := parts[len(parts)-2]
 		emoji, ok := categoryEmojis[category]
 		if !ok {
@@ -58,9 +58,9 @@ func main() {
 		// Regular expression to find Description: "..."
 		// We only want to replace descriptions that do not already start with an emoji and a pipe
 		// Usually they start with "
-		
+
 		re := regexp.MustCompile(`Description:\s*"([^"]+)"`)
-		
+
 		newContent := re.ReplaceAllStringFunc(content, func(match string) string {
 			sub := re.FindStringSubmatch(match)
 			if len(sub) > 1 {

@@ -19,7 +19,7 @@ func createCmdsCommand() *discord.Command {
 
 func cmdsHandler(ctx *discord.CommandContext) error {
 	commands := ctx.Client.CommandHandler.GetRegisteredCommands()
-	
+
 	if len(commands) == 0 {
 		return ctx.ReplyEphemeral("❌ No hay comandos registrados actualmente.")
 	}
@@ -37,7 +37,7 @@ func cmdsHandler(ctx *discord.CommandContext) error {
 	for _, cmd := range commands {
 		// Construir una lista de subcomandos para este comando base
 		var subcommands []string
-		
+
 		for _, opt := range cmd.Options {
 			if opt.Type == discordgo.ApplicationCommandOptionSubCommand {
 				subcommands = append(subcommands, fmt.Sprintf("`/%s %s` - %s", cmd.Name, opt.Name, cleanDesc(opt.Description)))
@@ -57,7 +57,7 @@ func cmdsHandler(ctx *discord.CommandContext) error {
 			if len(fieldValue) > 1024 {
 				fieldValue = fieldValue[:1021] + "..."
 			}
-			
+
 			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
 				Name:  fmt.Sprintf("💠 Comando Base: `/%s`", cmd.Name),
 				Value: fieldValue,

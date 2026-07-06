@@ -31,7 +31,7 @@ func createRemoveWarnCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:         discordgo.ApplicationCommandOptionString,
 			Name:         "id",
-			Description: "🛡️ | ID de la advertencia a eliminar",
+			Description:  "🛡️ | ID de la advertencia a eliminar",
 			Required:     true,
 			Autocomplete: true,
 		},

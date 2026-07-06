@@ -81,7 +81,7 @@ func shopAddHandler(ctx *discord.CommandContext) error {
 	if opt := ctx.GetOption("valor_efecto"); opt != nil {
 		effectValue = opt.FloatValue()
 	}
-	
+
 	emoji := "📦"
 	if ctx.GetStringOption("emoji") != "" {
 		emoji = ctx.GetStringOption("emoji")

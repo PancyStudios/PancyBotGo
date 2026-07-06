@@ -59,15 +59,15 @@ func exampleWarningsHandlerAsync(ctx *discord.CommandContext) error {
 		Description: "Obteniendo información de advertencias...",
 		Color:       0xFFFF00,
 	}
-	
+
 	if err := ctx.ReplyEphemeralEmbed(loadingEmbed); err != nil {
 		return err
 	}
-	
+
 	// Process in background
 	go func() {
 		// ... do some async processing ...
-		
+
 		// Update with final result
 		// Note: EditReplyEmbed maintains the ephemeral flag from the initial reply
 		resultEmbed := &discordgo.MessageEmbed{
@@ -77,6 +77,6 @@ func exampleWarningsHandlerAsync(ctx *discord.CommandContext) error {
 		}
 		ctx.EditReplyEmbed(resultEmbed)
 	}()
-	
+
 	return nil
 }

@@ -63,7 +63,7 @@ func CreateBlacklistRemoveCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:         discordgo.ApplicationCommandOptionString,
 			Name:         "id",
-			Description: "💻 | ID del usuario o servidor",
+			Description:  "💻 | ID del usuario o servidor",
 			Required:     true,
 			Autocomplete: true,
 		},

@@ -44,7 +44,7 @@ func clearHandler(ctx *discord.CommandContext) error {
 
 	eliminadosTotal := 0
 	var lastId string
-	
+
 	// 14 days ago for bulk delete limit
 	catorceDias := time.Now().Add(-14 * 24 * time.Hour)
 
@@ -88,7 +88,7 @@ func clearHandler(ctx *discord.CommandContext) error {
 				eliminadosTotal++
 			}
 			time.Sleep(100 * time.Millisecond) // avoid rate limits
-			
+
 			if eliminadosTotal >= cantidad {
 				break
 			}

@@ -40,13 +40,13 @@ func createScreenshotCommand() *discord.Command {
 			channel := ctx.Channel()
 
 			isNsfw := channel != nil && channel.NSFW
-			
+
 			// Use local screenshot API or an env variable
 			baseURL := os.Getenv("SCREENSHOT_API_URL")
 			if baseURL == "" {
 				baseURL = "http://localhost:3000"
 			}
-			
+
 			urlApi := baseURL + "/api/private/screenshot/sfw"
 			if isNsfw {
 				urlApi = baseURL + "/api/private/screenshot/nsfw"
@@ -62,7 +62,7 @@ func createScreenshotCommand() *discord.Command {
 			req.Header.Set("Authorization", "Bearer "+os.Getenv("authScreenshots"))
 			req.Header.Set("Accept", "image/png")
 			req.Header.Set("Content-Type", "application/json")
-			
+
 			user := ctx.User()
 			req.Header.Set("X-From-ID", user.ID)
 
@@ -119,16 +119,16 @@ func sendError(ctx *discord.CommandContext, errorMsg string) error {
 		Description: "🧰 | No se pudo tomar la captura de pantalla, verifica la url o intenta nuevamente.\n\n" + errorMsg,
 		Color:       0xFF0000, // Red
 	}
-	
+
 	user := ctx.User()
-	
+
 	if user != nil {
-	    embed.Footer = &discordgo.MessageEmbedFooter{
-		    Text:    fmt.Sprintf("Solicitado por %s", user.String()),
-		    IconURL: user.AvatarURL(""),
-	    }
+		embed.Footer = &discordgo.MessageEmbedFooter{
+			Text:    fmt.Sprintf("Solicitado por %s", user.String()),
+			IconURL: user.AvatarURL(""),
+		}
 	}
-	
+
 	embed.Timestamp = time.Now().Format(time.RFC3339)
 
 	return ctx.EditReplyEmbed(embed)

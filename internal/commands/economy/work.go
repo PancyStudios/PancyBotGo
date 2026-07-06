@@ -66,7 +66,7 @@ func workHandler(ctx *discord.CommandContext) error {
 			return err
 		}
 		_ = database.SetCooldownLocal(guildID, userID, "work")
-		
+
 		ctx.Reply(fmt.Sprintf("Has trabajado duro y ganaste **💵 %d monedas locales**.", amount))
 	} else {
 		_, err = database.AddStars(userID, amount, false)
@@ -75,7 +75,7 @@ func workHandler(ctx *discord.CommandContext) error {
 			return err
 		}
 		_ = database.SetCooldownStars(userID, "work")
-		
+
 		ctx.Reply(fmt.Sprintf("Hiciste un viaje espacial y minaste **🌟 %d estrellas**.", amount))
 	}
 	return nil

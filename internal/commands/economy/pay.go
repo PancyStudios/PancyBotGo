@@ -42,12 +42,12 @@ func createPayCommand() *discord.Command {
 
 func payHandler(ctx *discord.CommandContext) error {
 	ecoType := ctx.GetStringOption("tipo")
-	
+
 	var targetUser *discordgo.User
 	if ctx.HasOption("usuario") {
 		targetUser = ctx.GetUserOption("usuario")
 	}
-	
+
 	amount := ctx.GetIntOption("cantidad")
 	userID := ctx.Interaction.Member.User.ID
 	guildID := ctx.Interaction.GuildID

@@ -11,7 +11,7 @@ func createEmbedCreateCommand() *discord.Command {
 		Description: "📝 | Abre el constructor interactivo de embeds",
 		Run: func(ctx *discord.CommandContext) error {
 			user := ctx.User()
-			
+
 			embedState := getBuilderState(user.ID)
 			saveBuilderState(user.ID, embedState)
 

@@ -429,7 +429,7 @@ func NewDefaultGuildDocument(guildID string) *GuildDocument {
 					Bot           string `bson:"_bot" json:"_bot"`
 				}{"", ""},
 			},
-			Antibots:   AntibotsConfig{Enable: false, Type: "all"},
+			Antibots: AntibotsConfig{Enable: false, Type: "all"},
 			AntiTokens: AntiTokensConfig{
 				Enable:         false,
 				UsersEntrities: []string{},

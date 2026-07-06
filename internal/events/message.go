@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PancyStudios/PancyBotGo/internal/commands/config"
+	"github.com/PancyStudios/PancyBotGo/internal/messagecommands"
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
@@ -111,15 +111,23 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			prefix = guildData.Configuration.Prefix
 		}
 
+		mentionPrefix1 := fmt.Sprintf("<@%s> ", s.State.User.ID)
+		mentionPrefix2 := fmt.Sprintf("<@!%s> ", s.State.User.ID)
+
+		var args []string
 		if strings.HasPrefix(m.Content, prefix) {
-			args := strings.Fields(m.Content[len(prefix):])
-			if len(args) > 0 {
-				command := strings.ToLower(args[0])
-				switch command {
-				case "poj":
-					config.HandleMessagePojCommand(s, m, args[1:])
-				}
-			}
+			args = strings.Fields(m.Content[len(prefix):])
+		} else if strings.HasPrefix(m.Content, mentionPrefix1) {
+			args = strings.Fields(m.Content[len(mentionPrefix1):])
+		} else if strings.HasPrefix(m.Content, mentionPrefix2) {
+			args = strings.Fields(m.Content[len(mentionPrefix2):])
+		}
+
+		logger.Debug(fmt.Sprintf("Message Content: '%s' | Prefix: '%s' | Args: %v", m.Content, prefix, args), "PrefixRouter")
+
+		if len(args) > 0 {
+			commandName := strings.ToLower(args[0])
+			messagecommands.Handle(s, m, commandName, args[1:])
 		}
 	}
 
@@ -305,7 +313,7 @@ func onMessageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	}
 }
 
-// onMessageDelete is called when a message is deleted
+// onMessageDelete is called when a mfessage is deleted
 func onMessageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
 	logger.Debug(fmt.Sprintf("🗑️ Mensaje eliminado: ID %s en canal %s",
 		m.ID, m.ChannelID), "Message")

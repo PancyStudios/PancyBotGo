@@ -80,7 +80,7 @@ func handlePojCommand(ctx *discord.CommandContext) error {
 			}
 		}
 
-		err := addPojConfig(ctx.Interaction.GuildID, channelID, roleID)
+		err := AddPojConfig(ctx.Interaction.GuildID, channelID, roleID)
 		if err != nil {
 			return ctx.ReplyEphemeral("❌ Hubo un error al guardar.")
 		}
@@ -93,8 +93,8 @@ func handlePojCommand(ctx *discord.CommandContext) error {
 				channelID = opt.ChannelValue(nil).ID
 			}
 		}
-		
-		err := removePojConfig(ctx.Interaction.GuildID, channelID)
+
+		err := RemovePojConfig(ctx.Interaction.GuildID, channelID)
 		if err != nil {
 			return ctx.ReplyEphemeral("❌ Hubo un error al remover.")
 		}
@@ -117,10 +117,11 @@ func handlePojCommand(ctx *discord.CommandContext) error {
 	return nil
 }
 
-func addPojConfig(guildID, channelID, roleID string) error {
+// AddPojConfig exports the Poj logic
+func AddPojConfig(guildID, channelID, roleID string) error {
 	doc, err := database.GlobalGuildDM.Get(bson.M{"id": guildID})
 	if err != nil {
-		doc = models.NewGuildDocument(guildID)
+		doc = &models.GuildDocument{ID: guildID}
 	}
 
 	found := false
@@ -138,10 +139,12 @@ func addPojConfig(guildID, channelID, roleID string) error {
 		})
 	}
 
-	return database.GlobalGuildDM.Update(bson.M{"id": guildID}, doc)
+	_, err = database.GlobalGuildDM.Set(bson.M{"id": guildID}, doc)
+	return err
 }
 
-func removePojConfig(guildID, channelID string) error {
+// RemovePojConfig exports the Poj logic
+func RemovePojConfig(guildID, channelID string) error {
 	doc, err := database.GlobalGuildDM.Get(bson.M{"id": guildID})
 	if err != nil {
 		return nil
@@ -153,7 +156,8 @@ func removePojConfig(guildID, channelID string) error {
 			newPoj = append(newPoj, poj)
 		}
 	}
-	return database.GlobalGuildDM.Update(bson.M{"id": guildID}, doc)
+	_, err = database.GlobalGuildDM.Set(bson.M{"id": guildID}, doc)
+	return err
 }
 
 // HandleMessagePojCommand handles the pan!poj text command
@@ -177,7 +181,7 @@ func HandleMessagePojCommand(s *discordgo.Session, m *discordgo.MessageCreate, a
 			s.ChannelMessageSend(m.ChannelID, "❌ Uso correcto: `pan!poj add <#canal> <@&rol>`")
 			return
 		}
-		
+
 		// Clean up mentions: <#1234> -> 1234, <@&1234> -> 1234
 		channelID := args[1]
 		if len(channelID) > 4 && channelID[:2] == "<#" {
@@ -188,7 +192,7 @@ func HandleMessagePojCommand(s *discordgo.Session, m *discordgo.MessageCreate, a
 			roleID = roleID[3 : len(roleID)-1]
 		}
 
-		err := addPojConfig(m.GuildID, channelID, roleID)
+		err := AddPojConfig(m.GuildID, channelID, roleID)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "❌ Hubo un error al guardar.")
 			return
@@ -200,13 +204,13 @@ func HandleMessagePojCommand(s *discordgo.Session, m *discordgo.MessageCreate, a
 			s.ChannelMessageSend(m.ChannelID, "❌ Uso correcto: `pan!poj remove <#canal>`")
 			return
 		}
-		
+
 		channelID := args[1]
 		if len(channelID) > 4 && channelID[:2] == "<#" {
 			channelID = channelID[2 : len(channelID)-1]
 		}
 
-		err := removePojConfig(m.GuildID, channelID)
+		err := RemovePojConfig(m.GuildID, channelID)
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "❌ Hubo un error al remover.")
 			return

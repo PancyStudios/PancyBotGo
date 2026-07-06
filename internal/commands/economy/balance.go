@@ -26,7 +26,7 @@ func createBalanceCommand() *discord.Command {
 
 func balanceHandler(ctx *discord.CommandContext) error {
 	targetUser := ctx.Interaction.Member.User
-	
+
 	if ctx.HasOption("usuario") {
 		targetUser = ctx.GetUserOption("usuario")
 	}

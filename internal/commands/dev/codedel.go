@@ -22,7 +22,7 @@ func CreateCodeDelCommand() *discord.Command {
 		&discordgo.ApplicationCommandOption{
 			Type:         discordgo.ApplicationCommandOptionString,
 			Name:         "codigo",
-			Description: "💻 | Código premium a eliminar",
+			Description:  "💻 | Código premium a eliminar",
 			Required:     true,
 			Autocomplete: true,
 		},

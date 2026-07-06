@@ -53,7 +53,7 @@ func createImageHandler(ctx *discord.CommandContext) error {
 		baseURL = "http://localhost:3000"
 	}
 	modelUrl := baseURL + "/api/private/ia/fetch"
-	
+
 	reqBody := map[string]interface{}{
 		"prompt": prompt,
 	}
@@ -100,8 +100,8 @@ func createImageHandler(ctx *discord.CommandContext) error {
 	}
 
 	embed := &discordgo.MessageEmbed{
-		Color: 0xff0000,
-		Title: "🖼️ Imagen Generada",
+		Color:       0xff0000,
+		Title:       "🖼️ Imagen Generada",
 		Description: fmt.Sprintf("**Prompt:** %s", prompt),
 		Image: &discordgo.MessageEmbedImage{
 			URL: imageUrl,

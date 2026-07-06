@@ -52,7 +52,7 @@ var rankCommand = &discord.Command{
 		// Calcular XP necesaria para el próximo nivel
 		nextLevel := profile.Level + 1
 		requiredXP := nextLevel * nextLevel * 100
-		
+
 		// Calcular XP base del nivel actual
 		currentLevelXP := int64(0)
 		if profile.Level > 0 {
@@ -64,7 +64,7 @@ var rankCommand = &discord.Command{
 		xpNeededForNext := requiredXP - currentLevelXP
 
 		progressPercent := float64(xpInCurrentLevel) / float64(xpNeededForNext) * 100
-		
+
 		progressBar := createProgressBar(progressPercent, 10)
 
 		embed := discord.NewEmbed().
