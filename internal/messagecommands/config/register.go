@@ -6,10 +6,10 @@ import (
 
 // Register config text commands
 func Register() {
-	messagecommands.RegisterCommand("poj", pojCommand)
-	messagecommands.RegisterCommand("autorole", autoroleCommand)
-	messagecommands.RegisterCommand("welcome", welcomeCommand)
-	messagecommands.RegisterCommand("leave", leaveCommand)
-	messagecommands.RegisterCommand("channels", channelsCommand)
-	messagecommands.RegisterCommand("logs", logsCommand)
+	messagecommands.RegisterCommand("poj", "Comando poj", "pan!poj", "General", pojCommand)
+	messagecommands.RegisterCommand("autorole", "Comando autorole", "pan!autorole", "General", autoroleCommand)
+	messagecommands.RegisterCommand("welcome", "Comando welcome", "pan!welcome", "General", welcomeCommand)
+	messagecommands.RegisterCommand("leave", "Comando leave", "pan!leave", "General", leaveCommand)
+	messagecommands.RegisterCommand("channels", "Comando channels", "pan!channels", "General", channelsCommand)
+	messagecommands.RegisterCommand("logs", "Comando logs", "pan!logs", "General", logsCommand)
 }

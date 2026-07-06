@@ -34,52 +34,112 @@ func cmdsHandler(ctx *discord.CommandContext) error {
 		Fields: make([]*discordgo.MessageEmbedField, 0),
 	}
 
-	for _, cmd := range commands {
-		// Construir una lista de subcomandos para este comando base
-		var subcommands []string
+	menu := createSlashMenu(ctx.Client)
 
-		for _, opt := range cmd.Options {
-			if opt.Type == discordgo.ApplicationCommandOptionSubCommand {
-				subcommands = append(subcommands, fmt.Sprintf("`/%s %s` - %s", cmd.Name, opt.Name, cleanDesc(opt.Description)))
-			} else if opt.Type == discordgo.ApplicationCommandOptionSubCommandGroup {
-				for _, subOpt := range opt.Options {
-					if subOpt.Type == discordgo.ApplicationCommandOptionSubCommand {
-						subcommands = append(subcommands, fmt.Sprintf("`/%s %s %s` - %s", cmd.Name, opt.Name, subOpt.Name, cleanDesc(subOpt.Description)))
+	return ctx.Session.InteractionRespond(ctx.Interaction.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: []*discordgo.MessageEmbed{embed},
+			Components: menu,
+		},
+	})
+}
+
+func HandleSlashInteraction(s *discordgo.Session, i *discordgo.InteractionCreate, client *discord.ExtendedClient) bool {
+	if i.Type != discordgo.InteractionMessageComponent {
+		return false
+	}
+	
+	data := i.MessageComponentData()
+	if data.CustomID != "slash_help_cmds_menu" || len(data.Values) == 0 {
+		return false
+	}
+
+	val := data.Values[0]
+	if val == "none" {
+		embed := &discordgo.MessageEmbed{
+			Title:       "📚 Lista de Comandos de PancyBot",
+			Description: "Aquí tienes todos los comandos disponibles, categorizados automáticamente. ¡Selecciona una en el menú de abajo!",
+			Color:       0x3498DB,
+			Thumbnail: &discordgo.MessageEmbedThumbnail{
+				URL: s.State.User.AvatarURL("128"),
+			},
+		}
+
+		menu := createSlashMenu(client)
+
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseUpdateMessage,
+			Data: &discordgo.InteractionResponseData{
+				Embeds: []*discordgo.MessageEmbed{embed},
+				Components: menu,
+			},
+		})
+		if err != nil {
+			fmt.Println("Error in InteractionRespond:", err)
+		}
+		return true
+	}
+
+	if !strings.HasPrefix(val, "slash_help_cat_") {
+		return false
+	}
+
+	categoryName := strings.TrimPrefix(val, "slash_help_cat_")
+
+	commands := client.CommandHandler.GetRegisteredCommands()
+	var subcommands []string
+	var cmdDesc string
+
+	for _, cmd := range commands {
+		if cmd.Name == categoryName {
+			cmdDesc = cleanDesc(cmd.Description)
+			for _, opt := range cmd.Options {
+				if opt.Type == discordgo.ApplicationCommandOptionSubCommand {
+					subcommands = append(subcommands, fmt.Sprintf("`/%s %s` - %s", cmd.Name, opt.Name, cleanDesc(opt.Description)))
+				} else if opt.Type == discordgo.ApplicationCommandOptionSubCommandGroup {
+					for _, subOpt := range opt.Options {
+						if subOpt.Type == discordgo.ApplicationCommandOptionSubCommand {
+							subcommands = append(subcommands, fmt.Sprintf("`/%s %s %s` - %s", cmd.Name, opt.Name, subOpt.Name, cleanDesc(subOpt.Description)))
+						}
 					}
 				}
 			}
-		}
-
-		if len(subcommands) > 0 {
-			// Es un comando grupo (ej. /utils, /mod)
-			fieldValue := strings.Join(subcommands, "\n")
-			// Truncar si es muy largo (límite de Discord: 1024 caracteres por field value)
-			if len(fieldValue) > 1024 {
-				fieldValue = fieldValue[:1021] + "..."
-			}
-
-			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-				Name:  fmt.Sprintf("💠 Comando Base: `/%s`", cmd.Name),
-				Value: fieldValue,
-			})
-		} else {
-			// Es un comando simple raíz
-			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-				Name:  fmt.Sprintf("💠 `/%s`", cmd.Name),
-				Value: cleanDesc(cmd.Description),
-			})
+			break
 		}
 	}
 
-	// Si hay muchos fields, Discord permite máximo 25 fields por embed
-	if len(embed.Fields) > 25 {
-		embed.Fields = embed.Fields[:25]
-		embed.Footer = &discordgo.MessageEmbedFooter{
-			Text: "Se muestran hasta 25 grupos. Usa comandos específicos para más información.",
-		}
+	if len(subcommands) == 0 {
+		subcommands = append(subcommands, "Este comando no tiene subcomandos.")
 	}
 
-	return ctx.ReplyEmbed(embed)
+	valStr := strings.Join(subcommands, "\n")
+	if len(valStr) > 4000 {
+		valStr = valStr[:3997] + "..."
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title:       "📚 Comando: /" + categoryName,
+		Description: "**Descripción:** " + cmdDesc + "\n\n**Subcomandos:**\n" + valStr,
+		Color:       0x3498DB,
+		Thumbnail: &discordgo.MessageEmbedThumbnail{
+			URL: s.State.User.AvatarURL("128"),
+		},
+	}
+
+	menu := createSlashMenu(client)
+
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseUpdateMessage,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: []*discordgo.MessageEmbed{embed},
+			Components: menu,
+		},
+	})
+	if err != nil {
+		fmt.Println("Error in InteractionRespond:", err)
+	}
+	return true
 }
 
 // cleanDesc elimina los prefijos emoji si los hay para que la lista se vea más limpia
@@ -89,4 +149,48 @@ func cleanDesc(desc string) string {
 		return parts[1]
 	}
 	return desc
+}
+
+func createSlashMenu(client *discord.ExtendedClient) []discordgo.MessageComponent {
+	commands := client.CommandHandler.GetRegisteredCommands()
+
+	options := []discordgo.SelectMenuOption{
+		{
+			Label:       "Selecciona una categoría",
+			Value:       "none",
+			Description: "Muestra las categorías disponibles",
+			Emoji: &discordgo.ComponentEmoji{
+				Name: "📚",
+			},
+			Default: true,
+		},
+	}
+
+	for _, cmd := range commands {
+		options = append(options, discordgo.SelectMenuOption{
+			Label:       "/" + cmd.Name,
+			Value:       "slash_help_cat_" + cmd.Name,
+			Description: cleanDesc(cmd.Description),
+			Emoji: &discordgo.ComponentEmoji{
+				Name: "💠",
+			},
+		})
+	}
+
+	// Discord allows max 25 options per select menu
+	if len(options) > 25 {
+		options = options[:25]
+	}
+
+	return []discordgo.MessageComponent{
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    "slash_help_cmds_menu",
+					Placeholder: "Selecciona una categoría...",
+					Options:     options,
+				},
+			},
+		},
+	}
 }

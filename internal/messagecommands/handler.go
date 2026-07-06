@@ -1,6 +1,7 @@
 package messagecommands
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
@@ -86,27 +87,41 @@ func (ctx *MessageContext) HasPermission(permission int64) bool {
 // CommandRunFunc represents a message command handler function
 type CommandRunFunc func(ctx *MessageContext) error
 
-var registry = make(map[string]CommandRunFunc)
-
-// RegisterCommand adds a command to the prefix router
-func RegisterCommand(name string, handler CommandRunFunc) {
-	registry[strings.ToLower(name)] = handler
+// CommandInfo holds metadata about a message command
+type CommandInfo struct {
+	Name        string
+	Description string
+	Usage       string
+	Category    string
+	Run         CommandRunFunc
 }
 
-// GetRegisteredCommands returns a list of all registered command names
-func GetRegisteredCommands() []string {
-	names := make([]string, 0, len(registry))
-	for name := range registry {
-		names = append(names, name)
+var registry = make(map[string]*CommandInfo)
+
+// RegisterCommand adds a command to the prefix router
+func RegisterCommand(name, description, usage, category string, handler CommandRunFunc) {
+	registry[strings.ToLower(name)] = &CommandInfo{
+		Name:        name,
+		Description: description,
+		Usage:       usage,
+		Category:    category,
+		Run:         handler,
 	}
-	return names
+}
+
+// GetRegisteredCommands returns a list of all registered commands metadata
+func GetRegisteredCommands() []*CommandInfo {
+	cmds := make([]*CommandInfo, 0, len(registry))
+	for _, cmd := range registry {
+		cmds = append(cmds, cmd)
+	}
+	return cmds
 }
 
 // Handle routes an incoming message to the correct command handler
 func Handle(s *discordgo.Session, m *discordgo.MessageCreate, commandName string, args []string) error {
-	handler, exists := registry[strings.ToLower(commandName)]
+	cmd, exists := registry[strings.ToLower(commandName)]
 	if !exists {
-		// Command not found
 		return nil
 	}
 
@@ -116,5 +131,9 @@ func Handle(s *discordgo.Session, m *discordgo.MessageCreate, commandName string
 		Args:    args,
 	}
 
-	return handler(ctx)
+	err := cmd.Run(ctx)
+	if err != nil {
+		ctx.ReplyError("Error al ejecutar", fmt.Sprintf("Hubo un error interno:\n```\n%v\n```", err))
+	}
+	return err
 }

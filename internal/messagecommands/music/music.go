@@ -17,14 +17,14 @@ var minVolumeFloat = 0.0
 
 
 func RegisterAll() {
-	messagecommands.RegisterCommand("play", playHandler)
-	messagecommands.RegisterCommand("pause", pauseHandler)
-	messagecommands.RegisterCommand("skip", skipHandler)
-	messagecommands.RegisterCommand("stop", stopHandler)
-	messagecommands.RegisterCommand("queue", queueHandler)
-	messagecommands.RegisterCommand("volume", volumeHandler)
-	messagecommands.RegisterCommand("nowplaying", nowPlayingHandler)
-	messagecommands.RegisterCommand("radio", radioHandler)
+	messagecommands.RegisterCommand("play", "Comando play", "pan!play", "General", playHandler)
+	messagecommands.RegisterCommand("pause", "Comando pause", "pan!pause", "General", pauseHandler)
+	messagecommands.RegisterCommand("skip", "Comando skip", "pan!skip", "General", skipHandler)
+	messagecommands.RegisterCommand("stop", "Comando stop", "pan!stop", "General", stopHandler)
+	messagecommands.RegisterCommand("queue", "Comando queue", "pan!queue", "General", queueHandler)
+	messagecommands.RegisterCommand("volume", "Comando volume", "pan!volume", "General", volumeHandler)
+	messagecommands.RegisterCommand("nowplaying", "Comando nowplaying", "pan!nowplaying", "General", nowPlayingHandler)
+	messagecommands.RegisterCommand("radio", "Comando radio", "pan!radio", "General", radioHandler)
 	
 	
 }

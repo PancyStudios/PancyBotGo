@@ -32,7 +32,7 @@ func RegisterAll(client *discord.ExtendedClient) {
 
 	// Add more categories here as needed:
 	// RegisterModerationEvents(client)
-	// RegisterInteractionEvents(client)
+	RegisterInteractionEvents(client)
 
 	logger.Success("✅ Todos los eventos registrados correctamente", "Events")
 }

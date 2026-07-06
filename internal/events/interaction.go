@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/PancyStudios/PancyBotGo/internal/commands/embeds"
+	slashHelpCommands "github.com/PancyStudios/PancyBotGo/internal/commands/help"
+	helpMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/help"
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
@@ -18,18 +20,28 @@ import (
 // RegisterInteractionEvents registers all interaction-related event handlers
 // Uncomment this function in register.go to enable interaction events
 func RegisterInteractionEvents(client *discord.ExtendedClient) {
-	client.Session.AddHandler(onInteractionCreate)
+	client.Session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		onInteractionCreate(s, i, client)
+	})
 }
 
 // onInteractionCreate is called when an interaction is created (buttons, menus, modals, etc.)
 // Note: Slash commands are already handled by the CommandHandler
-func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate, client *discord.ExtendedClient) {
 	// Handle message components (buttons, select menus)
 	if i.Type == discordgo.InteractionMessageComponent {
 		customID := i.MessageComponentData().CustomID
 		logger.Debug(fmt.Sprintf("🔘 Componente clickeado: %s", customID), "Interaction")
 
 		if embeds.HandleInteraction(s, i) {
+			return
+		}
+
+		if helpMsgCommands.HandleInteraction(s, i) {
+			return
+		}
+
+		if slashHelpCommands.HandleSlashInteraction(s, i, client) {
 			return
 		}
 
