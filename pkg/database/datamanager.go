@@ -4,6 +4,7 @@ package database
 import (
 	"container/list"
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -142,7 +143,9 @@ func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 
 	// Not in cache, fetch from database
 	if !dm.dbInstance.Connected() || dm.collection == nil {
-		return nil, fmt.Errorf("database not connected")
+		// Modo offline: Si no está en caché y la DB está desconectada, devolvemos nil sin error.
+		// Esto le dice a los servicios que el perfil "no existe" y deben inicializar uno.
+		return nil, nil
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -154,8 +157,8 @@ func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		logger.Warn(fmt.Sprintf("Fallo al leer de la DB (%s), intentando desde caché...", dm.collection.Name()), "DataManager")
-		return nil, err
+		logger.Warn(fmt.Sprintf("Error leyendo de DB (%s), operando en modo fallback: %v", dm.collection.Name(), err), "DataManager")
+		return nil, nil // En vez de retornar error, simulamos "no existe" para inicializarlo localmente
 	}
 
 	// Add to cache
@@ -182,7 +185,8 @@ func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 // GetAll retrieves all documents matching a query from the database
 func (dm *DataManager[T]) GetAll(query bson.M) ([]*T, error) {
 	if !dm.dbInstance.Connected() || dm.collection == nil {
-		return nil, fmt.Errorf("database not connected")
+		logger.Warn(fmt.Sprintf("DB offline. GetAll devolviendo lista vacía para '%s'", dm.collection.Name()), "DataManager")
+		return []*T{}, nil
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -210,44 +214,21 @@ func (dm *DataManager[T]) GetAll(query bson.M) ([]*T, error) {
 func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 	cacheKey := dm.generateCacheKey(query)
 
-	if !dm.dbInstance.Connected() || dm.collection == nil {
-		// Queue for later
-		logger.Warn(fmt.Sprintf("DB offline. Encolando escritura para '%s'", dm.collection.Name()), "DataManager")
-		dm.dbInstance.AddToWriteQueue(QueuedOperation{
-			CollectionName: dm.collection.Name(),
-			Query:          query,
-			Operation:      "set",
-			Data:           data,
-		})
-		return nil, nil
+	// Update cache immediately (Write-Through)
+	var cacheValue *T
+	if v, ok := data.(*T); ok {
+		cacheValue = v
+	} else if v, ok := data.(T); ok {
+		cacheValue = &v
+	} else {
+		bytes, _ := json.Marshal(data)
+		var temp T
+		json.Unmarshal(bytes, &temp)
+		cacheValue = &temp
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	opts := options.FindOneAndUpdate().
-		SetUpsert(true).
-		SetReturnDocument(options.After)
-
-	var result T
-	err := dm.collection.FindOneAndUpdate(ctx, query, bson.M{"$set": data}, opts).Decode(&result)
-	if err != nil {
-		logger.Error("Error en 'set' con DB conectada. Encolando por seguridad.", "DataManager")
-		dm.dbInstance.AddToWriteQueue(QueuedOperation{
-			CollectionName: dm.collection.Name(),
-			Query:          query,
-			Operation:      "set",
-			Data:           data,
-		})
-		return nil, err
-	}
-
-	// Update cache
 	globalCacheManager.mu.Lock()
-	defer globalCacheManager.mu.Unlock()
-
-	entry := &cacheEntry{key: cacheKey, value: &result}
-
+	entry := &cacheEntry{key: cacheKey, value: cacheValue}
 	if elem, exists := globalCacheManager.cache[cacheKey]; exists {
 		elem.Value = entry
 		globalCacheManager.cacheList.MoveToFront(elem)
@@ -264,6 +245,38 @@ func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 				globalCacheManager.cacheList.Remove(oldest)
 			}
 		}
+	}
+	globalCacheManager.mu.Unlock()
+
+	if !dm.dbInstance.Connected() || dm.collection == nil {
+		logger.Warn(fmt.Sprintf("DB offline. Encolando escritura en '%s' y usando caché.", dm.collection.Name()), "DataManager")
+		dm.dbInstance.AddToWriteQueue(QueuedOperation{
+			CollectionName: dm.collection.Name(),
+			Query:          query,
+			Operation:      "set",
+			Data:           data,
+		})
+		return cacheValue, nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	opts := options.FindOneAndUpdate().
+		SetUpsert(true).
+		SetReturnDocument(options.After)
+
+	var result T
+	err := dm.collection.FindOneAndUpdate(ctx, query, bson.M{"$set": data}, opts).Decode(&result)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Error en 'set' para DB '%s'. Encolando por seguridad. Error: %v", dm.collection.Name(), err), "DataManager")
+		dm.dbInstance.AddToWriteQueue(QueuedOperation{
+			CollectionName: dm.collection.Name(),
+			Query:          query,
+			Operation:      "set",
+			Data:           data,
+		})
+		return cacheValue, nil
 	}
 
 	return &result, nil

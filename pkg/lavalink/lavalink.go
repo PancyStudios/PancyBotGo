@@ -366,9 +366,17 @@ func (n *Node) handleEvent(payload map[string]interface{}) {
 	case "TrackEndEvent":
 		n.client.handleTrackEnd(guildID, payload)
 	case "TrackExceptionEvent":
-		logger.Error(fmt.Sprintf("Track exception in guild %s", guildID), "Lavalink")
+		logger.Error(fmt.Sprintf("Track exception in guild %s, saltando a la siguiente...", guildID), "Lavalink")
+		// Lavalink usually sends a TrackEndEvent after this, but to be safe we can let TrackEndEvent handle it.
+		// However, for TrackStuckEvent we MUST manually skip because Lavalink won't stop it automatically.
 	case "TrackStuckEvent":
-		logger.Warn(fmt.Sprintf("Track stuck in guild %s", guildID), "Lavalink")
+		logger.Warn(fmt.Sprintf("Track stuck in guild %s, forzando salto a la siguiente canción...", guildID), "Lavalink")
+		go func() {
+			err := n.client.Skip(guildID)
+			if err != nil {
+				logger.Error(fmt.Sprintf("Error saltando track stuck en guild %s: %v", guildID, err), "Lavalink")
+			}
+		}()
 	case "WebSocketClosedEvent":
 		code, _ := payload["code"].(float64)
 		reason, _ := payload["reason"].(string)
