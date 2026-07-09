@@ -148,7 +148,7 @@ func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 		return nil, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
 	defer cancel()
 
 	var result T
@@ -189,7 +189,7 @@ func (dm *DataManager[T]) GetAll(query bson.M) ([]*T, error) {
 		return []*T{}, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
 	defer cancel()
 
 	cursor, err := dm.collection.Find(ctx, query)
@@ -259,7 +259,7 @@ func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 		return cacheValue, nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
 	defer cancel()
 
 	opts := options.FindOneAndUpdate().
@@ -269,7 +269,7 @@ func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 	var result T
 	err := dm.collection.FindOneAndUpdate(ctx, query, bson.M{"$set": data}, opts).Decode(&result)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Error en 'set' para DB '%s'. Encolando por seguridad. Error: %v", dm.collection.Name(), err), "DataManager")
+		logger.Debug(fmt.Sprintf("DB offline o timeout. Usando cache local para '%s'", dm.collection.Name()), "DataManager")
 		dm.dbInstance.AddToWriteQueue(QueuedOperation{
 			CollectionName: dm.collection.Name(),
 			Query:          query,
@@ -304,12 +304,12 @@ func (dm *DataManager[T]) Delete(query bson.M) error {
 		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
 	defer cancel()
 
 	_, err := dm.collection.DeleteOne(ctx, query)
 	if err != nil {
-		logger.Error("Error en 'delete' con DB conectada. Encolando por seguridad.", "DataManager")
+		logger.Debug("Eliminación añadida a la cola offline", "DataManager")
 		dm.dbInstance.AddToWriteQueue(QueuedOperation{
 			CollectionName: dm.collection.Name(),
 			Query:          query,

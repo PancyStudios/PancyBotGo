@@ -78,7 +78,7 @@ func (c *BlacklistCache) Refresh() error {
 
 	cursor, err := collection.Find(ctx, bson.M{})
 	if err != nil {
-		logger.Error("BlacklistCache: Error fetching blacklist entries: "+err.Error(), "BlacklistCache")
+		logger.Debug("BlacklistCache: DB offline. Manteniendo cache actual.", "BlacklistCache")
 		return err
 	}
 	defer func() { _ = cursor.Close(ctx) }()
@@ -94,7 +94,7 @@ func (c *BlacklistCache) Refresh() error {
 	}
 
 	if err := cursor.Err(); err != nil {
-		logger.Error("BlacklistCache: Cursor error: "+err.Error(), "BlacklistCache")
+		logger.Debug("BlacklistCache: Cursor error (DB offline): "+err.Error(), "BlacklistCache")
 		return err
 	}
 
@@ -130,7 +130,7 @@ func (c *BlacklistCache) StartAutoRefresh(interval time.Duration) {
 			select {
 			case <-ticker.C:
 				if err := c.Refresh(); err != nil {
-					logger.Error("BlacklistCache: Auto-refresh failed: "+err.Error(), "BlacklistCache")
+					logger.Debug("BlacklistCache: Auto-refresh cancelado por DB offline", "BlacklistCache")
 				}
 			case <-stopChan:
 				logger.Info("BlacklistCache: Auto-refresh stopped", "BlacklistCache")

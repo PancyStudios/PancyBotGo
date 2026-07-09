@@ -51,14 +51,14 @@ func checkExpiredBans() {
 
 	cursor, err := col.Find(ctx, filter)
 	if err != nil {
-		logger.Error("Error finding expired tempbans: "+err.Error(), "Scheduler")
+		logger.Debug("Scheduler: DB offline, omitiendo chequeo de bans...", "Scheduler")
 		return
 	}
 	defer cursor.Close(ctx)
 
 	var expiredBans []TempBan
 	if err := cursor.All(ctx, &expiredBans); err != nil {
-		logger.Error("Error decoding expired tempbans: "+err.Error(), "Scheduler")
+		logger.Debug("Scheduler: Error decoding expired tempbans (DB offline): "+err.Error(), "Scheduler")
 		return
 	}
 
