@@ -10,12 +10,12 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type waifuResponse struct {
+type gifResponse struct {
 	URL string `json:"url"`
 }
 
-func fetchWaifuImage(category string) (string, error) {
-	url := fmt.Sprintf("https://api.waifu.pics/sfw/%s", category)
+func fetchGifImage(category string) (string, error) {
+	url := fmt.Sprintf("https://api.otakugifs.xyz/gif?reaction=%s&format=gif", category)
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -26,7 +26,7 @@ func fetchWaifuImage(category string) (string, error) {
 		return "", fmt.Errorf("API returned status %d", resp.StatusCode)
 	}
 
-	var data waifuResponse
+	var data gifResponse
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return "", err
 	}
@@ -54,7 +54,7 @@ func createReactionCommand(name string, description string, actionText string, s
 	cmd.Run = func(ctx *discord.CommandContext) error {
 		ctx.Defer()
 
-		imageURL, err := fetchWaifuImage(name)
+		imageURL, err := fetchGifImage(name)
 		if err != nil {
 			return ctx.EditReply("❌ Ocurrió un error al contactar la API de GIFs.")
 		}

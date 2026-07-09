@@ -99,6 +99,12 @@ func (c *Command) ToApplicationCommand() *discordgo.ApplicationCommand {
 		Name:        c.Name,
 		Description: c.Description,
 		Options:     c.Options,
+		IntegrationTypes: &[]discordgo.ApplicationIntegrationType{
+			discordgo.ApplicationIntegrationGuildInstall,
+		},
+		Contexts: &[]discordgo.InteractionContextType{
+			discordgo.InteractionContextGuild,
+		},
 	}
 }
 
