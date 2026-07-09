@@ -74,9 +74,10 @@ func InitGlobalDataManagers(db *Database) {
 
 // DataManager provides cached access to a MongoDB collection
 type DataManager[T any] struct {
-	collection *mongo.Collection
-	dbInstance *Database
-	options    DataManagerOptions
+	collectionName string
+	collection     *mongo.Collection
+	dbInstance     *Database
+	options        DataManagerOptions
 }
 
 // DefaultDataManagerOptions returns default options for DataManager
@@ -94,9 +95,10 @@ func NewDataManager[T any](collectionName string, db *Database, opts ...DataMana
 	}
 
 	return &DataManager[T]{
-		collection: db.GetCollection(collectionName),
-		dbInstance: db,
-		options:    dmOptions,
+		collectionName: collectionName,
+		collection:     db.GetCollection(collectionName),
+		dbInstance:     db,
+		options:        dmOptions,
 	}
 }
 
@@ -105,7 +107,7 @@ func NewDataManager[T any](collectionName string, db *Database, opts ...DataMana
 func (dm *DataManager[T]) generateCacheKey(query bson.M) string {
 	collName := ""
 	if dm.collection != nil {
-		collName = dm.collection.Name()
+		collName = dm.collectionName
 	}
 
 	// Sort keys for deterministic serialization
@@ -157,7 +159,7 @@ func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		logger.Warn(fmt.Sprintf("Error leyendo de DB (%s), operando en modo fallback: %v", dm.collection.Name(), err), "DataManager")
+		logger.Warn(fmt.Sprintf("Error leyendo de DB (%s), operando en modo fallback: %v", dm.collectionName, err), "DataManager")
 		return nil, nil // En vez de retornar error, simulamos "no existe" para inicializarlo localmente
 	}
 
@@ -185,7 +187,7 @@ func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 // GetAll retrieves all documents matching a query from the database
 func (dm *DataManager[T]) GetAll(query bson.M) ([]*T, error) {
 	if !dm.dbInstance.Connected() || dm.collection == nil {
-		logger.Warn(fmt.Sprintf("DB offline. GetAll devolviendo lista vacía para '%s'", dm.collection.Name()), "DataManager")
+		logger.Warn(fmt.Sprintf("DB offline. GetAll devolviendo lista vacía para '%s'", dm.collectionName), "DataManager")
 		return []*T{}, nil
 	}
 
@@ -249,9 +251,9 @@ func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 	globalCacheManager.mu.Unlock()
 
 	if !dm.dbInstance.Connected() || dm.collection == nil {
-		logger.Warn(fmt.Sprintf("DB offline. Encolando escritura en '%s' y usando caché.", dm.collection.Name()), "DataManager")
+		logger.Warn(fmt.Sprintf("DB offline. Encolando escritura en '%s' y usando caché.", dm.collectionName), "DataManager")
 		dm.dbInstance.AddToWriteQueue(QueuedOperation{
-			CollectionName: dm.collection.Name(),
+			CollectionName: dm.collectionName,
 			Query:          query,
 			Operation:      "set",
 			Data:           data,
@@ -269,9 +271,9 @@ func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 	var result T
 	err := dm.collection.FindOneAndUpdate(ctx, query, bson.M{"$set": data}, opts).Decode(&result)
 	if err != nil {
-		logger.Debug(fmt.Sprintf("DB offline o timeout. Usando cache local para '%s'", dm.collection.Name()), "DataManager")
+		logger.Debug(fmt.Sprintf("DB offline o timeout. Usando cache local para '%s'", dm.collectionName), "DataManager")
 		dm.dbInstance.AddToWriteQueue(QueuedOperation{
-			CollectionName: dm.collection.Name(),
+			CollectionName: dm.collectionName,
 			Query:          query,
 			Operation:      "set",
 			Data:           data,
@@ -295,9 +297,9 @@ func (dm *DataManager[T]) Delete(query bson.M) error {
 	globalCacheManager.mu.Unlock()
 
 	if !dm.dbInstance.Connected() || dm.collection == nil {
-		logger.Warn(fmt.Sprintf("DB offline. Encolando eliminación para '%s'", dm.collection.Name()), "DataManager")
+		logger.Warn(fmt.Sprintf("DB offline. Encolando eliminación para '%s'", dm.collectionName), "DataManager")
 		dm.dbInstance.AddToWriteQueue(QueuedOperation{
-			CollectionName: dm.collection.Name(),
+			CollectionName: dm.collectionName,
 			Query:          query,
 			Operation:      "delete",
 		})
@@ -311,7 +313,7 @@ func (dm *DataManager[T]) Delete(query bson.M) error {
 	if err != nil {
 		logger.Debug("Eliminación añadida a la cola offline", "DataManager")
 		dm.dbInstance.AddToWriteQueue(QueuedOperation{
-			CollectionName: dm.collection.Name(),
+			CollectionName: dm.collectionName,
 			Query:          query,
 			Operation:      "delete",
 		})
@@ -341,7 +343,7 @@ func (dm *DataManager[T]) CacheSize() int {
 func (dm *DataManager[T]) PrimeCache() {
 	collName := ""
 	if dm.collection != nil {
-		collName = dm.collection.Name()
+		collName = dm.collectionName
 	}
 	logger.System(fmt.Sprintf("Caché para '%s' preparada (tamaño máx: %d). Se llenará bajo demanda.", collName, dm.options.MaxCacheSize), "DataManager")
 }
