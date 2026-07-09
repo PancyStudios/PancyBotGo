@@ -33,7 +33,7 @@ func RegisterReactionCommands(client *discord.ExtendedClient) {
 	shrugCmd := createReactionCommand("shrug", "Encógete de hombros", "", "se encogió de hombros 🤷", false)
 	confusedCmd := createReactionCommand("confused", "Muestra confusión", "", "está muy confundido 😵‍💫", false)
 
-	reactionGroup := client.CommandHandler.BuildCommandGroup(
+	reactionGroup := client.CommandHandler.BuildUserCommandGroup(
 		"reaccion",
 		"Comandos de reacciones de anime",
 		hugCmd,

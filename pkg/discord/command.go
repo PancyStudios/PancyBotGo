@@ -25,6 +25,7 @@ type Command struct {
 	InVoiceChannel  bool
 	RequiresDB      bool
 	PremiumType     PremiumRequirement
+	UserInstallable bool
 	Run             CommandRunFunc
 	AutoComplete    AutoCompleteFunc
 }
@@ -93,19 +94,40 @@ func (c *Command) WithAutoComplete(fn AutoCompleteFunc) *Command {
 	return c
 }
 
+// AllowUserInstall marks the command as user installable
+func (c *Command) AllowUserInstall() *Command {
+	c.UserInstallable = true
+	return c
+}
+
 // ToApplicationCommand converts the command to a Discord application command
 func (c *Command) ToApplicationCommand() *discordgo.ApplicationCommand {
-	return &discordgo.ApplicationCommand{
+	appCmd := &discordgo.ApplicationCommand{
 		Name:        c.Name,
 		Description: c.Description,
 		Options:     c.Options,
-		IntegrationTypes: &[]discordgo.ApplicationIntegrationType{
-			discordgo.ApplicationIntegrationGuildInstall,
-		},
-		Contexts: &[]discordgo.InteractionContextType{
-			discordgo.InteractionContextGuild,
-		},
 	}
+
+	if c.UserInstallable {
+		appCmd.IntegrationTypes = &[]discordgo.ApplicationIntegrationType{
+			discordgo.ApplicationIntegrationGuildInstall,
+			discordgo.ApplicationIntegrationUserInstall,
+		}
+		appCmd.Contexts = &[]discordgo.InteractionContextType{
+			discordgo.InteractionContextGuild,
+			discordgo.InteractionContextBotDM,
+			discordgo.InteractionContextPrivateChannel,
+		}
+	} else {
+		appCmd.IntegrationTypes = &[]discordgo.ApplicationIntegrationType{
+			discordgo.ApplicationIntegrationGuildInstall,
+		}
+		appCmd.Contexts = &[]discordgo.InteractionContextType{
+			discordgo.InteractionContextGuild,
+		}
+	}
+
+	return appCmd
 }
 
 func (ctx *CommandContext) IsDev() bool {

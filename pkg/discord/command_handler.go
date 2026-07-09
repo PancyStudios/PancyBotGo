@@ -103,7 +103,28 @@ func (ch *CommandHandler) BuildCommandGroup(name, description string, subcommand
 		Name:        name,
 		Description: description,
 		Options:     options,
+		IntegrationTypes: &[]discordgo.ApplicationIntegrationType{
+			discordgo.ApplicationIntegrationGuildInstall,
+		},
+		Contexts: &[]discordgo.InteractionContextType{
+			discordgo.InteractionContextGuild,
+		},
 	}
+}
+
+// BuildUserCommandGroup creates a command group with subcommands that can be installed by users
+func (ch *CommandHandler) BuildUserCommandGroup(name, description string, subcommands ...*Command) *discordgo.ApplicationCommand {
+	cmd := ch.BuildCommandGroup(name, description, subcommands...)
+	cmd.IntegrationTypes = &[]discordgo.ApplicationIntegrationType{
+		discordgo.ApplicationIntegrationGuildInstall,
+		discordgo.ApplicationIntegrationUserInstall,
+	}
+	cmd.Contexts = &[]discordgo.InteractionContextType{
+		discordgo.InteractionContextGuild,
+		discordgo.InteractionContextBotDM,
+		discordgo.InteractionContextPrivateChannel,
+	}
+	return cmd
 }
 
 // BuildSubcommandGroup creates a subcommand group
