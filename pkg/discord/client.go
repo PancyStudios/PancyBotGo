@@ -4,6 +4,7 @@ package discord
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -241,6 +242,31 @@ func (c *ExtendedClient) handleInteraction(s *discordgo.Session, i *discordgo.In
 			},
 		})
 
+		return
+	}
+
+	// Check maintenance mode
+	botConfig := config.GetBotConfig()
+	if botConfig.IsMaintenance() && !strings.HasPrefix(commandName, "dev") {
+		_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "⚠️ **El bot está en mantenimiento.** Los desarrolladores están trabajando en mejoras. Intenta de nuevo más tarde.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+		return
+	}
+
+	// Check disabled commands
+	if botConfig.IsCommandDisabled(commandName) {
+		_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "⚠️ Este comando ha sido deshabilitado temporalmente por los administradores.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
 		return
 	}
 

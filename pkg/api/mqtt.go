@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"runtime"
+	"strings"
 	"time"
 
+	"github.com/PancyStudios/PancyBotGo/pkg/config"
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/mqtt"
+	"github.com/bwmarrin/discordgo"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -286,5 +289,75 @@ func RegisterAPIHandlers(mc *mqtt.MqttCommunicator, discordClient *discord.Exten
 		}
 
 		return string(bytes), nil
+	})
+
+	// broadcast-message
+	mc.On("broadcast-message", func(payload map[string]interface{}) (interface{}, error) {
+		if discordClient == nil || discordClient.Session == nil {
+			return nil, fmt.Errorf("discord client not ready")
+		}
+
+		title, _ := payload["title"].(string)
+		description, _ := payload["description"].(string)
+		colorHex, _ := payload["color"].(string)
+		imageUrl, _ := payload["imageUrl"].(string)
+
+		colorInt := 0xA855F7 // default purple
+		if colorHex != "" {
+			colorHex = strings.TrimPrefix(colorHex, "#")
+			fmt.Sscanf(colorHex, "%x", &colorInt)
+		}
+
+		embed := &discordgo.MessageEmbed{
+			Title:       title,
+			Description: description,
+			Color:       colorInt,
+		}
+		if imageUrl != "" {
+			embed.Image = &discordgo.MessageEmbedImage{URL: imageUrl}
+		}
+
+		go func() {
+			discordClient.Session.State.RLock()
+			guilds := discordClient.Session.State.Guilds
+			discordClient.Session.State.RUnlock()
+
+			for _, g := range guilds {
+				if g.SystemChannelID != "" {
+					discordClient.Session.ChannelMessageSendEmbed(g.SystemChannelID, embed)
+				} else {
+					// Intenta encontrar un canal general
+					for _, c := range g.Channels {
+						if c.Type == discordgo.ChannelTypeGuildText && (strings.Contains(strings.ToLower(c.Name), "general") || strings.Contains(strings.ToLower(c.Name), "chat")) {
+							discordClient.Session.ChannelMessageSendEmbed(c.ID, embed)
+							break
+						}
+					}
+				}
+				time.Sleep(100 * time.Millisecond) // Rate limit
+			}
+		}()
+
+		return map[string]interface{}{"success": true}, nil
+	})
+
+	// config-update
+	mc.On("config-update", func(payload map[string]interface{}) (interface{}, error) {
+		maintenanceMode, _ := payload["maintenanceMode"].(bool)
+		
+		disabledCommandsRaw, ok := payload["disabledCommands"].([]interface{})
+		var disabledCommands []string
+		if ok {
+			for _, v := range disabledCommandsRaw {
+				if str, ok := v.(string); ok {
+					disabledCommands = append(disabledCommands, str)
+				}
+			}
+		}
+
+		botConfig := config.GetBotConfig()
+		botConfig.Update(maintenanceMode, disabledCommands)
+
+		return map[string]interface{}{"success": true}, nil
 	})
 }

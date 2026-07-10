@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -115,6 +116,22 @@ func main() {
 		mqttClientID,
 	)
 	defer mqttClient.Destroy()
+
+	// ──────────────────────────────────────────
+	// Publish logs to MQTT
+	// ──────────────────────────────────────────
+	go func() {
+		logChan := logger.Subscribe()
+		for logMsg := range logChan {
+			payload := map[string]interface{}{
+				"message": logMsg,
+			}
+			bytes, err := json.Marshal(payload)
+			if err == nil {
+				mqttClient.Publish(fmt.Sprintf("pancy/logs/%s", cfg.Environment), bytes)
+			}
+		}
+	}()
 
 	// Initialize web server
 	webServer := web.Init(cfg.LogsWebServerHook)
