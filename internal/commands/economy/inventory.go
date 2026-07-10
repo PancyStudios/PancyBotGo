@@ -8,18 +8,18 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/models"
 )
 
-func createInventoryCommand(isGlobal bool) *discord.Command {
+func createInventoryCommand() *discord.Command {
 	return discord.NewCommand(
 		"inventory",
 		"🎒 | Revisa tu inventario de objetos",
 		"economy",
 		func(ctx *discord.CommandContext) error {
-			return inventoryHandler(ctx, isGlobal)
+			return inventoryHandler(ctx)
 		},
 	)
 }
 
-func inventoryHandler(ctx *discord.CommandContext, isGlobal bool) error {
+func inventoryHandler(ctx *discord.CommandContext) error {
 	userID := ctx.Interaction.Member.User.ID
 	guildID := ctx.Interaction.GuildID
 

@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func adminShopCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
+func adminShopCommand(ctx *messagecommands.MessageContext) error {
 	if !ctx.HasPermission(discordgo.PermissionAdministrator) {
 		_, err := ctx.ReplyError("Acceso Denegado", "No tienes permiso para administrar la tienda local.")
 		return err

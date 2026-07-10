@@ -9,10 +9,9 @@ import (
 // Register economy text commands
 func Register() {
 	messagecommands.RegisterCommand("eco", "Comandos de economía global", "pan!eco <comando>", "Economy", func(ctx *messagecommands.MessageContext) error { return ecoRouter(ctx, true) })
-	messagecommands.RegisterCommand("ecog", "Comandos de economía local", "pan!ecog <comando>", "Economy", func(ctx *messagecommands.MessageContext) error { return ecoRouter(ctx, false) })
+	messagecommands.RegisterCommand("ecol", "Comandos de economía local", "pan!ecol <comando>", "Economy", func(ctx *messagecommands.MessageContext) error { return ecoRouter(ctx, false) })
 
-	messagecommands.RegisterCommand("shop", "Tienda global", "pan!shop <comando>", "Economy", func(ctx *messagecommands.MessageContext) error { return shopRouter(ctx, true) })
-	messagecommands.RegisterCommand("shopg", "Tienda local", "pan!shopg <comando>", "Economy", func(ctx *messagecommands.MessageContext) error { return shopRouter(ctx, false) })
+	messagecommands.RegisterCommand("shop", "Tienda de objetos", "pan!shop <comando>", "Economy", func(ctx *messagecommands.MessageContext) error { return shopRouter(ctx) })
 }
 
 func ecoRouter(ctx *messagecommands.MessageContext, isGlobal bool) error {
@@ -53,9 +52,9 @@ func ecoRouter(ctx *messagecommands.MessageContext, isGlobal bool) error {
 	}
 }
 
-func shopRouter(ctx *messagecommands.MessageContext, isGlobal bool) error {
+func shopRouter(ctx *messagecommands.MessageContext) error {
 	if len(ctx.Args) == 0 {
-		return shopCommand(ctx, isGlobal) // view shop
+		return shopCommand(ctx) // view shop
 	}
 
 	cmd := strings.ToLower(ctx.Args[0])
@@ -63,18 +62,18 @@ func shopRouter(ctx *messagecommands.MessageContext, isGlobal bool) error {
 	switch cmd {
 	case "buy":
 		ctx.Args = ctx.Args[1:]
-		return buyCommand(ctx, isGlobal)
+		return buyCommand(ctx)
 	case "use":
 		ctx.Args = ctx.Args[1:]
-		return useCommand(ctx, isGlobal)
+		return useCommand(ctx)
 	case "inventory", "inv":
 		ctx.Args = ctx.Args[1:]
-		return inventoryCommand(ctx, isGlobal)
+		return inventoryCommand(ctx)
 	case "admin":
 		ctx.Args = ctx.Args[1:]
-		return adminShopCommand(ctx, isGlobal)
+		return adminShopCommand(ctx)
 	default:
 		// view shop with page
-		return shopCommand(ctx, isGlobal)
+		return shopCommand(ctx)
 	}
 }

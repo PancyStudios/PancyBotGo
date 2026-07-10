@@ -10,13 +10,13 @@ import (
 	"github.com/google/uuid"
 )
 
-func createAdminShopCommand(isGlobal bool) *discord.Command {
+func createAdminShopCommand() *discord.Command {
 	cmd := discord.NewCommand(
 		"admin",
 		"🛠️ | Administra la tienda local del servidor",
 		"economy",
 		func(ctx *discord.CommandContext) error {
-			return adminShopHandler(ctx, isGlobal)
+			return adminShopHandler(ctx)
 		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
@@ -71,6 +71,12 @@ func createAdminShopCommand(isGlobal bool) *discord.Command {
 					Description: "✨ | El rol a otorgar (solo si el efecto es GIVE_ROLE)",
 					Required:    false,
 				},
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "id",
+					Description: "💰 | ID personalizado para el objeto (opcional)",
+					Required:    false,
+				},
 			},
 		},
 		&discordgo.ApplicationCommandOption{
@@ -90,7 +96,7 @@ func createAdminShopCommand(isGlobal bool) *discord.Command {
 	return cmd
 }
 
-func adminShopHandler(ctx *discord.CommandContext, isGlobal bool) error {
+func adminShopHandler(ctx *discord.CommandContext) error {
 	subcommand := ctx.Interaction.ApplicationCommandData().Options[0]
 
 	if subcommand.Name == "add" {
@@ -101,6 +107,7 @@ func adminShopHandler(ctx *discord.CommandContext, isGlobal bool) error {
 		effect := "NONE"
 		effectValue := float64(0)
 		roleID := ""
+		customID := ""
 
 		for _, opt := range subcommand.Options {
 			switch opt.Name {
@@ -118,6 +125,8 @@ func adminShopHandler(ctx *discord.CommandContext, isGlobal bool) error {
 				effectValue = opt.FloatValue()
 			case "rol_id":
 				roleID = opt.RoleValue(ctx.Session, ctx.Interaction.GuildID).ID
+			case "id":
+				customID = opt.StringValue()
 			}
 		}
 
@@ -133,9 +142,16 @@ func adminShopHandler(ctx *discord.CommandContext, isGlobal bool) error {
 			itemType = models.ItemTypeConsumable
 		}
 
+		if customID == "" {
+			customID = "EC-" + uuid.New().String()[:8]
+		} else if len(customID) < 3 || customID[:3] != "EC-" {
+			customID = "EC-" + customID
+		}
+
 		item := models.Item{
-			ID:          uuid.New().String()[:8],
+			ID:          customID,
 			GuildID:     ctx.Interaction.GuildID,
+			IsGlobal:    false,
 			Name:        name,
 			Description: desc,
 			Price:       price,

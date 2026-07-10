@@ -5,10 +5,12 @@ package events
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PancyStudios/PancyBotGo/internal/commands/embeds"
 	slashHelpCommands "github.com/PancyStudios/PancyBotGo/internal/commands/help"
+	"github.com/PancyStudios/PancyBotGo/internal/commands/economy"
 	helpMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/help"
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
@@ -56,7 +58,11 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate, c
 		case "btn_verify_user":
 			handleVerifyUser(s, i)
 		default:
-			logger.Debug(fmt.Sprintf("Componente no manejado: %s", customID), "Interaction")
+			if len(customID) >= 9 && customID[:9] == "shop_nav_" {
+				handleShopNavigation(s, i)
+			} else {
+				logger.Debug(fmt.Sprintf("Componente no manejado: %s", customID), "Interaction")
+			}
 		}
 		return
 	}
@@ -81,6 +87,62 @@ func onInteractionCreate(s *discordgo.Session, i *discordgo.InteractionCreate, c
 }
 
 // Example button handlers
+
+func handleShopNavigation(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	customID := i.MessageComponentData().CustomID
+	
+	if customID == "shop_nav_menu" {
+		embed, components := economy.ShopMenu()
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseUpdateMessage,
+			Data: &discordgo.InteractionResponseData{
+				Embeds:     []*discordgo.MessageEmbed{embed},
+				Components: components,
+			},
+		})
+		if err != nil {
+			logger.Error(fmt.Sprintf("Error respondiendo interacción shop_nav_menu: %v", err), "Interaction")
+		}
+		return
+	}
+
+	// Format is shop_nav_{type}_{page}
+	parts := strings.Split(customID, "_")
+	if len(parts) != 4 {
+		logger.Error(fmt.Sprintf("Invalid customID format: %s", customID), "Interaction")
+		return
+	}
+	
+	shopType := parts[2]
+	page, err := strconv.Atoi(parts[3])
+	if err != nil {
+		logger.Error(fmt.Sprintf("Error parseando página %s: %v", customID, err), "Interaction")
+		return
+	}
+
+	embed, components, err := economy.RenderShopPage(i.GuildID, shopType, page)
+	if err != nil {
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "❌ Ocurrió un error al cargar la tienda.",
+				Flags:   discordgo.MessageFlagsEphemeral,
+			},
+		})
+		return
+	}
+
+	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseUpdateMessage,
+		Data: &discordgo.InteractionResponseData{
+			Embeds:     []*discordgo.MessageEmbed{embed},
+			Components: components,
+		},
+	})
+	if err != nil {
+		logger.Error(fmt.Sprintf("Error actualizando mensaje de la tienda: %v", err), "Interaction")
+	}
+}
 
 func handleAcceptButton(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

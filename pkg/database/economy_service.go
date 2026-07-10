@@ -357,8 +357,8 @@ func GetItems(guildID string) ([]models.Item, error) {
 		return nil, ErrEconomyManagerNotInitialized
 	}
 
-	// Get global items (GuildID is empty)
-	queryGlobal := bson.M{"guild_id": ""}
+	// Get global items
+	queryGlobal := bson.M{"is_global": true}
 	globals, err := ItemDM.GetAll(queryGlobal)
 	if err != nil {
 		return nil, err
@@ -371,7 +371,7 @@ func GetItems(guildID string) ([]models.Item, error) {
 
 	// Get local items if guildID is provided
 	if guildID != "" {
-		queryLocal := bson.M{"guild_id": guildID}
+		queryLocal := bson.M{"guild_id": guildID, "is_global": false}
 		locals, err := ItemDM.GetAll(queryLocal)
 		if err != nil {
 			return items, err

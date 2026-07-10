@@ -204,6 +204,7 @@ func (dm *DataManager[T]) GetAll(query bson.M) ([]*T, error) {
 	for cursor.Next(ctx) {
 		var doc T
 		if err := cursor.Decode(&doc); err != nil {
+			logger.Warn(fmt.Sprintf("Error decoding document in GetAll for '%s': %v", dm.collectionName, err), "DataManager")
 			continue
 		}
 		results = append(results, &doc)

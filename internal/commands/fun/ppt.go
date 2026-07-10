@@ -42,7 +42,7 @@ func pptHandler(ctx *discord.CommandContext) error {
 		action = "piedra"
 	}
 
-	rand.Seed(time.Now().UnixNano())
+	rand.NewSource(time.Now().UnixNano())
 	machineInput := moveVals[rand.Intn(3)]
 
 	i := moves[action]

@@ -49,9 +49,9 @@ func Register(client *discord.ExtendedClient) {
 		topGlobal,
 	)
 
-	// Build the /ecog command group
-	ecogGroup := client.CommandHandler.BuildCommandGroup(
-		"ecog",
+	// Build the /ecol command group
+	ecolGroup := client.CommandHandler.BuildCommandGroup(
+		"ecol",
 		"💵 Sistema de economía local (Servidor)",
 		balanceLocal,
 		workLocal,
@@ -66,45 +66,26 @@ func Register(client *discord.ExtendedClient) {
 		topLocal,
 	)
 
-	// Create individual shop subcommands (Global)
-	shopViewGlobal := createShopCommand(true)
-	shopBuyGlobal := createBuyCommand(true)
-	shopUseGlobal := createUseCommand(true)
-	shopInvGlobal := createInventoryCommand(true)
-	shopAdminGlobal := createAdminShopCommand(true)
-
-	// Create individual shop subcommands (Local)
-	shopViewLocal := createShopCommand(false)
-	shopBuyLocal := createBuyCommand(false)
-	shopUseLocal := createUseCommand(false)
-	shopInvLocal := createInventoryCommand(false)
-	shopAdminLocal := createAdminShopCommand(false)
+	// Create unified shop subcommands
+	shopView := createShopCommand()
+	shopBuy := createBuyCommand()
+	shopUse := createUseCommand()
+	shopInv := createInventoryCommand()
+	shopAdmin := createAdminShopCommand()
 
 	// Build the /shop command group
 	shopGroup := client.CommandHandler.BuildCommandGroup(
 		"shop",
-		"🌟 Tienda global de objetos",
-		shopViewGlobal,
-		shopBuyGlobal,
-		shopUseGlobal,
-		shopInvGlobal,
-		shopAdminGlobal,
-	)
-
-	// Build the /shopg command group
-	shopgGroup := client.CommandHandler.BuildCommandGroup(
-		"shopg",
-		"🛒 Tienda local del servidor",
-		shopViewLocal,
-		shopBuyLocal,
-		shopUseLocal,
-		shopInvLocal,
-		shopAdminLocal,
+		"🛒 Tienda de objetos",
+		shopView,
+		shopBuy,
+		shopUse,
+		shopInv,
+		shopAdmin,
 	)
 
 	// Register global groups
 	client.CommandHandler.AddGlobalCommand(ecoGroup)
-	client.CommandHandler.AddGlobalCommand(ecogGroup)
+	client.CommandHandler.AddGlobalCommand(ecolGroup)
 	client.CommandHandler.AddGlobalCommand(shopGroup)
-	client.CommandHandler.AddGlobalCommand(shopgGroup)
 }

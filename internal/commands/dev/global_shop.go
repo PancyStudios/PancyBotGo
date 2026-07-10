@@ -73,6 +73,10 @@ func CreateShopRemoveCommand() *discord.Command {
 }
 
 func shopAddHandler(ctx *discord.CommandContext) error {
+	if err := ctx.Defer(); err != nil {
+		return err
+	}
+
 	name := ctx.GetStringOption("nombre")
 	desc := ctx.GetStringOption("descripcion")
 	price := ctx.GetIntOption("precio")
@@ -88,12 +92,12 @@ func shopAddHandler(ctx *discord.CommandContext) error {
 	}
 
 	if price <= 0 {
-		return ctx.Reply("❌ El precio debe ser mayor a 0.")
+		return ctx.EditReply("❌ El precio debe ser mayor a 0.")
 	}
 
 	item := models.Item{
 		ID:          uuid.New().String()[:8],
-		GuildID:     "", // Global item
+		GuildID:     "global", // Global item
 		Name:        name,
 		Description: desc,
 		Price:       price,
@@ -107,18 +111,22 @@ func shopAddHandler(ctx *discord.CommandContext) error {
 
 	err := database.SaveItem(item)
 	if err != nil {
-		return ctx.Reply("❌ Hubo un error al guardar el objeto global.")
+		return ctx.EditReply("❌ Hubo un error al guardar el objeto global.")
 	}
 
-	return ctx.Reply(fmt.Sprintf("✅ Objeto global estelar creado exitosamente.\n**Nombre:** %s\n**Precio:** %d 🌟\n**ID:** `%s`\n**Efecto:** %s (%.2f)", name, price, item.ID, effect, effectValue))
+	return ctx.EditReply(fmt.Sprintf("✅ Objeto global estelar creado exitosamente.\n**Nombre:** %s\n**Precio:** %d 🌟\n**ID:** `%s`\n**Efecto:** %s (%.2f)", name, price, item.ID, effect, effectValue))
 }
 
 func shopRemoveHandler(ctx *discord.CommandContext) error {
+	if err := ctx.Defer(); err != nil {
+		return err
+	}
+
 	id := ctx.GetStringOption("id")
 
 	items, err := database.GetItems("") // Global items
 	if err != nil {
-		return ctx.Reply("❌ Error al buscar el catálogo global.")
+		return ctx.EditReply("❌ Error al buscar el catálogo global.")
 	}
 
 	found := false
@@ -130,13 +138,13 @@ func shopRemoveHandler(ctx *discord.CommandContext) error {
 	}
 
 	if !found {
-		return ctx.Reply("❌ No se encontró un objeto global con esa ID.")
+		return ctx.EditReply("❌ No se encontró un objeto global con esa ID.")
 	}
 
 	err = database.DeleteItem(id)
 	if err != nil {
-		return ctx.Reply("❌ Hubo un error al eliminar el objeto global.")
+		return ctx.EditReply("❌ Hubo un error al eliminar el objeto global.")
 	}
 
-	return ctx.Reply(fmt.Sprintf("✅ El objeto global con ID `%s` fue eliminado del mercado intergaláctico.", id))
+	return ctx.EditReply(fmt.Sprintf("✅ El objeto global con ID `%s` fue eliminado del mercado intergaláctico.", id))
 }

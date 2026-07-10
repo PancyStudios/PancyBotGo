@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func buyCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
+func buyCommand(ctx *messagecommands.MessageContext) error {
 	if len(ctx.Args) == 0 {
 		_, err := ctx.ReplyError("Uso Incorrecto", "Debes especificar el ID del objeto a comprar.\nUso: `pan!buy <id> [cantidad]`")
 		return err
@@ -53,7 +53,7 @@ func buyCommand(ctx *messagecommands.MessageContext, isGlobal bool) error {
 
 	totalCost := selectedItem.Price * qty
 
-	if selectedItem.GuildID == "" {
+	if selectedItem.IsGlobal {
 		_, err = database.AddStars(ctx.Message.Author.ID, -totalCost, false)
 		if err != nil {
 			_, err = ctx.ReplyError("Error", "❌ No tienes suficientes estrellas para comprar esto.")

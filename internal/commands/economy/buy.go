@@ -10,13 +10,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func createBuyCommand(isGlobal bool) *discord.Command {
+func createBuyCommand() *discord.Command {
 	return discord.NewCommand(
 		"buy",
 		"🛍️ | Compra un objeto del mercado estelar o local",
 		"economy",
 		func(ctx *discord.CommandContext) error {
-			return buyHandler(ctx, isGlobal)
+			return buyHandler(ctx)
 		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
@@ -34,7 +34,7 @@ func createBuyCommand(isGlobal bool) *discord.Command {
 	)
 }
 
-func buyHandler(ctx *discord.CommandContext, isGlobal bool) error {
+func buyHandler(ctx *discord.CommandContext) error {
 	itemID := ctx.GetStringOption("id")
 	qty := int64(1)
 
@@ -70,7 +70,7 @@ func buyHandler(ctx *discord.CommandContext, isGlobal bool) error {
 
 	totalCost := selectedItem.Price * qty
 
-	if selectedItem.GuildID == "" {
+	if selectedItem.IsGlobal {
 		_, err = database.AddStars(ctx.Interaction.Member.User.ID, -totalCost, false)
 		if err != nil {
 			ctx.Reply("❌ " + "No tienes suficientes estrellas para comprar esto.")

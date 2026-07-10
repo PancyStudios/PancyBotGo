@@ -18,7 +18,8 @@ const (
 // Item represents a buyable/usable item in the economy
 type Item struct {
 	ID          string   `bson:"_id" json:"id"`
-	GuildID     string   `bson:"guild_id" json:"guild_id"` // Empty if global
+	GuildID     string   `bson:"guild_id" json:"guild_id"`
+	IsGlobal    bool     `bson:"is_global" json:"is_global"`
 	Name        string   `bson:"name" json:"name"`
 	Description string   `bson:"description" json:"description"`
 	Price       int64    `bson:"price" json:"price"`

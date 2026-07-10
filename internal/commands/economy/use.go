@@ -10,13 +10,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func createUseCommand(isGlobal bool) *discord.Command {
+func createUseCommand() *discord.Command {
 	return discord.NewCommand(
 		"use",
 		"✨ | Usa un objeto mágico de tu inventario",
 		"economy",
 		func(ctx *discord.CommandContext) error {
-			return useHandler(ctx, isGlobal)
+			return useHandler(ctx)
 		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
@@ -28,7 +28,7 @@ func createUseCommand(isGlobal bool) *discord.Command {
 	)
 }
 
-func useHandler(ctx *discord.CommandContext, isGlobal bool) error {
+func useHandler(ctx *discord.CommandContext) error {
 	itemID := ctx.GetStringOption("id")
 	userID := ctx.Interaction.Member.User.ID
 	guildID := ctx.Interaction.GuildID
@@ -53,7 +53,7 @@ func useHandler(ctx *discord.CommandContext, isGlobal bool) error {
 		return nil
 	}
 
-	if selectedItem.GuildID == "" {
+	if selectedItem.IsGlobal {
 		// Global Item
 		profile, _ := database.GetGlobalProfile(userID)
 		qty := profile.Inventory[selectedItem.ID]
