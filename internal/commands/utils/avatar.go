@@ -13,9 +13,10 @@ func createAvatarCommand() *discord.Command {
 		Description: "🧰 | Muestra el avatar de un usuario",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
-				Type:     discordgo.ApplicationCommandOptionUser,
-				Name:     "user",
-				Required: false,
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        "user",
+				Description: "Usuario del cual mostrar el avatar",
+				Required:    false,
 			},
 		},
 		Run: func(ctx *discord.CommandContext) error {
