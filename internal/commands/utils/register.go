@@ -14,6 +14,7 @@ func RegisterUtilsCommands(client *discord.ExtendedClient) {
 	screenshotCmd := createScreenshotCommand()
 	suggestCmd := createSuggestCommand()
 	confessCmd := createConfessCommand()
+	avatarCmd := createAvatarCommand()
 
 	// Build the /utils command group with all subcommands
 	modGroup := client.CommandHandler.BuildCommandGroup(
@@ -26,6 +27,7 @@ func RegisterUtilsCommands(client *discord.ExtendedClient) {
 		screenshotCmd,
 		suggestCmd,
 		confessCmd,
+		avatarCmd,
 	)
 
 	// Register the command group
