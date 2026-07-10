@@ -119,11 +119,8 @@ func (d *Database) Connect(mongoURL, dbName string) error {
 
 // handleDisconnection starts reconnection attempts
 func (d *Database) handleDisconnection(mongoURL, dbName string) {
-	if !d.IsConnected {
-		return
-	}
 	d.IsConnected = false
-	logger.Warn("Se perdió la conexión con la base de datos. Activando modo offline.", "DB")
+	logger.Warn("Modo offline activo. La conexión con la base de datos no está disponible.", "DB")
 
 	if d.reconnectTicker == nil {
 		d.reconnectTicker = time.NewTicker(15 * time.Second)
