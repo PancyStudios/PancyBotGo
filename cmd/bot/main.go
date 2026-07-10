@@ -3,7 +3,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -126,10 +125,7 @@ func main() {
 			payload := map[string]interface{}{
 				"message": logMsg,
 			}
-			bytes, err := json.Marshal(payload)
-			if err == nil {
-				mqttClient.Publish(fmt.Sprintf("pancy/logs/%s", cfg.Environment), bytes)
-			}
+			mqttClient.Publish(fmt.Sprintf("pancy/logs/%s", cfg.Environment), payload)
 		}
 	}()
 
