@@ -18,16 +18,6 @@ func createDepositCommand(isGlobal bool) *discord.Command {
 		},
 	).WithOptions(
 		&discordgo.ApplicationCommandOption{
-			Type:        discordgo.ApplicationCommandOptionString,
-			Name:        "tipo",
-			Description: "💰 | Elige si quieres depositar economía Local o Global",
-			Required:    true,
-			Choices: []*discordgo.ApplicationCommandOptionChoice{
-				{Name: "Local (Servidor)", Value: "local"},
-				{Name: "Global (Estrellas)", Value: "global"},
-			},
-		},
-		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionInteger,
 			Name:        "cantidad",
 			Description: "💰 | Cantidad a depositar",
@@ -37,7 +27,7 @@ func createDepositCommand(isGlobal bool) *discord.Command {
 }
 
 func depositHandler(ctx *discord.CommandContext, isGlobal bool) error {
-	
+
 	amount := ctx.GetIntOption("cantidad")
 	userID := ctx.Interaction.Member.User.ID
 	guildID := ctx.Interaction.GuildID

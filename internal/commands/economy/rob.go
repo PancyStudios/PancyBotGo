@@ -24,10 +24,6 @@ func createRobCommand(isGlobal bool) *discord.Command {
 			Name:        "tipo",
 			Description: "💰 | Elige economía Local o Global",
 			Required:    true,
-			Choices: []*discordgo.ApplicationCommandOptionChoice{
-				{Name: "Local (Servidor)", Value: "local"},
-				{Name: "Global (Estrellas)", Value: "global"},
-			},
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionUser,
@@ -39,7 +35,6 @@ func createRobCommand(isGlobal bool) *discord.Command {
 }
 
 func robHandler(ctx *discord.CommandContext, isGlobal bool) error {
-	
 
 	targetUser := ctx.GetUserOption("victima")
 	userID := ctx.Interaction.Member.User.ID

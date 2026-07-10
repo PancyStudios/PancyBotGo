@@ -24,16 +24,12 @@ func createWorkCommand(isGlobal bool) *discord.Command {
 			Name:        "tipo",
 			Description: "💰 | Elige si quieres ganar economía Local o Global",
 			Required:    true,
-			Choices: []*discordgo.ApplicationCommandOptionChoice{
-				{Name: "Local (Servidor)", Value: "local"},
-				{Name: "Global (Estrellas)", Value: "global"},
-			},
 		},
 	)
 }
 
 func workHandler(ctx *discord.CommandContext, isGlobal bool) error {
-	
+
 	userID := ctx.Interaction.Member.User.ID
 	guildID := ctx.Interaction.GuildID
 

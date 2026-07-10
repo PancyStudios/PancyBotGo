@@ -22,10 +22,6 @@ func createWithdrawCommand(isGlobal bool) *discord.Command {
 			Name:        "tipo",
 			Description: "💰 | Elige si quieres retirar economía Local o Global",
 			Required:    true,
-			Choices: []*discordgo.ApplicationCommandOptionChoice{
-				{Name: "Local (Servidor)", Value: "local"},
-				{Name: "Global (Estrellas)", Value: "global"},
-			},
 		},
 		&discordgo.ApplicationCommandOption{
 			Type:        discordgo.ApplicationCommandOptionInteger,
@@ -37,7 +33,7 @@ func createWithdrawCommand(isGlobal bool) *discord.Command {
 }
 
 func withdrawHandler(ctx *discord.CommandContext, isGlobal bool) error {
-	
+
 	amount := ctx.GetIntOption("cantidad")
 	userID := ctx.Interaction.Member.User.ID
 	guildID := ctx.Interaction.GuildID

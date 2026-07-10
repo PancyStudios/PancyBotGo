@@ -24,16 +24,11 @@ func createTopCommand(isGlobal bool) *discord.Command {
 			Name:        "tipo",
 			Description: "💰 | Elige economía Local o Global",
 			Required:    true,
-			Choices: []*discordgo.ApplicationCommandOptionChoice{
-				{Name: "Local (Servidor)", Value: "local"},
-				{Name: "Global (Estrellas)", Value: "global"},
-			},
 		},
 	)
 }
 
 func topHandler(ctx *discord.CommandContext, isGlobal bool) error {
-	
 
 	var leaderboardStr string
 	var embedTitle string

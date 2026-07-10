@@ -155,6 +155,15 @@ func (h *ErrorHandler) HandlePanic(recovered interface{}) {
 		Error:   "PANIC / Unhandled Exception",
 		Message: fmt.Sprintf("Se ha recuperado de un crasheo fatal.\n**Error:** `%v`\n**Crash Dump:** `%s`", recovered, dumpFile),
 	})
+
+	go func() {
+		time.Sleep(30 * time.Second)
+		logger.Warn("El sistema se apagara en 30s...", "AntiCrash")
+		if h.shutdownFunc != nil {
+			h.shutdownFunc()
+		}
+		os.Exit(1)
+	}()
 }
 
 // Report sends an error report to the Discord webhook
