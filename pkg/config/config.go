@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -22,6 +23,11 @@ type Config struct {
 	// MongoDB
 	MongoDBURL string
 	DBName     string
+
+	// Redis cache (optional)
+	RedisURL    string
+	RedisPrefix string
+	CacheTTL    time.Duration
 
 	// MQTT
 	MQTTHost     string
@@ -86,6 +92,11 @@ func loadConfig() {
 		MongoDBURL: getEnvAny([]string{"MONGODB_URL", "mongodbUrl"}, "mongodb://localhost:27017"),
 		DBName:     getEnvAny([]string{"DB_NAME", "dbName"}, "PancyBot"),
 
+		// Redis
+		RedisURL:    strings.TrimSpace(getEnv("REDIS_URL", "")),
+		RedisPrefix: strings.TrimSpace(getEnv("REDIS_PREFIX", "")),
+		CacheTTL:    5 * time.Minute,
+
 		// MQTT
 		MQTTHost:     getEnv("MQTT_Host", "localhost"),
 		MQTTPort:     getEnv("MQTT_Port", "1883"),
@@ -112,6 +123,18 @@ func loadConfig() {
 
 		// Craiyon
 		CraiyonToken: getEnv("craiyonToken", ""),
+	}
+
+	if cfg.RedisPrefix == "" {
+		cfg.RedisPrefix = "pancybot:" + cfg.Environment
+	}
+	if rawTTL := strings.TrimSpace(getEnv("CACHE_TTL", "5m")); rawTTL != "" {
+		ttl, err := time.ParseDuration(rawTTL)
+		if err != nil || ttl <= 0 {
+			cfgErr = fmt.Errorf("CACHE_TTL must be a positive Go duration such as 5m or 1h")
+			return
+		}
+		cfg.CacheTTL = ttl
 	}
 
 	if strings.TrimSpace(cfg.BotToken) == "" {

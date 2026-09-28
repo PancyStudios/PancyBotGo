@@ -28,6 +28,7 @@ import (
 	securityMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/security"
 	utilsMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/utils"
 	"github.com/PancyStudios/PancyBotGo/pkg/api"
+	cachepkg "github.com/PancyStudios/PancyBotGo/pkg/cache"
 	"github.com/PancyStudios/PancyBotGo/pkg/cli"
 	"github.com/PancyStudios/PancyBotGo/pkg/config"
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
@@ -58,6 +59,29 @@ func main() {
 
 	logger.System("Iniciando PancyBot Go...", "Main")
 	logger.Info(fmt.Sprintf("Directorio de trabajo: %s", getCurrentDir()), "Main")
+
+	// Initialize the optional shared cache. MongoDB remains the source of truth.
+	memoryCache := cachepkg.NewMemoryStore(1000)
+	var sharedCache cachepkg.Store = memoryCache
+	if cfg.RedisURL != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		redisCache, redisErr := cachepkg.NewRedisStore(ctx, cfg.RedisURL, cfg.RedisPrefix)
+		cancel()
+		if redisErr != nil {
+			logger.Warn(fmt.Sprintf("Redis no está disponible; usando caché en memoria: %v", redisErr), "Cache")
+		} else {
+			sharedCache = cachepkg.NewFailoverStore(redisCache, memoryCache)
+			logger.Success("Redis conectado; caché compartida habilitada.", "Cache")
+		}
+	} else {
+		logger.Info("REDIS_URL no configurada; usando caché en memoria.", "Cache")
+	}
+	database.ConfigureCache(sharedCache, cfg.CacheTTL)
+	defer func() {
+		if err := sharedCache.Close(); err != nil {
+			logger.Warn(fmt.Sprintf("Error cerrando la caché: %v", err), "Cache")
+		}
+	}()
 
 	// Initialize error handler
 	var discordClient *discord.ExtendedClient

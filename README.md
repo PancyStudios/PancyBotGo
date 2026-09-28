@@ -300,6 +300,11 @@ DEVELOPER_ID=id_del_usuario_desarrollador
 MONGODB_URL=mongodb://localhost:27017
 DB_NAME=PancyBot
 
+# Redis (opcional; si se omite, se usa caché local en memoria)
+REDIS_URL=redis://usuario:contraseña@localhost:6379/0
+REDIS_PREFIX=pancybot:prod
+CACHE_TTL=5m
+
 # MQTT
 MQTT_Host=localhost
 MQTT_Port=1883

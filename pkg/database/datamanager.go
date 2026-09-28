@@ -2,7 +2,6 @@
 package database
 
 import (
-	"container/list"
 	"context"
 	"encoding/json"
 	"errors"
@@ -12,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	cachepkg "github.com/PancyStudios/PancyBotGo/pkg/cache"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/PancyStudios/PancyBotGo/pkg/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -26,23 +26,33 @@ type DataManagerOptions struct {
 	MaxCacheSize int
 }
 
-// CacheManager provides shared caching across DataManagers
-type CacheManager struct {
-	cache     map[string]*list.Element
-	cacheList *list.List
-	mu        sync.RWMutex
+const cacheOperationTimeout = 900 * time.Millisecond
+
+var (
+	cacheMu       sync.RWMutex
+	cacheStore    cachepkg.Store = cachepkg.NewMemoryStore(1000)
+	cacheEntryTTL                = 5 * time.Minute
+)
+
+// ConfigureCache replaces the process-local default with another cache backend.
+// MongoDB remains the source of truth, so cache failures never block database access.
+func ConfigureCache(store cachepkg.Store, ttl time.Duration) {
+	if store == nil {
+		return
+	}
+	if ttl <= 0 {
+		ttl = 5 * time.Minute
+	}
+	cacheMu.Lock()
+	cacheStore = store
+	cacheEntryTTL = ttl
+	cacheMu.Unlock()
 }
 
-// cacheEntry holds a cached value with its key
-type cacheEntry struct {
-	key   string
-	value interface{}
-}
-
-// globalCacheManager is shared across all DataManager instances
-var globalCacheManager = &CacheManager{
-	cache:     make(map[string]*list.Element),
-	cacheList: list.New(),
+func currentCache() (cachepkg.Store, time.Duration) {
+	cacheMu.RLock()
+	defer cacheMu.RUnlock()
+	return cacheStore, cacheEntryTTL
 }
 
 // global DataManagers for shared collections
@@ -144,26 +154,62 @@ func (dm *DataManager[T]) generateCacheKey(query bson.M) string {
 	return fmt.Sprintf("%s:{%s}", dm.collectionName, strings.Join(parts, ","))
 }
 
+func (dm *DataManager[T]) getCached(cacheKey string) (*T, bool) {
+	store, _ := currentCache()
+	ctx, cancel := context.WithTimeout(context.Background(), cacheOperationTimeout)
+	defer cancel()
+
+	data, err := store.Get(ctx, cacheKey)
+	if errors.Is(err, cachepkg.ErrMiss) {
+		return nil, false
+	}
+	if err != nil {
+		logger.Debug(fmt.Sprintf("Caché '%s' no disponible para '%s': %v", store.Name(), dm.collectionName, err), "DataManager")
+		return nil, false
+	}
+
+	var value T
+	if err := json.Unmarshal(data, &value); err != nil {
+		logger.Warn(fmt.Sprintf("Entrada de caché inválida para '%s': %v", dm.collectionName, err), "DataManager")
+		_ = store.Delete(context.Background(), cacheKey)
+		return nil, false
+	}
+	return &value, true
+}
+
+func (dm *DataManager[T]) setCached(cacheKey string, value *T) {
+	if value == nil {
+		return
+	}
+	data, err := json.Marshal(value)
+	if err != nil {
+		logger.Debug(fmt.Sprintf("No se pudo serializar caché para '%s': %v", dm.collectionName, err), "DataManager")
+		return
+	}
+	store, ttl := currentCache()
+	ctx, cancel := context.WithTimeout(context.Background(), cacheOperationTimeout)
+	defer cancel()
+	if err := store.Set(ctx, cacheKey, data, ttl); err != nil {
+		logger.Debug(fmt.Sprintf("No se pudo actualizar caché '%s' para '%s': %v", store.Name(), dm.collectionName, err), "DataManager")
+	}
+}
+
+func (dm *DataManager[T]) deleteCached(cacheKey string) {
+	store, _ := currentCache()
+	ctx, cancel := context.WithTimeout(context.Background(), cacheOperationTimeout)
+	defer cancel()
+	if err := store.Delete(ctx, cacheKey); err != nil {
+		logger.Debug(fmt.Sprintf("No se pudo invalidar caché '%s' para '%s': %v", store.Name(), dm.collectionName, err), "DataManager")
+	}
+}
+
 // Get retrieves a document from cache or database
 func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 	cacheKey := dm.generateCacheKey(query)
 
-	// Check cache first
-	globalCacheManager.mu.RLock()
-	if elem, exists := globalCacheManager.cache[cacheKey]; exists {
-		// Move to front (LRU)
-		globalCacheManager.mu.RUnlock()
-		globalCacheManager.mu.Lock()
-		globalCacheManager.cacheList.MoveToFront(elem)
-		entry := elem.Value.(*cacheEntry)
-		globalCacheManager.mu.Unlock()
-		value, ok := entry.value.(*T)
-		if !ok {
-			return nil, fmt.Errorf("invalid cached type for collection %s", dm.collectionName)
-		}
-		return cloneValue(value)
+	if value, ok := dm.getCached(cacheKey); ok {
+		return value, nil
 	}
-	globalCacheManager.mu.RUnlock()
 
 	// Not in cache, fetch from database
 	collection := dm.collection()
@@ -184,28 +230,7 @@ func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 		return nil, err
 	}
 
-	// Add to cache
-	globalCacheManager.mu.Lock()
-	defer globalCacheManager.mu.Unlock()
-
-	cachedResult, err := cloneValue(&result)
-	if err != nil {
-		return nil, err
-	}
-	entry := &cacheEntry{key: cacheKey, value: cachedResult}
-	elem := globalCacheManager.cacheList.PushFront(entry)
-	globalCacheManager.cache[cacheKey] = elem
-
-	// Evict if over capacity
-	if dm.options.MaxCacheSize > 0 && globalCacheManager.cacheList.Len() > dm.options.MaxCacheSize {
-		oldest := globalCacheManager.cacheList.Back()
-		if oldest != nil {
-			oldEntry := oldest.Value.(*cacheEntry)
-			delete(globalCacheManager.cache, oldEntry.key)
-			globalCacheManager.cacheList.Remove(oldest)
-		}
-	}
-
+	dm.setCached(cacheKey, &result)
 	return &result, nil
 }
 
@@ -264,26 +289,7 @@ func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 		return nil, err
 	}
 
-	globalCacheManager.mu.Lock()
-	entry := &cacheEntry{key: cacheKey, value: cacheValue}
-	if elem, exists := globalCacheManager.cache[cacheKey]; exists {
-		elem.Value = entry
-		globalCacheManager.cacheList.MoveToFront(elem)
-	} else {
-		elem := globalCacheManager.cacheList.PushFront(entry)
-		globalCacheManager.cache[cacheKey] = elem
-
-		// Evict if over capacity
-		if dm.options.MaxCacheSize > 0 && globalCacheManager.cacheList.Len() > dm.options.MaxCacheSize {
-			oldest := globalCacheManager.cacheList.Back()
-			if oldest != nil {
-				oldEntry := oldest.Value.(*cacheEntry)
-				delete(globalCacheManager.cache, oldEntry.key)
-				globalCacheManager.cacheList.Remove(oldest)
-			}
-		}
-	}
-	globalCacheManager.mu.Unlock()
+	dm.setCached(cacheKey, cacheValue)
 
 	collection := dm.collection()
 	if collection == nil {
@@ -317,6 +323,7 @@ func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 		return cacheValue, nil
 	}
 
+	dm.setCached(cacheKey, &result)
 	return &result, nil
 }
 
@@ -324,13 +331,7 @@ func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 func (dm *DataManager[T]) Delete(query bson.M) error {
 	cacheKey := dm.generateCacheKey(query)
 
-	// Remove from cache first
-	globalCacheManager.mu.Lock()
-	if elem, exists := globalCacheManager.cache[cacheKey]; exists {
-		globalCacheManager.cacheList.Remove(elem)
-		delete(globalCacheManager.cache, cacheKey)
-	}
-	globalCacheManager.mu.Unlock()
+	dm.deleteCached(cacheKey)
 
 	collection := dm.collection()
 	if collection == nil {
@@ -362,21 +363,28 @@ func (dm *DataManager[T]) Delete(query bson.M) error {
 
 // ClearCache clears the entire cache
 func (dm *DataManager[T]) ClearCache() {
-	globalCacheManager.mu.Lock()
-	defer globalCacheManager.mu.Unlock()
-
-	globalCacheManager.cache = make(map[string]*list.Element)
-	globalCacheManager.cacheList = list.New()
+	store, _ := currentCache()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := store.Clear(ctx); err != nil {
+		logger.Warn(fmt.Sprintf("No se pudo limpiar la caché '%s': %v", store.Name(), err), "DataManager")
+	}
 }
 
 // CacheSize returns the current cache size
 func (dm *DataManager[T]) CacheSize() int {
-	globalCacheManager.mu.RLock()
-	defer globalCacheManager.mu.RUnlock()
-	return globalCacheManager.cacheList.Len()
+	store, _ := currentCache()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	size, err := store.Size(ctx)
+	if err != nil {
+		return 0
+	}
+	return size
 }
 
 // PrimeCache logs that the cache is ready (caches are filled on demand)
 func (dm *DataManager[T]) PrimeCache() {
-	logger.System(fmt.Sprintf("Caché para '%s' preparada (tamaño máx: %d). Se llenará bajo demanda.", dm.collectionName, dm.options.MaxCacheSize), "DataManager")
+	store, ttl := currentCache()
+	logger.System(fmt.Sprintf("Caché '%s' para '%s' preparada (TTL: %s). Se llenará bajo demanda.", store.Name(), dm.collectionName, ttl), "DataManager")
 }

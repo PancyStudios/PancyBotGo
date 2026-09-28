@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"testing"
+	"time"
 )
 
 func TestLoad(t *testing.T) {
@@ -36,6 +37,10 @@ func TestLoad(t *testing.T) {
 
 	if config.Environment != "test" {
 		t.Errorf("Environment = %v, want %v", config.Environment, "test")
+	}
+
+	if config.CacheTTL != 5*time.Minute {
+		t.Errorf("CacheTTL = %v, want %v", config.CacheTTL, 5*time.Minute)
 	}
 }
 
@@ -142,5 +147,40 @@ func TestLoadRejectsMissingBotToken(t *testing.T) {
 	_, err := Load()
 	if err == nil {
 		t.Fatal("Load() accepted a missing bot token")
+	}
+}
+
+func TestLoadRedisConfiguration(t *testing.T) {
+	t.Setenv("BOT_TOKEN", "test-token")
+	t.Setenv("DEVELOPER_ID", "test-developer")
+	t.Setenv("BOT_ENV", "test")
+	t.Setenv("REDIS_URL", "redis://localhost:6379/2")
+	t.Setenv("REDIS_PREFIX", "custom-prefix")
+	t.Setenv("CACHE_TTL", "15m")
+	resetForTesting()
+
+	loaded, err := Load()
+	if err != nil {
+		t.Fatalf("Load() returned error: %v", err)
+	}
+	if loaded.RedisURL != "redis://localhost:6379/2" {
+		t.Fatalf("RedisURL = %q", loaded.RedisURL)
+	}
+	if loaded.RedisPrefix != "custom-prefix" {
+		t.Fatalf("RedisPrefix = %q", loaded.RedisPrefix)
+	}
+	if loaded.CacheTTL != 15*time.Minute {
+		t.Fatalf("CacheTTL = %v", loaded.CacheTTL)
+	}
+}
+
+func TestLoadRejectsInvalidCacheTTL(t *testing.T) {
+	t.Setenv("BOT_TOKEN", "test-token")
+	t.Setenv("DEVELOPER_ID", "test-developer")
+	t.Setenv("CACHE_TTL", "not-a-duration")
+	resetForTesting()
+
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() accepted an invalid CACHE_TTL")
 	}
 }
