@@ -123,5 +123,5 @@ func evalHandler(ctx *discord.CommandContext) error {
 
 // Helper para verificar ID (Hardcoded por seguridad como en tu codegen.go)
 func isDev(userID string) bool {
-	return userID == "852683369899622430"
+	return userID == config.Get().DeveloperID
 }

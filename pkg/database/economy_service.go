@@ -3,11 +3,25 @@ package database
 import (
 	"errors"
 	"fmt"
+	"math"
+	"sync"
 	"time"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/models"
 	"go.mongodb.org/mongo-driver/bson"
 )
+
+var economyMu sync.Mutex
+
+func checkedAdd(current, delta int64) (int64, bool) {
+	if delta > 0 && current > math.MaxInt64-delta {
+		return 0, false
+	}
+	if delta < 0 && current < math.MinInt64-delta {
+		return 0, false
+	}
+	return current + delta, true
+}
 
 var (
 	ErrEconomyManagerNotInitialized = errors.New("economy data managers not initialized")
@@ -91,13 +105,22 @@ func GetLocalProfile(guildID, userID string) (*models.LocalEconomyProfile, error
 
 // AddStars adds or removes Stars from a user's global profile
 func AddStars(userID string, amount int64, toBank bool) (*models.GlobalEconomyProfile, error) {
+	economyMu.Lock()
+	defer economyMu.Unlock()
+	return addStars(userID, amount, toBank)
+}
+
+func addStars(userID string, amount int64, toBank bool) (*models.GlobalEconomyProfile, error) {
 	profile, err := GetGlobalProfile(userID)
 	if err != nil {
 		return nil, err
 	}
 
 	if toBank {
-		newBank := profile.StarsBank + amount
+		newBank, ok := checkedAdd(profile.StarsBank, amount)
+		if !ok {
+			return nil, errors.New("balance overflow")
+		}
 		if amount > 0 && newBank > profile.BankCapacity {
 			return nil, ErrBankFull
 		}
@@ -106,7 +129,10 @@ func AddStars(userID string, amount int64, toBank bool) (*models.GlobalEconomyPr
 		}
 		profile.StarsBank = newBank
 	} else {
-		newWallet := profile.StarsWallet + amount
+		newWallet, ok := checkedAdd(profile.StarsWallet, amount)
+		if !ok {
+			return nil, errors.New("balance overflow")
+		}
 		if newWallet < 0 {
 			return nil, ErrInsufficientFunds
 		}
@@ -120,13 +146,22 @@ func AddStars(userID string, amount int64, toBank bool) (*models.GlobalEconomyPr
 
 // AddLocalBalance adds or removes local balance from a user
 func AddLocalBalance(guildID, userID string, amount int64, toBank bool) (*models.LocalEconomyProfile, error) {
+	economyMu.Lock()
+	defer economyMu.Unlock()
+	return addLocalBalance(guildID, userID, amount, toBank)
+}
+
+func addLocalBalance(guildID, userID string, amount int64, toBank bool) (*models.LocalEconomyProfile, error) {
 	profile, err := GetLocalProfile(guildID, userID)
 	if err != nil {
 		return nil, err
 	}
 
 	if toBank {
-		newBank := profile.Bank + amount
+		newBank, ok := checkedAdd(profile.Bank, amount)
+		if !ok {
+			return nil, errors.New("balance overflow")
+		}
 		if amount > 0 && newBank > profile.BankCapacity {
 			return nil, ErrBankFull
 		}
@@ -135,7 +170,10 @@ func AddLocalBalance(guildID, userID string, amount int64, toBank bool) (*models
 		}
 		profile.Bank = newBank
 	} else {
-		newWallet := profile.Wallet + amount
+		newWallet, ok := checkedAdd(profile.Wallet, amount)
+		if !ok {
+			return nil, errors.New("balance overflow")
+		}
 		if newWallet < 0 {
 			return nil, ErrInsufficientFunds
 		}
@@ -153,15 +191,18 @@ func TransferStars(fromUserID, toUserID string, amount int64) error {
 		return errors.New("amount must be positive")
 	}
 
-	_, err := AddStars(fromUserID, -amount, false)
+	economyMu.Lock()
+	defer economyMu.Unlock()
+
+	_, err := addStars(fromUserID, -amount, false)
 	if err != nil {
 		return err
 	}
 
-	_, err = AddStars(toUserID, amount, false)
+	_, err = addStars(toUserID, amount, false)
 	if err != nil {
 		// Rollback on failure
-		_, _ = AddStars(fromUserID, amount, false)
+		_, _ = addStars(fromUserID, amount, false)
 		return err
 	}
 
@@ -174,15 +215,18 @@ func TransferLocalBalance(guildID, fromUserID, toUserID string, amount int64) er
 		return errors.New("amount must be positive")
 	}
 
-	_, err := AddLocalBalance(guildID, fromUserID, -amount, false)
+	economyMu.Lock()
+	defer economyMu.Unlock()
+
+	_, err := addLocalBalance(guildID, fromUserID, -amount, false)
 	if err != nil {
 		return err
 	}
 
-	_, err = AddLocalBalance(guildID, toUserID, amount, false)
+	_, err = addLocalBalance(guildID, toUserID, amount, false)
 	if err != nil {
 		// Rollback on failure
-		_, _ = AddLocalBalance(guildID, fromUserID, amount, false)
+		_, _ = addLocalBalance(guildID, fromUserID, amount, false)
 		return err
 	}
 
@@ -194,6 +238,8 @@ func DepositLocal(guildID, userID string, amount int64) error {
 	if amount <= 0 {
 		return errors.New("amount must be positive")
 	}
+	economyMu.Lock()
+	defer economyMu.Unlock()
 	profile, err := GetLocalProfile(guildID, userID)
 	if err != nil {
 		return err
@@ -202,7 +248,7 @@ func DepositLocal(guildID, userID string, amount int64) error {
 	if profile.Wallet < amount {
 		return ErrInsufficientFunds
 	}
-	if profile.Bank+amount > profile.BankCapacity {
+	if profile.Bank > profile.BankCapacity-amount {
 		return ErrBankFull
 	}
 
@@ -218,6 +264,8 @@ func WithdrawLocal(guildID, userID string, amount int64) error {
 	if amount <= 0 {
 		return errors.New("amount must be positive")
 	}
+	economyMu.Lock()
+	defer economyMu.Unlock()
 	profile, err := GetLocalProfile(guildID, userID)
 	if err != nil {
 		return err
@@ -239,6 +287,8 @@ func DepositStars(userID string, amount int64) error {
 	if amount <= 0 {
 		return errors.New("amount must be positive")
 	}
+	economyMu.Lock()
+	defer economyMu.Unlock()
 	profile, err := GetGlobalProfile(userID)
 	if err != nil {
 		return err
@@ -247,7 +297,7 @@ func DepositStars(userID string, amount int64) error {
 	if profile.StarsWallet < amount {
 		return ErrInsufficientFunds
 	}
-	if profile.StarsBank+amount > profile.BankCapacity {
+	if profile.StarsBank > profile.BankCapacity-amount {
 		return ErrBankFull
 	}
 
@@ -263,6 +313,8 @@ func WithdrawStars(userID string, amount int64) error {
 	if amount <= 0 {
 		return errors.New("amount must be positive")
 	}
+	economyMu.Lock()
+	defer economyMu.Unlock()
 	profile, err := GetGlobalProfile(userID)
 	if err != nil {
 		return err
@@ -303,6 +355,8 @@ func CooldownLocal(guildID, userID, command string, duration time.Duration) (boo
 
 // SetCooldownLocal updates the cooldown timestamp for a command
 func SetCooldownLocal(guildID, userID, command string) error {
+	economyMu.Lock()
+	defer economyMu.Unlock()
 	profile, err := GetLocalProfile(guildID, userID)
 	if err != nil {
 		return err
@@ -339,6 +393,8 @@ func CooldownStars(userID, command string, duration time.Duration) (bool, time.D
 
 // SetCooldownStars updates the cooldown timestamp for a global command
 func SetCooldownStars(userID, command string) error {
+	economyMu.Lock()
+	defer economyMu.Unlock()
 	profile, err := GetGlobalProfile(userID)
 	if err != nil {
 		return err
@@ -348,6 +404,62 @@ func SetCooldownStars(userID, command string) error {
 	}
 	profile.Cooldowns[command] = time.Now()
 	_, err = GlobalEconomyDM.Set(bson.M{"_id": userID}, profile)
+	return err
+}
+
+// PurchaseItem deducts the balance and updates inventory in one serialized profile write.
+func PurchaseItem(guildID, userID string, item models.Item, quantity int64) error {
+	if quantity <= 0 {
+		return errors.New("quantity must be positive")
+	}
+	if item.Price < 0 || (item.Price > 0 && quantity > math.MaxInt64/item.Price) {
+		return errors.New("invalid item price or quantity")
+	}
+
+	economyMu.Lock()
+	defer economyMu.Unlock()
+
+	totalCost := item.Price * quantity
+	if item.IsGlobal {
+		profile, err := GetGlobalProfile(userID)
+		if err != nil {
+			return err
+		}
+		if profile.StarsWallet < totalCost {
+			return ErrInsufficientFunds
+		}
+		if profile.Inventory == nil {
+			profile.Inventory = make(map[string]int)
+		}
+		maxInt := int64(^uint(0) >> 1)
+		if quantity > maxInt-int64(profile.Inventory[item.ID]) {
+			return errors.New("inventory quantity overflow")
+		}
+		profile.StarsWallet -= totalCost
+		profile.Inventory[item.ID] += int(quantity)
+		profile.UpdatedAt = time.Now()
+		_, err = GlobalEconomyDM.Set(bson.M{"_id": userID}, profile)
+		return err
+	}
+
+	profile, err := GetLocalProfile(guildID, userID)
+	if err != nil {
+		return err
+	}
+	if profile.Wallet < totalCost {
+		return ErrInsufficientFunds
+	}
+	if profile.Inventory == nil {
+		profile.Inventory = make(map[string]int)
+	}
+	maxInt := int64(^uint(0) >> 1)
+	if quantity > maxInt-int64(profile.Inventory[item.ID]) {
+		return errors.New("inventory quantity overflow")
+	}
+	profile.Wallet -= totalCost
+	profile.Inventory[item.ID] += int(quantity)
+	profile.UpdatedAt = time.Now()
+	_, err = LocalEconomyDM.Set(bson.M{"_id": profile.ID}, profile)
 	return err
 }
 

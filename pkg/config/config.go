@@ -3,7 +3,10 @@
 package config
 
 import (
+	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/joho/godotenv"
@@ -12,8 +15,9 @@ import (
 // Config holds all configuration values for the bot
 type Config struct {
 	// Discord
-	BotToken   string
-	DevGuildID string
+	BotToken    string
+	DevGuildID  string
+	DeveloperID string
 
 	// MongoDB
 	MongoDBURL string
@@ -26,7 +30,9 @@ type Config struct {
 	MQTTPassword string
 
 	// Web Server
-	Port string
+	Port          string
+	AdminUser     string
+	AdminPassword string
 
 	// Environment
 	Environment string
@@ -53,6 +59,7 @@ var (
 // cfg holds the global configuration instance
 var (
 	cfg     *Config
+	cfgErr  error
 	cfgOnce sync.Once
 )
 
@@ -60,6 +67,7 @@ var (
 // This function should only be called from test code.
 func resetForTesting() {
 	cfg = nil
+	cfgErr = nil
 	cfgOnce = sync.Once{}
 }
 
@@ -70,12 +78,13 @@ func loadConfig() {
 
 	cfg = &Config{
 		// Discord
-		BotToken:   getEnv("botToken", ""),
-		DevGuildID: getEnv("devGuildId", ""),
+		BotToken:    getEnvAny([]string{"BOT_TOKEN", "botToken"}, ""),
+		DevGuildID:  getEnvAny([]string{"DEV_GUILD_ID", "devGuildId"}, ""),
+		DeveloperID: getEnv("DEVELOPER_ID", ""),
 
 		// MongoDB
-		MongoDBURL: getEnv("mongodbUrl", "mongodb://localhost:27017"),
-		DBName:     getEnv("dbName", "PancyBot"),
+		MongoDBURL: getEnvAny([]string{"MONGODB_URL", "mongodbUrl"}, "mongodb://localhost:27017"),
+		DBName:     getEnvAny([]string{"DB_NAME", "dbName"}, "PancyBot"),
 
 		// MQTT
 		MQTTHost:     getEnv("MQTT_Host", "localhost"),
@@ -84,10 +93,12 @@ func loadConfig() {
 		MQTTPassword: getEnv("MQTT_Password", ""),
 
 		// Web Server
-		Port: getEnv("PORT", "3000"),
+		Port:          getEnv("PORT", "3000"),
+		AdminUser:     getEnv("ADMIN_USER", "admin"),
+		AdminPassword: getEnv("ADMIN_PASSWORD", ""),
 
 		// Environment
-		Environment: getEnv("enviroment", "dev"),
+		Environment: strings.ToLower(getEnvAny([]string{"BOT_ENV", "ENVIRONMENT", "enviroment"}, "dev")),
 
 		// Webhooks
 		ErrorWebhook:      getEnv("errorWebhook", ""),
@@ -102,12 +113,32 @@ func loadConfig() {
 		// Craiyon
 		CraiyonToken: getEnv("craiyonToken", ""),
 	}
+
+	if strings.TrimSpace(cfg.BotToken) == "" {
+		cfgErr = fmt.Errorf("BOT_TOKEN (or legacy botToken) is required")
+		return
+	}
+	if strings.TrimSpace(cfg.DeveloperID) == "" {
+		cfgErr = fmt.Errorf("DEVELOPER_ID is required")
+		return
+	}
+	port, err := strconv.Atoi(cfg.Port)
+	if err != nil || port < 1 || port > 65535 {
+		cfgErr = fmt.Errorf("PORT must be a number between 1 and 65535")
+	}
+	if cfg.IsProd() && strings.TrimSpace(cfg.AdminPassword) == "" {
+		cfgErr = fmt.Errorf("ADMIN_PASSWORD is required in production")
+		return
+	}
+	if cfg.IsProd() && (strings.TrimSpace(cfg.MQTTUser) == "" || strings.TrimSpace(cfg.MQTTPassword) == "") {
+		cfgErr = fmt.Errorf("MQTT_User and MQTT_Password are required in production")
+	}
 }
 
 // Load initializes the configuration from environment variables
 func Load() (*Config, error) {
 	cfgOnce.Do(loadConfig)
-	return cfg, nil
+	return cfg, cfgErr
 }
 
 // Get returns the current configuration
@@ -121,6 +152,15 @@ func Get() *Config {
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return defaultValue
+}
+
+func getEnvAny(keys []string, defaultValue string) string {
+	for _, key := range keys {
+		if value := os.Getenv(key); value != "" {
+			return value
+		}
 	}
 	return defaultValue
 }

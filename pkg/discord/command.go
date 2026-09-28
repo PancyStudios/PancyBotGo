@@ -2,6 +2,7 @@
 package discord
 
 import (
+	"github.com/PancyStudios/PancyBotGo/pkg/config"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord/premium"
 	"github.com/bwmarrin/discordgo"
 )
@@ -107,6 +108,10 @@ func (c *Command) ToApplicationCommand() *discordgo.ApplicationCommand {
 		Description: c.Description,
 		Options:     c.Options,
 	}
+	if c.UserPermissions != 0 {
+		permissions := c.UserPermissions
+		appCmd.DefaultMemberPermissions = &permissions
+	}
 
 	if c.UserInstallable {
 		appCmd.IntegrationTypes = &[]discordgo.ApplicationIntegrationType{
@@ -131,10 +136,8 @@ func (c *Command) ToApplicationCommand() *discordgo.ApplicationCommand {
 }
 
 func (ctx *CommandContext) IsDev() bool {
-	if ctx.Interaction.User.ID == "852683369899622430" {
-		return true
-	}
-	return false
+	user := ctx.User()
+	return user != nil && user.ID == config.Get().DeveloperID
 }
 
 // Reply sends an embedded reply to the interaction

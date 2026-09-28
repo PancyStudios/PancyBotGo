@@ -1,8 +1,11 @@
+//go:build tools
+
 package main
 
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,7 +19,11 @@ type Item struct {
 }
 
 func main() {
-	uri := "mongodb://PancyBot:MeGustaElRosita%3Ew%3C123213*@139.177.102.78:27017/PancyBot"
+	uri := os.Getenv("mongodbUrl")
+	if uri == "" {
+		fmt.Println("mongodbUrl is required")
+		return
+	}
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(uri))
 	if err != nil {
 		return
@@ -24,7 +31,7 @@ func main() {
 	defer client.Disconnect(context.Background())
 
 	coll := client.Database("PancyBot").Collection("economy_items")
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

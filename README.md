@@ -12,7 +12,7 @@ PancyBotGo/
 ├── internal/
 │   └── commands/                # 📁 AQUÍ VAN TUS COMANDOS
 │       ├── register.go          # Registro de todos los comandos
-│       ├── util.go              # Comandos de utilidad (ping, status, etc.)
+│       ├── utils/               # Comandos de utilidad (ping, status, etc.)
 │       ├── music.go             # Comandos de música (play, pause, etc.)
 │       └── mod/                 # 📁 Grupo de subcomandos /mod
 │           ├── register.go      # Registra el grupo /mod
@@ -39,7 +39,7 @@ PancyBotGo/
 Si tu comando pertenece a una categoría existente (util, music), añádelo al archivo correspondiente:
 
 ```go
-// En internal/commands/util.go
+// En internal/commands/utils/register.go
 
 // Mi nuevo comando
 miComandoCmd := discord.NewCommand(
@@ -64,7 +64,7 @@ client.CommandHandler.AddGlobalCommand(miComandoCmd.ToApplicationCommand())
 package commands
 
 import (
-    "github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/discord"
+    "github.com/PancyStudios/PancyBotGo/pkg/discord"
 )
 
 func RegisterFunCommands(client *discord.ExtendedClient) {
@@ -141,7 +141,7 @@ internal/commands/mod/
 ```go
 package mod
 
-import "github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/discord"
+import "github.com/PancyStudios/PancyBotGo/pkg/discord"
 
 func RegisterModCommands(client *discord.ExtendedClient) {
     // Crear subcomandos (cada uno puede estar en su propio archivo)
@@ -169,7 +169,7 @@ package mod
 
 import (
     "fmt"
-    "github.com/PancyStudios/PancyBotCode/PancyBotGo/pkg/discord"
+    "github.com/PancyStudios/PancyBotGo/pkg/discord"
     "github.com/bwmarrin/discordgo"
 )
 
@@ -198,7 +198,7 @@ func banHandler(ctx *discord.CommandContext) error {
 
 **3. Registrar en `internal/commands/register.go`:**
 ```go
-import "github.com/PancyStudios/PancyBotCode/PancyBotGo/internal/commands/mod"
+import "github.com/PancyStudios/PancyBotGo/internal/commands/mod"
 
 func RegisterAll(client *discord.ExtendedClient) {
     RegisterUtilCommands(client)
@@ -276,11 +276,11 @@ func RegisterAll(client *discord.ExtendedClient) {
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/PancyStudios/PancyBotCode.git
-cd PancyBotCode/PancyBotGo
+git clone https://github.com/PancyStudios/PancyBotGo.git
+cd PancyBotGo
 
-# Instalar dependencias
-go mod tidy
+# Verificar dependencias
+go mod verify
 
 # Compilar
 go build -o pancybot ./cmd/bot
@@ -292,18 +292,20 @@ Crear un archivo `.env` en el directorio raíz con las siguientes variables:
 
 ```env
 # Discord
-botToken=tu_token_de_discord
-devGuildId=id_del_servidor_de_desarrollo
+BOT_TOKEN=tu_token_de_discord
+DEV_GUILD_ID=id_del_servidor_de_desarrollo
+DEVELOPER_ID=id_del_usuario_desarrollador
 
 # MongoDB
-mongodbUrl=mongodb://localhost:27017
-dbName=PancyBot
+MONGODB_URL=mongodb://localhost:27017
+DB_NAME=PancyBot
 
 # MQTT
 MQTT_Host=localhost
 MQTT_Port=1883
 MQTT_User=
 MQTT_Password=
+# Las credenciales MQTT son obligatorias en producción; limita además los topics con ACLs en el broker.
 
 # Lavalink (para música)
 linkserver=localhost
@@ -311,9 +313,11 @@ linkpassword=youshallnotpass
 
 # Web Server
 PORT=3000
+ADMIN_USER=admin
+ADMIN_PASSWORD=una_contraseña_segura  # obligatorio en producción
 
 # Environment
-enviroment=dev  # o 'prod' para producción
+BOT_ENV=dev  # o 'prod' para producción
 
 # Webhooks (opcional)
 errorWebhook=url_webhook_errores

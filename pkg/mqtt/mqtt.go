@@ -5,11 +5,11 @@ package mqtt
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/PancyStudios/PancyBotGo/pkg/config"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/google/uuid"
 
@@ -46,7 +46,7 @@ var (
 func Init(host, port, username, password, clientID string) *MqttCommunicator {
 	once.Do(func() {
 		communicator = NewMqttCommunicator(host, port, username, password, clientID)
-		
+
 		communicator.On("ping", func(payload map[string]interface{}) (interface{}, error) {
 			return map[string]interface{}{"pong": true}, nil
 		})
@@ -122,10 +122,7 @@ func (mc *MqttCommunicator) Publish(topic string, payload interface{}) error {
 
 // Request sends a request and waits for a response
 func (mc *MqttCommunicator) Request(topic string, payload interface{}, timeout time.Duration) (interface{}, error) {
-	env := os.Getenv("BOT_ENV")
-	if env == "" {
-		env = "canary"
-	}
+	env := config.Get().Environment
 	correlationID := uuid.New().String()
 	requestTopic := fmt.Sprintf("pancy/request/%s/%s", env, topic)
 	responseTopic := fmt.Sprintf("pancy/response/%s/%s/%s", env, topic, correlationID)
@@ -198,10 +195,7 @@ type RequestHandler func(payload map[string]interface{}) (interface{}, error)
 
 // On registers a handler for a request topic
 func (mc *MqttCommunicator) On(requestTopic string, callback RequestHandler) {
-	env := os.Getenv("BOT_ENV")
-	if env == "" {
-		env = "canary"
-	}
+	env := config.Get().Environment
 	topic := fmt.Sprintf("pancy/request/%s/%s", env, requestTopic)
 
 	token := mc.client.Subscribe(topic, 0, func(c mqtt.Client, msg mqtt.Message) {

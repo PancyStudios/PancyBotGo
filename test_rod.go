@@ -1,7 +1,10 @@
+//go:build tools
+
 package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/go-rod/rod"
@@ -24,7 +27,7 @@ func main() {
 
 	fmt.Println("Running fetch for API...")
 
-	js := `
+	js := fmt.Sprintf(`
 		async () => {
 			let res = await fetch("https://api.craiyon.com/v4", {
 				method: "POST",
@@ -33,7 +36,7 @@ func main() {
 				},
 				body: JSON.stringify({
 					prompt: "A beautiful red dog",
-					token: "turbis",
+					token: %q,
 					model: "auto",
 					negative_prompt: "",
 					size: "256x256"
@@ -41,7 +44,7 @@ func main() {
 			});
 			return await res.json();
 		}
-	`
+	`, os.Getenv("CRAIYON_TEST_TOKEN"))
 
 	res, err := page.Eval(js)
 	if err != nil {

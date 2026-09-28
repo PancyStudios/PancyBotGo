@@ -1,3 +1,5 @@
+//go:build tools
+
 package main
 
 import (
@@ -10,7 +12,7 @@ import (
 
 func main() {
 	baseDir := "./internal/messagecommands"
-	
+
 	filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -19,7 +21,7 @@ func main() {
 			// Extract category from folder name
 			dir := filepath.Dir(path)
 			category := filepath.Base(dir)
-			
+
 			// Capitalize category name
 			if len(category) > 0 {
 				category = strings.ToUpper(category[:1]) + category[1:]
@@ -30,7 +32,7 @@ func main() {
 				return err
 			}
 			content := string(contentBytes)
-			
+
 			// We only want to replace `"General"` with `"` + category + `"` on the lines with RegisterCommand
 			lines := strings.Split(content, "\n")
 			changed := false
@@ -43,7 +45,7 @@ func main() {
 					}
 				}
 			}
-			
+
 			if changed {
 				newContent := strings.Join(lines, "\n")
 				err = os.WriteFile(path, []byte(newContent), 0644)

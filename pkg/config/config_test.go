@@ -8,10 +8,12 @@ import (
 func TestLoad(t *testing.T) {
 	// Set up test environment variables
 	os.Setenv("botToken", "test-token")
+	os.Setenv("DEVELOPER_ID", "test-developer")
 	os.Setenv("PORT", "3001")
 	os.Setenv("enviroment", "test")
 	defer func() {
 		os.Unsetenv("botToken")
+		os.Unsetenv("DEVELOPER_ID")
 		os.Unsetenv("PORT")
 		os.Unsetenv("enviroment")
 	}()
@@ -52,6 +54,12 @@ func TestGetEnv(t *testing.T) {
 
 func TestIsProd(t *testing.T) {
 	resetForTesting()
+	os.Setenv("botToken", "test-token")
+	os.Setenv("DEVELOPER_ID", "test-developer")
+	os.Setenv("ADMIN_PASSWORD", "test-password")
+	defer os.Unsetenv("botToken")
+	defer os.Unsetenv("DEVELOPER_ID")
+	defer os.Unsetenv("ADMIN_PASSWORD")
 	os.Setenv("enviroment", "prod")
 	config, _ := Load()
 
@@ -123,5 +131,16 @@ func TestDefaultValues(t *testing.T) {
 
 	if config.Environment != "dev" {
 		t.Errorf("Environment default = %v, want %v", config.Environment, "dev")
+	}
+}
+
+func TestLoadRejectsMissingBotToken(t *testing.T) {
+	os.Unsetenv("BOT_TOKEN")
+	os.Unsetenv("botToken")
+	resetForTesting()
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("Load() accepted a missing bot token")
 	}
 }

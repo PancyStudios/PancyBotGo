@@ -1,10 +1,10 @@
 package messagecommands
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
+	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -133,7 +133,8 @@ func Handle(s *discordgo.Session, m *discordgo.MessageCreate, commandName string
 
 	err := cmd.Run(ctx)
 	if err != nil {
-		ctx.ReplyError("Error al ejecutar", fmt.Sprintf("Hubo un error interno:\n```\n%v\n```", err))
+		logger.Error("Error executing prefix command "+commandName+": "+err.Error(), "MessageCommands")
+		_, _ = ctx.ReplyError("Error al ejecutar", "Hubo un error interno. Inténtalo de nuevo más tarde.")
 	}
 	return err
 }

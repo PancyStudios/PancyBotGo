@@ -1,3 +1,5 @@
+//go:build tools
+
 package main
 
 import (
@@ -6,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 
 	"github.com/bogdanfinn/fhttp"
 	tls_client "github.com/bogdanfinn/tls-client"
@@ -34,7 +37,7 @@ func main() {
 
 	reqBody := CraiyonRequest{
 		Prompt:         "A beautiful red dog",
-		Token:          "turbis",
+		Token:          os.Getenv("CRAIYON_TEST_TOKEN"),
 		Model:          "auto",
 		NegativePrompt: "",
 		Size:           "256x256",

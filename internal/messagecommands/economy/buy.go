@@ -7,7 +7,6 @@ import (
 	"github.com/PancyStudios/PancyBotGo/internal/messagecommands"
 	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/models"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 func buyCommand(ctx *messagecommands.MessageContext) error {
@@ -19,8 +18,8 @@ func buyCommand(ctx *messagecommands.MessageContext) error {
 	itemID := ctx.Args[0]
 	qty := int64(1)
 
-	if len(ctx.Args) > 0 {
-		q, err := strconv.ParseInt(ctx.Args[0], 10, 64)
+	if len(ctx.Args) > 1 {
+		q, err := strconv.ParseInt(ctx.Args[1], 10, 64)
 		if err == nil && q > 0 {
 			qty = q
 		}
@@ -51,32 +50,19 @@ func buyCommand(ctx *messagecommands.MessageContext) error {
 		return err
 	}
 
+	if err := database.PurchaseItem(ctx.Message.GuildID, ctx.Message.Author.ID, *selectedItem, qty); err != nil {
+		_, replyErr := ctx.ReplyError("Error", "❌ No se pudo completar la compra. Verifica tu saldo e inténtalo de nuevo.")
+		if replyErr != nil {
+			return replyErr
+		}
+		return nil
+	}
 	totalCost := selectedItem.Price * qty
 
 	if selectedItem.IsGlobal {
-		_, err = database.AddStars(ctx.Message.Author.ID, -totalCost, false)
-		if err != nil {
-			_, err = ctx.ReplyError("Error", "❌ No tienes suficientes estrellas para comprar esto.")
-			return err
-		}
-
-		profile, _ := database.GetGlobalProfile(ctx.Message.Author.ID)
-		profile.Inventory[selectedItem.ID] += int(qty)
-		database.GlobalEconomyDM.Set(bson.M{"_id": profile.UserID}, profile)
-
 		_, err = ctx.ReplySuccess("Compra Exitosa", fmt.Sprintf("Has comprado **x%d %s** por 🌟 %d estrellas.", qty, selectedItem.Name, totalCost))
 		return err
 	} else {
-		_, err = database.AddLocalBalance(ctx.Message.GuildID, ctx.Message.Author.ID, -totalCost, false)
-		if err != nil {
-			_, err = ctx.ReplyError("Error", "❌ No tienes suficientes monedas locales para comprar esto.")
-			return err
-		}
-
-		profile, _ := database.GetLocalProfile(ctx.Message.GuildID, ctx.Message.Author.ID)
-		profile.Inventory[selectedItem.ID] += int(qty)
-		database.LocalEconomyDM.Set(bson.M{"_id": profile.ID}, profile)
-
 		_, err = ctx.ReplySuccess("Compra Exitosa", fmt.Sprintf("Has comprado **x%d %s** por 💵 %d monedas locales.", qty, selectedItem.Name, totalCost))
 		return err
 	}

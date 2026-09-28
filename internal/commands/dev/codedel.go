@@ -40,7 +40,7 @@ func codedelHandler(ctx *discord.CommandContext) error {
 		} else if ctx.Interaction.User != nil {
 			userID = ctx.Interaction.User.ID
 		}
-		if userID != "852683369899622430" {
+		if !isDev(userID) {
 			sendErrorEmbed(ctx, "Acceso Denegado", "❌ Este comando solo está disponible para desarrolladores.")
 			return
 		}

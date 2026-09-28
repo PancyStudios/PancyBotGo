@@ -3,28 +3,30 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/PancyStudios/PancyBotGo/internal/commands"
 	"github.com/PancyStudios/PancyBotGo/internal/events"
 	msgconfig "github.com/PancyStudios/PancyBotGo/internal/messagecommands/config"
+	devMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/dev"
 	"github.com/PancyStudios/PancyBotGo/internal/messagecommands/economy"
+	embedsMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/embeds"
 	funMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/fun"
-	modMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/mod"
-	utilsMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/utils"
 	helpMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/help"
 	iaMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/ia"
 	levelsMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/levels"
-	devMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/dev"
-	embedsMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/embeds"
+	modMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/mod"
 	musicMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/music"
 	premiumMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/premium"
 	reactionMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/reaction"
 	securityMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/security"
+	utilsMsgCommands "github.com/PancyStudios/PancyBotGo/internal/messagecommands/utils"
 	"github.com/PancyStudios/PancyBotGo/pkg/api"
 	"github.com/PancyStudios/PancyBotGo/pkg/cli"
 	"github.com/PancyStudios/PancyBotGo/pkg/config"
@@ -76,7 +78,6 @@ func main() {
 	db, err := database.Init(cfg.MongoDBURL, cfg.DBName)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error connecting to database: %v", err), "Main")
-		logger.Debug(fmt.Sprintf("Error connecting to database: %v", cfg.MongoDBURL), "Main")
 		// Continue without database- it will attempt to reconnect
 	}
 	defer func() {
@@ -134,6 +135,13 @@ func main() {
 	web.SetupAPIRoutes(webServer)
 	web.SetupDashboardRoutes(webServer)
 	webServer.StartAsync(cfg.Port)
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := webServer.Shutdown(ctx); err != nil {
+			logger.Warn(fmt.Sprintf("Error shutting down web server: %v", err), "Main")
+		}
+	}()
 
 	// Open dashboard automatically if requested
 	if *useDashboard {
@@ -200,9 +208,10 @@ func main() {
 
 	err = lavalinkClient.Connect()
 	if err != nil {
-		return
+		logger.Warn(fmt.Sprintf("Lavalink no está disponible; la música iniciará en modo degradado: %v", err), "Main")
+	} else {
+		defer lavalinkClient.Disconnect()
 	}
-	defer lavalinkClient.Disconnect()
 
 	// Register MQTT handlers for remote control via API
 	lavalink.RegisterMusicHandlers(mqttClient, lavalinkClient)

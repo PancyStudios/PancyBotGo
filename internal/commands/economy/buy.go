@@ -7,7 +7,6 @@ import (
 	"github.com/PancyStudios/PancyBotGo/pkg/discord"
 	"github.com/PancyStudios/PancyBotGo/pkg/models"
 	"github.com/bwmarrin/discordgo"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 func createBuyCommand() *discord.Command {
@@ -68,31 +67,15 @@ func buyHandler(ctx *discord.CommandContext) error {
 		return nil
 	}
 
+	if err := database.PurchaseItem(ctx.Interaction.GuildID, ctx.User().ID, *selectedItem, qty); err != nil {
+		ctx.Reply("❌ No se pudo completar la compra. Verifica tu saldo e inténtalo de nuevo.")
+		return err
+	}
 	totalCost := selectedItem.Price * qty
 
 	if selectedItem.IsGlobal {
-		_, err = database.AddStars(ctx.Interaction.Member.User.ID, -totalCost, false)
-		if err != nil {
-			ctx.Reply("❌ " + "No tienes suficientes estrellas para comprar esto.")
-			return nil
-		}
-
-		profile, _ := database.GetGlobalProfile(ctx.Interaction.Member.User.ID)
-		profile.Inventory[selectedItem.ID] += int(qty)
-		database.GlobalEconomyDM.Set(bson.M{"_id": profile.UserID}, profile)
-
 		ctx.Reply(fmt.Sprintf("Has comprado **x%d %s** por 🌟 %d estrellas.", qty, selectedItem.Name, totalCost))
 	} else {
-		_, err = database.AddLocalBalance(ctx.Interaction.GuildID, ctx.Interaction.Member.User.ID, -totalCost, false)
-		if err != nil {
-			ctx.Reply("❌ " + "No tienes suficientes monedas locales para comprar esto.")
-			return nil
-		}
-
-		profile, _ := database.GetLocalProfile(ctx.Interaction.GuildID, ctx.Interaction.Member.User.ID)
-		profile.Inventory[selectedItem.ID] += int(qty)
-		database.LocalEconomyDM.Set(bson.M{"_id": profile.ID}, profile)
-
 		ctx.Reply(fmt.Sprintf("Has comprado **x%d %s** por 💵 %d monedas locales.", qty, selectedItem.Name, totalCost))
 	}
 

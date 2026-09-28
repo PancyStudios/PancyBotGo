@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/config"
+	"github.com/PancyStudios/PancyBotGo/pkg/database"
 	"github.com/PancyStudios/PancyBotGo/pkg/discord/premium"
 	"github.com/PancyStudios/PancyBotGo/pkg/errors"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
@@ -110,7 +111,8 @@ func NewClient(token string) (*ExtendedClient, error) {
 	session.Identify.Intents = discordgo.IntentsGuilds |
 		discordgo.IntentsGuildMessages |
 		discordgo.IntentsGuildMembers |
-		discordgo.IntentsGuildVoiceStates
+		discordgo.IntentsGuildVoiceStates |
+		discordgo.IntentsMessageContent
 
 	// Configure session
 	session.ShardCount = 1 // Auto sharding equivalent
@@ -205,6 +207,10 @@ func (c *ExtendedClient) handleInteraction(s *discordgo.Session, i *discordgo.In
 				Interaction: i,
 				Client:      c,
 			}
+			if !c.canUseAutocomplete(ctx, cmd, commandName) {
+				_ = ctx.SendAutoCompleteResults(nil)
+				return
+			}
 			cmd.AutoComplete(ctx)
 		}
 		return
@@ -282,6 +288,11 @@ func (c *ExtendedClient) handleInteraction(s *discordgo.Session, i *discordgo.In
 		return
 	}
 
+	if err := c.checkCommandRequirements(ctx, cmd, commandName); err != nil {
+		logger.Warn("Command requirement rejected for "+commandName+": "+err.Error(), "Client")
+		return
+	}
+
 	if !cmd.PremiumType.IsNone() {
 		guildID := i.GuildID
 		userID := ctx.User().ID
@@ -295,6 +306,95 @@ func (c *ExtendedClient) handleInteraction(s *discordgo.Session, i *discordgo.In
 	if err := cmd.Run(ctx); err != nil {
 		logger.Error("Error executing command "+commandName+": "+err.Error(), "Client")
 	}
+}
+
+func (c *ExtendedClient) canUseAutocomplete(ctx *CommandContext, cmd *Command, commandName string) bool {
+	if (strings.HasPrefix(commandName, "dev.") || cmd.IsDev) && !ctx.IsDev() {
+		return false
+	}
+	user := ctx.User()
+	if user == nil {
+		return false
+	}
+	if cmd.UserPermissions != 0 {
+		permissions, err := ctx.Session.UserChannelPermissions(user.ID, ctx.Interaction.ChannelID)
+		if err != nil || permissions&cmd.UserPermissions != cmd.UserPermissions {
+			return false
+		}
+	}
+	if cmd.RequiresDB {
+		db := database.Get()
+		if db == nil || !db.Connected() {
+			return false
+		}
+	}
+	if cmd.InVoiceChannel {
+		if ctx.Session.State == nil || ctx.Interaction.GuildID == "" {
+			return false
+		}
+		voiceState, err := ctx.Session.State.VoiceState(ctx.Interaction.GuildID, user.ID)
+		if err != nil || voiceState == nil || voiceState.ChannelID == "" {
+			return false
+		}
+	}
+	return true
+}
+
+func (c *ExtendedClient) checkCommandRequirements(ctx *CommandContext, cmd *Command, commandName string) error {
+	if strings.HasPrefix(commandName, "dev.") || cmd.IsDev {
+		if !ctx.IsDev() {
+			_ = ctx.ReplyEphemeral("❌ Este comando está reservado para el equipo de desarrollo.")
+			return fmt.Errorf("developer access required")
+		}
+	}
+
+	if cmd.UserPermissions != 0 {
+		user := ctx.User()
+		if user == nil {
+			_ = ctx.ReplyEphemeral("❌ No se pudo validar tu identidad.")
+			return fmt.Errorf("interaction user is missing")
+		}
+		permissions, err := ctx.Session.UserChannelPermissions(user.ID, ctx.Interaction.ChannelID)
+		if err != nil || permissions&cmd.UserPermissions != cmd.UserPermissions {
+			_ = ctx.ReplyEphemeral("❌ No tienes los permisos necesarios para usar este comando.")
+			return fmt.Errorf("missing user permissions")
+		}
+	}
+
+	if cmd.BotPermissions != 0 {
+		if ctx.Session.State == nil || ctx.Session.State.User == nil {
+			_ = ctx.ReplyEphemeral("❌ No se pudieron validar los permisos del bot.")
+			return fmt.Errorf("bot state is unavailable")
+		}
+		permissions, err := ctx.Session.UserChannelPermissions(ctx.Session.State.User.ID, ctx.Interaction.ChannelID)
+		if err != nil || permissions&cmd.BotPermissions != cmd.BotPermissions {
+			_ = ctx.ReplyEphemeral("❌ No tengo los permisos necesarios para ejecutar este comando.")
+			return fmt.Errorf("missing bot permissions")
+		}
+	}
+
+	if cmd.RequiresDB {
+		db := database.Get()
+		if db == nil || !db.Connected() {
+			_ = ctx.ReplyEphemeral("❌ La base de datos no está disponible temporalmente.")
+			return fmt.Errorf("database is unavailable")
+		}
+	}
+
+	if cmd.InVoiceChannel {
+		user := ctx.User()
+		if user == nil || ctx.Interaction.GuildID == "" || ctx.Session.State == nil {
+			_ = ctx.ReplyEphemeral("❌ Debes usar este comando dentro de un servidor y estar en un canal de voz.")
+			return fmt.Errorf("voice context is unavailable")
+		}
+		voiceState, err := ctx.Session.State.VoiceState(ctx.Interaction.GuildID, user.ID)
+		if err != nil || voiceState == nil || voiceState.ChannelID == "" {
+			_ = ctx.ReplyEphemeral("❌ Debes estar en un canal de voz para usar este comando.")
+			return fmt.Errorf("user is not in a voice channel")
+		}
+	}
+
+	return nil
 }
 
 // Stop stops the bot and closes the session

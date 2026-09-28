@@ -1,4 +1,3 @@
-go.sum
 .idea/
 PancyBotCode
 main
@@ -11,3 +10,6 @@ logs/
 
 fix_commands.sh
 bot
+/PancyBot
+/PancyBotGo
+/test_bot

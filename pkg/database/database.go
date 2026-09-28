@@ -34,6 +34,7 @@ type Database struct {
 	stopReconnect   chan struct{}
 	mu              sync.RWMutex
 	queueMu         sync.Mutex
+	stopOnce        sync.Once
 	collections     map[string]*mongo.Collection
 }
 
@@ -94,6 +95,7 @@ func (d *Database) Connect(mongoURL, dbName string) error {
 
 	// Ping to verify connection
 	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		_ = client.Disconnect(context.Background())
 		logger.Critical("Fallo al verificar conexión con la base de datos.", "DB")
 		d.handleDisconnection(mongoURL, dbName)
 		return err
@@ -148,7 +150,7 @@ func (d *Database) Disconnect() error {
 	if d.reconnectTicker != nil {
 		d.reconnectTicker.Stop()
 	}
-	close(d.stopReconnect)
+	d.stopOnce.Do(func() { close(d.stopReconnect) })
 
 	if d.client != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -248,6 +250,7 @@ func (d *Database) syncOfflineWrites() {
 		col := d.GetCollection(op.CollectionName)
 		if col == nil {
 			logger.Error(fmt.Sprintf("Colección '%s' no encontrada durante la sincronización.", op.CollectionName), "DB-Sync")
+			failedOps = append(failedOps, op)
 			continue
 		}
 
@@ -259,6 +262,8 @@ func (d *Database) syncOfflineWrites() {
 			_, err = col.UpdateOne(ctx, op.Query, bson.M{"$set": op.Data}, opts)
 		} else if op.Operation == "delete" {
 			_, err = col.DeleteOne(ctx, op.Query)
+		} else {
+			err = fmt.Errorf("unsupported queued operation %q", op.Operation)
 		}
 
 		cancel()

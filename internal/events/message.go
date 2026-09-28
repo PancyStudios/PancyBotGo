@@ -215,64 +215,18 @@ func handleUserLeveling(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	profile, err := database.GetLocalLevelProfile(m.GuildID, m.Author.ID)
+	result, err := database.ProcessLevelMessage(m.GuildID, m.Author.ID, time.Now())
 	if err != nil {
-		logger.Error(fmt.Sprintf("Error obteniendo perfil de nivel para %s: %v", m.Author.ID, err), "Levels")
+		logger.Error(fmt.Sprintf("Error actualizando perfil de nivel para %s: %v", m.Author.ID, err), "Levels")
 		return
 	}
-
-	now := time.Now()
-
-	// Comprobar si está en enfriamiento
-	if now.Before(profile.CooldownUntil) {
+	if result.Skipped {
 		return
 	}
-
-	// Comprobar ventana de spam (4 mensajes en 3 segundos)
-	if now.Sub(profile.SpamWindowStart) > 3*time.Second {
-		// Resetear la ventana
-		profile.SpamWindowStart = now
-		profile.SpamCount = 1
-	} else {
-		profile.SpamCount++
-		if profile.SpamCount >= 4 {
-			// Activar cooldown de 5 segundos
-			profile.CooldownUntil = now.Add(5 * time.Second)
-			profile.SpamCount = 0 // Resetear cuenta para después del cooldown
-
-			// Guardar el perfil para que el cooldown haga efecto, y no dar XP
-			_, err = database.LocalLevelsDM.Set(bson.M{"_id": profile.ID}, profile)
-			if err != nil {
-				logger.Error(fmt.Sprintf("Error guardando cooldown para %s: %v", m.Author.ID, err), "Levels")
-			}
-			return
-		}
-	}
-
-	// Añadir XP aleatorio (1 a 15)
-	addedXP := int64(1 + (now.UnixNano() % 15)) // simple pseudo-random
-	profile.XP += addedXP
-	profile.TotalMessages += 1
-	profile.LastMessageTime = now
-
-	// Verificar si subió de nivel
-	nextLevel := profile.Level + 1
-	requiredXP := nextLevel * nextLevel * 100
-
-	levelUp := false
-	if profile.XP >= requiredXP {
-		profile.Level = nextLevel
-		levelUp = true
-	}
-
-	_, err = database.LocalLevelsDM.Set(bson.M{"_id": profile.ID}, profile)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Error guardando perfil de nivel para %s: %v", m.Author.ID, err), "Levels")
-		return
-	}
+	profile := result.Profile
 
 	// Enviar mensaje de Level Up si es necesario
-	if levelUp {
+	if result.LevelUp {
 		// Asignar roles de recompensa
 		for _, reward := range guildData.Levels.Rewards {
 			if reward.Level == profile.Level {

@@ -14,7 +14,7 @@ import (
 )
 
 func isDev(id string) bool {
-	return id == "852683369899622430"
+	return id == config.Get().DeveloperID
 }
 
 func evalCommand(ctx *messagecommands.MessageContext) error {

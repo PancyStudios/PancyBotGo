@@ -5,6 +5,7 @@ import (
 	"container/list"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -17,6 +18,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+var ErrDatabaseUnavailable = errors.New("database unavailable")
 
 // DataManagerOptions contains configuration for a DataManager
 type DataManagerOptions struct {
@@ -75,7 +78,6 @@ func InitGlobalDataManagers(db *Database) {
 // DataManager provides cached access to a MongoDB collection
 type DataManager[T any] struct {
 	collectionName string
-	collection     *mongo.Collection
 	dbInstance     *Database
 	options        DataManagerOptions
 }
@@ -96,20 +98,36 @@ func NewDataManager[T any](collectionName string, db *Database, opts ...DataMana
 
 	return &DataManager[T]{
 		collectionName: collectionName,
-		collection:     db.GetCollection(collectionName),
 		dbInstance:     db,
 		options:        dmOptions,
 	}
 }
 
+func (dm *DataManager[T]) collection() *mongo.Collection {
+	if dm.dbInstance == nil || !dm.dbInstance.Connected() {
+		return nil
+	}
+	return dm.dbInstance.GetCollection(dm.collectionName)
+}
+
+func cloneValue[T any](value *T) (*T, error) {
+	if value == nil {
+		return nil, nil
+	}
+	data, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	var cloned T
+	if err := json.Unmarshal(data, &cloned); err != nil {
+		return nil, err
+	}
+	return &cloned, nil
+}
+
 // generateCacheKey creates a unique, deterministic key from a query
 // It sorts the keys to ensure consistent ordering regardless of map iteration order
 func (dm *DataManager[T]) generateCacheKey(query bson.M) string {
-	collName := ""
-	if dm.collection != nil {
-		collName = dm.collectionName
-	}
-
 	// Sort keys for deterministic serialization
 	keys := make([]string, 0, len(query))
 	for k := range query {
@@ -123,7 +141,7 @@ func (dm *DataManager[T]) generateCacheKey(query bson.M) string {
 		parts = append(parts, fmt.Sprintf("%s=%v", k, query[k]))
 	}
 
-	return fmt.Sprintf("%s:{%s}", collName, strings.Join(parts, ","))
+	return fmt.Sprintf("%s:{%s}", dm.collectionName, strings.Join(parts, ","))
 }
 
 // Get retrieves a document from cache or database
@@ -139,35 +157,42 @@ func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 		globalCacheManager.cacheList.MoveToFront(elem)
 		entry := elem.Value.(*cacheEntry)
 		globalCacheManager.mu.Unlock()
-		return entry.value.(*T), nil
+		value, ok := entry.value.(*T)
+		if !ok {
+			return nil, fmt.Errorf("invalid cached type for collection %s", dm.collectionName)
+		}
+		return cloneValue(value)
 	}
 	globalCacheManager.mu.RUnlock()
 
 	// Not in cache, fetch from database
-	if !dm.dbInstance.Connected() || dm.collection == nil {
-		// Modo offline: Si no está en caché y la DB está desconectada, devolvemos nil sin error.
-		// Esto le dice a los servicios que el perfil "no existe" y deben inicializar uno.
-		return nil, nil
+	collection := dm.collection()
+	if collection == nil {
+		return nil, ErrDatabaseUnavailable
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
 	defer cancel()
 
 	var result T
-	err := dm.collection.FindOne(ctx, query).Decode(&result)
+	err := collection.FindOne(ctx, query).Decode(&result)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		logger.Warn(fmt.Sprintf("Error leyendo de DB (%s), operando en modo fallback: %v", dm.collectionName, err), "DataManager")
-		return nil, nil // En vez de retornar error, simulamos "no existe" para inicializarlo localmente
+		logger.Warn(fmt.Sprintf("Error leyendo de DB (%s): %v", dm.collectionName, err), "DataManager")
+		return nil, err
 	}
 
 	// Add to cache
 	globalCacheManager.mu.Lock()
 	defer globalCacheManager.mu.Unlock()
 
-	entry := &cacheEntry{key: cacheKey, value: &result}
+	cachedResult, err := cloneValue(&result)
+	if err != nil {
+		return nil, err
+	}
+	entry := &cacheEntry{key: cacheKey, value: cachedResult}
 	elem := globalCacheManager.cacheList.PushFront(entry)
 	globalCacheManager.cache[cacheKey] = elem
 
@@ -186,15 +211,15 @@ func (dm *DataManager[T]) Get(query bson.M) (*T, error) {
 
 // GetAll retrieves all documents matching a query from the database
 func (dm *DataManager[T]) GetAll(query bson.M) ([]*T, error) {
-	if !dm.dbInstance.Connected() || dm.collection == nil {
-		logger.Warn(fmt.Sprintf("DB offline. GetAll devolviendo lista vacía para '%s'", dm.collectionName), "DataManager")
-		return []*T{}, nil
+	collection := dm.collection()
+	if collection == nil {
+		return nil, ErrDatabaseUnavailable
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
 	defer cancel()
 
-	cursor, err := dm.collection.Find(ctx, query)
+	cursor, err := collection.Find(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -224,10 +249,19 @@ func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 	} else if v, ok := data.(T); ok {
 		cacheValue = &v
 	} else {
-		bytes, _ := json.Marshal(data)
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			return nil, err
+		}
 		var temp T
-		json.Unmarshal(bytes, &temp)
+		if err := json.Unmarshal(bytes, &temp); err != nil {
+			return nil, err
+		}
 		cacheValue = &temp
+	}
+	cacheValue, err := cloneValue(cacheValue)
+	if err != nil {
+		return nil, err
 	}
 
 	globalCacheManager.mu.Lock()
@@ -251,7 +285,8 @@ func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 	}
 	globalCacheManager.mu.Unlock()
 
-	if !dm.dbInstance.Connected() || dm.collection == nil {
+	collection := dm.collection()
+	if collection == nil {
 		logger.Warn(fmt.Sprintf("DB offline. Encolando escritura en '%s' y usando caché.", dm.collectionName), "DataManager")
 		dm.dbInstance.AddToWriteQueue(QueuedOperation{
 			CollectionName: dm.collectionName,
@@ -270,7 +305,7 @@ func (dm *DataManager[T]) Set(query bson.M, data interface{}) (*T, error) {
 		SetReturnDocument(options.After)
 
 	var result T
-	err := dm.collection.FindOneAndUpdate(ctx, query, bson.M{"$set": data}, opts).Decode(&result)
+	err = collection.FindOneAndUpdate(ctx, query, bson.M{"$set": data}, opts).Decode(&result)
 	if err != nil {
 		logger.Debug(fmt.Sprintf("DB offline o timeout. Usando cache local para '%s'", dm.collectionName), "DataManager")
 		dm.dbInstance.AddToWriteQueue(QueuedOperation{
@@ -297,7 +332,8 @@ func (dm *DataManager[T]) Delete(query bson.M) error {
 	}
 	globalCacheManager.mu.Unlock()
 
-	if !dm.dbInstance.Connected() || dm.collection == nil {
+	collection := dm.collection()
+	if collection == nil {
 		logger.Warn(fmt.Sprintf("DB offline. Encolando eliminación para '%s'", dm.collectionName), "DataManager")
 		dm.dbInstance.AddToWriteQueue(QueuedOperation{
 			CollectionName: dm.collectionName,
@@ -310,7 +346,7 @@ func (dm *DataManager[T]) Delete(query bson.M) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
 	defer cancel()
 
-	_, err := dm.collection.DeleteOne(ctx, query)
+	_, err := collection.DeleteOne(ctx, query)
 	if err != nil {
 		logger.Debug("Eliminación añadida a la cola offline", "DataManager")
 		dm.dbInstance.AddToWriteQueue(QueuedOperation{
@@ -342,9 +378,5 @@ func (dm *DataManager[T]) CacheSize() int {
 
 // PrimeCache logs that the cache is ready (caches are filled on demand)
 func (dm *DataManager[T]) PrimeCache() {
-	collName := ""
-	if dm.collection != nil {
-		collName = dm.collectionName
-	}
-	logger.System(fmt.Sprintf("Caché para '%s' preparada (tamaño máx: %d). Se llenará bajo demanda.", collName, dm.options.MaxCacheSize), "DataManager")
+	logger.System(fmt.Sprintf("Caché para '%s' preparada (tamaño máx: %d). Se llenará bajo demanda.", dm.collectionName, dm.options.MaxCacheSize), "DataManager")
 }

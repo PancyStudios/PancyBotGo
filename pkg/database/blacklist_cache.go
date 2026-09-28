@@ -70,7 +70,7 @@ func (c *BlacklistCache) Refresh() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	collection := GlobalBlacklistDM.collection
+	collection := GlobalBlacklistDM.collection()
 	if collection == nil {
 		logger.Warn("BlacklistCache: Collection not available", "BlacklistCache")
 		return nil

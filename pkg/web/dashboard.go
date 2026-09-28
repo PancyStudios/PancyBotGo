@@ -1,12 +1,16 @@
 package web
 
 import (
+	"crypto/subtle"
+	"net"
 	"net/http"
+	"net/url"
 	"runtime"
 	"strings"
 	"syscall"
 
 	"github.com/PancyStudios/PancyBotGo/pkg/cli"
+	"github.com/PancyStudios/PancyBotGo/pkg/config"
 	"github.com/PancyStudios/PancyBotGo/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
@@ -14,9 +18,39 @@ import (
 // localOnlyMiddleware ensures a route is only accessible via localhost
 func localOnlyMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !isAllowedHost(c.Request.Host) {
+		host, _, err := net.SplitHostPort(c.Request.RemoteAddr)
+		if err != nil {
+			host = c.Request.RemoteAddr
+		}
+		ip := net.ParseIP(host)
+		if ip == nil || !ip.IsLoopback() {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Forbidden", "message": "El panel de administración solo es accesible localmente."})
 			return
+		}
+
+		cfg := config.Get()
+		if cfg.AdminPassword != "" {
+			username, password, ok := c.Request.BasicAuth()
+			validUser := subtle.ConstantTimeCompare([]byte(username), []byte(cfg.AdminUser)) == 1
+			validPassword := subtle.ConstantTimeCompare([]byte(password), []byte(cfg.AdminPassword)) == 1
+			if !ok || !validUser || !validPassword {
+				c.Header("WWW-Authenticate", `Basic realm="PancyBot Admin", charset="UTF-8"`)
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+				return
+			}
+		}
+		if c.Request.Method != http.MethodGet && c.Request.Method != http.MethodHead {
+			if origin := c.GetHeader("Origin"); origin != "" {
+				parsedOrigin, err := url.Parse(origin)
+				if err != nil || parsedOrigin.Host != c.Request.Host {
+					c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Invalid origin"})
+					return
+				}
+			}
+			if c.GetHeader("Sec-Fetch-Site") == "cross-site" {
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Cross-site request rejected"})
+				return
+			}
 		}
 		c.Next()
 	}
